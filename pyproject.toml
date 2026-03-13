@@ -3,6 +3,7 @@ name = "doob"
 version = "0.1.0"
 requires-python = ">=3.12"
 description = "Quantitative strategy research and backtesting"
+license = "MIT"
 dependencies = [
     "pandas>=2.0",
     "pyarrow>=14.0",

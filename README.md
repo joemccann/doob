@@ -5,7 +5,7 @@ Quantitative strategy research and backtesting package. Reads from the shared `~
 ## Prerequisites
 
 - Python 3.12+
-- Populated `~/market-warehouse/` data lake (bronze parquet layer)
+- Populated `~/market-warehouse/` data lake (bronze parquet layer) — see [market-data-warehouse](https://github.com/joemccann/market-data-warehouse)
 
 ## Install
 
