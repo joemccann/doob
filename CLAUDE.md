@@ -22,7 +22,7 @@ src/
 │   └── fees.rs                      # IBKR fee model constants + ibkr_roundtrip_cost()
 └── strategies/
     ├── mod.rs
-    ├── common.rs                    # Shared: daily_returns, buy_and_hold_equity, formatting
+    ├── common.rs                    # Shared: daily_returns, buy_and_hold_equity, formatting, JSON output
     ├── overnight_drift.rs           # Buy close, sell next open; optional VIX filter + ADF test
     ├── intraday_drift.rs            # Buy open, sell close same day; long or short
     ├── breadth_washout.rs           # Generic breadth signal across any universe
@@ -82,7 +82,8 @@ cargo test
 
 - `polars` — DataFrame & parquet I/O
 - `nalgebra` — Linear algebra (ADF test OLS)
-- `clap` — CLI argument parsing (derive)
+- `clap` — CLI argument parsing (derive), global `--output` flag
+- `serde` + `serde_json` — JSON serialization for `--output json`
 - `reqwest` — HTTP client (VIX download, Yahoo Finance, NASDAQ API)
 - `chrono` — Date/time operations
 - `rayon` — Parallel data fetching

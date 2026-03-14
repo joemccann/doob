@@ -50,7 +50,8 @@ src/
 
 - `polars` — DataFrame & parquet I/O
 - `nalgebra` — Linear algebra for ADF test OLS
-- `clap` — CLI argument parsing with derive macros
+- `clap` — CLI argument parsing with derive macros, global `--output` flag
+- `serde` + `serde_json` — JSON serialization for `--output json` mode
 - `reqwest` — HTTP client for VIX download, Yahoo Finance, NASDAQ API
 - `chrono` — Date/time operations
 - `rayon` — Parallel data fetching

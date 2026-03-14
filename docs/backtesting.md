@@ -7,5 +7,6 @@ Repo note:
 - Data is read from the shared `~/market-warehouse/` bronze parquet layer.
 - ADF test uses pure Rust nalgebra OLS with AIC lag selection (no external stats dependency).
 - Fee model: IBKR tiered with per-share commission, exchange/regulatory fees, min order, and max cap.
+- All strategies support `--output json` for programmatic/agent consumption (single JSON object to stdout, no progress text).
 
 See the full backtesting framework reference in the parent market-data-warehouse repo's `docs/backtesting.md`.
