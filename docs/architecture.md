@@ -38,7 +38,7 @@ src/
 │   └── fees.rs                      # IBKR fee model constants + ibkr_roundtrip_cost()
 └── strategies/
     ├── mod.rs
-    ├── common.rs                    # Shared: daily_returns, buy_and_hold_equity, formatting
+    ├── common.rs                    # Shared: daily_returns, buy_and_hold_equity, formatting, JSON output
     ├── overnight_drift.rs           # Buy close, sell next open; optional VIX filter + ADF test
     ├── intraday_drift.rs            # Buy open, sell close same day; long or short
     ├── breadth_washout.rs           # Generic breadth signal across any universe
@@ -61,11 +61,16 @@ src/
 DOOB_WAREHOUSE_PATH env var → .env file → ~/market-warehouse (default)
 ```
 
+## Output modes
+
+All strategies support `--output text` (default) and `--output json`. The flag is global on the `Cli` struct and passed to each strategy's `run(args, fmt)` function. When `json`, strategies emit a single JSON object to stdout with no progress text.
+
 ## How to add a new strategy
 
 1. Create `src/strategies/my_strategy.rs`
 2. Define `MyStrategyArgs` struct using clap derive
-3. Add the strategy to `StrategyCommand` enum in `src/cli.rs`
-4. Wire it up in `src/main.rs` match arm
-5. Write tests in the `#[cfg(test)] mod tests` block
-6. Run `cargo test`
+3. Implement `pub fn run(args: &MyStrategyArgs, fmt: OutputFormat) -> Result<()>`
+4. Add the strategy to `StrategyCommand` enum in `src/cli.rs`
+5. Wire it up in `src/main.rs` match arm
+6. Write tests in the `#[cfg(test)] mod tests` block
+7. Run `cargo test`

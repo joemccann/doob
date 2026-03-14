@@ -38,6 +38,15 @@ doob run ndx100-sma-breadth --end-date 2026-03-11
 | `breadth-washout` | Generic breadth signal across any universe (ndx100, sp500, r2k, all-stocks). |
 | `ndx100-sma-breadth` | NASDAQ-100 5-day SMA breadth analysis with forward returns. |
 
+## JSON Output
+
+For AI agents or programmatic consumption, pass `--output json` to get structured output:
+
+```bash
+doob --output json run overnight-drift --no-vix-filter
+doob run intraday-drift --ticker SPY --output json
+```
+
 ## Testing
 
 ```bash

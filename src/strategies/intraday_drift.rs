@@ -7,11 +7,12 @@ use chrono::NaiveDate;
 
 use num_format::ToFormattedString;
 
+use crate::cli::OutputFormat;
 use crate::data::readers::{load_ticker_ohlcv, OhlcvRow};
 use crate::metrics::fees::ibkr_roundtrip_cost;
 use crate::strategies::common::{
-    buy_and_hold_equity, format_annual_table, format_results_header,
-    format_strategy_row, StrategyResult,
+    build_json_annual_returns, buy_and_hold_equity, compute_strategy_metrics, format_annual_table,
+    format_results_header, format_strategy_row, JsonOutput, StrategyResult,
 };
 
 pub const DEFAULT_CAPITAL: f64 = 1_000_000.0;
@@ -80,18 +81,23 @@ pub struct IntradayDriftArgs {
 }
 
 /// Run the intraday drift strategy.
-pub fn run(args: &IntradayDriftArgs) -> Result<()> {
+pub fn run(args: &IntradayDriftArgs, fmt: OutputFormat) -> Result<()> {
+    let json_mode = fmt == OutputFormat::Json;
     let ticker = args.ticker.to_uppercase();
 
-    println!("Loading {} from bronze parquet...", ticker);
+    if !json_mode {
+        println!("Loading {} from bronze parquet...", ticker);
+    }
     let mut spy = load_ticker_ohlcv(&ticker, None, None)?;
-    println!(
-        "  {}: {} bars, {} to {}",
-        ticker,
-        spy.len(),
-        spy.first().unwrap().trade_date,
-        spy.last().unwrap().trade_date
-    );
+    if !json_mode {
+        println!(
+            "  {}: {} bars, {} to {}",
+            ticker,
+            spy.len(),
+            spy.first().unwrap().trade_date,
+            spy.last().unwrap().trade_date
+        );
+    }
 
     // Date filtering
     if let Some(ref sd) = args.start_date {
@@ -141,44 +147,67 @@ pub fn run(args: &IntradayDriftArgs) -> Result<()> {
         as f64
         / 365.25;
 
-    // Print results
-    println!();
-    println!("{}", "=".repeat(80));
-    let mode = if args.short {
-        "SHORT OPEN, COVER CLOSE"
+    if json_mode {
+        let results: Vec<_> = strategies
+            .iter()
+            .map(|s| compute_strategy_metrics(&s.name, &s.equity, years))
+            .collect();
+
+        let output = JsonOutput {
+            strategy: "intraday-drift".to_string(),
+            ticker: ticker.clone(),
+            period_start: dates.first().unwrap().to_string(),
+            period_end: dates.last().unwrap().to_string(),
+            years,
+            capital: args.capital,
+            fee_model: "IBKR Tiered".to_string(),
+            results,
+            annual_returns: build_json_annual_returns(
+                &strategies,
+                &dates,
+                args.start_year_table,
+            ),
+        };
+        println!("{}", serde_json::to_string(&output)?);
     } else {
-        "BUY THE OPEN, SELL THE CLOSE"
-    };
-    println!("{} — {} BACKTEST RESULTS", mode, ticker);
-    println!(
-        "Period: {} to {} ({:.1} years)",
-        dates.first().unwrap(),
-        dates.last().unwrap(),
-        years
-    );
-    println!(
-        "Capital: ${} | Fee model: IBKR Tiered",
-        (args.capital as i64).to_formatted_string(&num_format::Locale::en)
-    );
-    println!("Note: adj_close == close (IB split-adj only); B&H CAGR understates by ~1.3%/yr");
-    println!("{}", "=".repeat(80));
+        println!();
+        println!("{}", "=".repeat(80));
+        let mode = if args.short {
+            "SHORT OPEN, COVER CLOSE"
+        } else {
+            "BUY THE OPEN, SELL THE CLOSE"
+        };
+        println!("{} — {} BACKTEST RESULTS", mode, ticker);
+        println!(
+            "Period: {} to {} ({:.1} years)",
+            dates.first().unwrap(),
+            dates.last().unwrap(),
+            years
+        );
+        println!(
+            "Capital: ${} | Fee model: IBKR Tiered",
+            (args.capital as i64).to_formatted_string(&num_format::Locale::en)
+        );
+        println!("Note: adj_close == close (IB split-adj only); B&H CAGR understates by ~1.3%/yr");
+        println!("{}", "=".repeat(80));
 
-    let (header, sep) = format_results_header();
-    println!("{header}");
-    println!("{sep}");
+        let (header, sep) = format_results_header();
+        println!("{header}");
+        println!("{sep}");
 
-    for strat in &strategies {
-        println!("{}", format_strategy_row(&strat.name, &strat.equity, years));
-    }
+        for strat in &strategies {
+            println!("{}", format_strategy_row(&strat.name, &strat.equity, years));
+        }
 
-    println!("\nAnnual Returns (from {}):", args.start_year_table);
-    println!(
-        "{}",
-        format_annual_table(&strategies, &dates, args.start_year_table, 25)
-    );
+        println!("\nAnnual Returns (from {}):", args.start_year_table);
+        println!(
+            "{}",
+            format_annual_table(&strategies, &dates, args.start_year_table, 25)
+        );
 
-    if !args.no_plots {
-        println!("\nPlotting not yet implemented in Rust port (use --no-plots)");
+        if !args.no_plots {
+            println!("\nPlotting not yet implemented in Rust port (use --no-plots)");
+        }
     }
 
     Ok(())

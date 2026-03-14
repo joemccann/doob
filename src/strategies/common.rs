@@ -1,7 +1,8 @@
-/// Shared strategy utilities: buy-and-hold, report formatting, daily returns.
+/// Shared strategy utilities: buy-and-hold, report formatting, daily returns, JSON output.
 
 use chrono::NaiveDate;
 use num_format::{Locale, ToFormattedString};
+use serde::Serialize;
 
 use crate::metrics::fees::ibkr_roundtrip_cost;
 use crate::metrics::performance::{annual_returns_table, cagr, max_drawdown, sharpe_default, var_95};
@@ -113,6 +114,89 @@ pub fn format_annual_table(
     lines.join("\n")
 }
 
+/// Metrics for a single strategy in JSON output.
+#[derive(Debug, Serialize)]
+pub struct JsonStrategyMetrics {
+    pub name: String,
+    pub final_equity: f64,
+    pub cagr: f64,
+    pub sharpe: f64,
+    pub max_drawdown: f64,
+    pub var_95: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adf_stat: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adf_p_value: Option<f64>,
+}
+
+/// Annual return entry.
+#[derive(Debug, Serialize)]
+pub struct JsonAnnualReturn {
+    pub year: i32,
+    pub returns: std::collections::BTreeMap<String, f64>,
+}
+
+/// Top-level JSON output for backtest strategies.
+#[derive(Debug, Serialize)]
+pub struct JsonOutput {
+    pub strategy: String,
+    pub ticker: String,
+    pub period_start: String,
+    pub period_end: String,
+    pub years: f64,
+    pub capital: f64,
+    pub fee_model: String,
+    pub results: Vec<JsonStrategyMetrics>,
+    pub annual_returns: Vec<JsonAnnualReturn>,
+}
+
+/// Compute metrics for a strategy and return as JsonStrategyMetrics.
+pub fn compute_strategy_metrics(name: &str, equity: &[f64], years: f64) -> JsonStrategyMetrics {
+    let dr = daily_returns(equity);
+    JsonStrategyMetrics {
+        name: name.to_string(),
+        final_equity: *equity.last().unwrap(),
+        cagr: cagr(equity, years),
+        sharpe: sharpe_default(&dr),
+        max_drawdown: max_drawdown(equity),
+        var_95: var_95(&dr),
+        adf_stat: None,
+        adf_p_value: None,
+    }
+}
+
+/// Build annual returns for JSON output.
+pub fn build_json_annual_returns(
+    strategies: &[StrategyResult],
+    dates: &[NaiveDate],
+    start_year: i32,
+) -> Vec<JsonAnnualReturn> {
+    let tables: Vec<Vec<(i32, f64)>> = strategies
+        .iter()
+        .map(|s| annual_returns_table(&s.equity, dates, start_year))
+        .collect();
+
+    let mut all_years: std::collections::BTreeSet<i32> = std::collections::BTreeSet::new();
+    for tbl in &tables {
+        for (year, _) in tbl {
+            all_years.insert(*year);
+        }
+    }
+
+    all_years
+        .into_iter()
+        .map(|year| {
+            let mut returns = std::collections::BTreeMap::new();
+            for (i, tbl) in tables.iter().enumerate() {
+                if let Some((_, ret)) = tbl.iter().find(|(y, _)| *y == year) {
+                    returns.insert(strategies[i].name.clone(), *ret);
+                }
+            }
+            JsonAnnualReturn { year, returns }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,5 +234,45 @@ mod tests {
         let row = format_strategy_row("Test Strategy", &equity, 1.0);
         assert!(row.contains("Test Strategy"));
         assert!(row.contains("1,200,000"));
+    }
+
+    #[test]
+    fn test_compute_strategy_metrics() {
+        let equity = [1_000_000.0, 1_100_000.0, 1_050_000.0, 1_200_000.0];
+        let m = compute_strategy_metrics("Test", &equity, 1.0);
+        assert_eq!(m.name, "Test");
+        assert_eq!(m.final_equity, 1_200_000.0);
+        assert!(m.cagr > 0.0);
+        assert!(m.max_drawdown > 0.0);
+        assert!(m.adf_stat.is_none());
+        assert!(m.adf_p_value.is_none());
+    }
+
+    #[test]
+    fn test_compute_strategy_metrics_serializes_to_json() {
+        let equity = [1_000_000.0, 1_100_000.0, 1_200_000.0];
+        let m = compute_strategy_metrics("Buy & Hold", &equity, 1.0);
+        let json = serde_json::to_string(&m).unwrap();
+        assert!(json.contains("\"name\":\"Buy & Hold\""));
+        assert!(json.contains("\"final_equity\":1200000.0"));
+        // adf fields should be omitted (skip_serializing_if = None)
+        assert!(!json.contains("adf_stat"));
+    }
+
+    #[test]
+    fn test_build_json_annual_returns() {
+        let dates = vec![
+            NaiveDate::from_ymd_opt(2020, 6, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2020, 12, 31).unwrap(),
+            NaiveDate::from_ymd_opt(2021, 6, 1).unwrap(),
+        ];
+        let strategies = vec![StrategyResult {
+            name: "Test".to_string(),
+            equity: vec![100.0, 100.0, 110.0, 120.0],
+        }];
+        let annual = build_json_annual_returns(&strategies, &dates, 2020);
+        assert_eq!(annual.len(), 2);
+        assert_eq!(annual[0].year, 2020);
+        assert!(annual[0].returns.contains_key("Test"));
     }
 }

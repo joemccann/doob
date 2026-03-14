@@ -21,6 +21,7 @@ use anyhow::{bail, Context, Result};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
+use crate::cli::OutputFormat;
 use crate::config::{output_dir, presets_dir};
 use crate::data::discovery::discover_symbols;
 use crate::strategies::ndx100_sma_breadth::{BreadthRow, DEFAULT_FORWARD_HORIZONS};
@@ -449,6 +450,8 @@ fn fetch_price_panel(
 // ---------------------------------------------------------------------------
 
 /// Fetch official Nasdaq index memberships for specific trade dates.
+/// Includes retry logic with exponential back-off for rate-limited /
+/// dropped connections, and a small delay between requests to be polite.
 fn fetch_nasdaq_memberships(
     client: &reqwest::blocking::Client,
     snapshot_dates: &[NaiveDate],
@@ -456,43 +459,108 @@ fn fetch_nasdaq_memberships(
     time_of_day: &str,
 ) -> Result<BTreeMap<NaiveDate, HashSet<String>>> {
     let mut memberships: BTreeMap<NaiveDate, HashSet<String>> = BTreeMap::new();
+    let max_retries: usize = 4;
 
-    for &trade_date in snapshot_dates {
+    for (idx, &trade_date) in snapshot_dates.iter().enumerate() {
         let trade_date_str = format!("{}T00:00:00.000", trade_date);
 
-        let resp = client
-            .post(NASDAQ_WEIGHTING_URL)
-            .form(&[
-                ("id", symbol),
-                ("tradeDate", &trade_date_str),
-                ("timeOfDay", time_of_day),
-            ])
-            .send()
-            .with_context(|| {
-                format!("fetching NASDAQ memberships for {trade_date}")
-            })?;
-
-        resp.error_for_status_ref().with_context(|| {
-            format!("NASDAQ membership API error for {trade_date}")
-        })?;
-
-        let payload: serde_json::Value = resp.json()?;
-        let aa_data = payload
-            .get("aaData")
-            .and_then(|d| d.as_array())
-            .cloned()
-            .unwrap_or_default();
-
         let mut members = HashSet::new();
-        for row in &aa_data {
-            if let Some(sym) = row.get("Symbol").and_then(|s| s.as_str()) {
-                if !sym.is_empty() {
-                    members.insert(sym.to_uppercase());
+        let mut last_err: Option<anyhow::Error> = None;
+
+        for attempt in 0..=max_retries {
+            if attempt > 0 {
+                let backoff = std::time::Duration::from_millis(500 * (1 << attempt));
+                tracing::warn!(
+                    "Retrying membership fetch for {} (attempt {}/{}) after {:?}",
+                    trade_date,
+                    attempt + 1,
+                    max_retries + 1,
+                    backoff,
+                );
+                std::thread::sleep(backoff);
+            }
+
+            let send_result = client
+                .post(NASDAQ_WEIGHTING_URL)
+                .form(&[
+                    ("id", symbol),
+                    ("tradeDate", &trade_date_str),
+                    ("timeOfDay", time_of_day),
+                ])
+                .send();
+
+            let resp = match send_result {
+                Ok(r) => r,
+                Err(e) => {
+                    last_err = Some(anyhow::anyhow!(e).context(format!(
+                        "fetching NASDAQ memberships for {trade_date}"
+                    )));
+                    continue;
+                }
+            };
+
+            if let Err(e) = resp.error_for_status_ref() {
+                last_err = Some(anyhow::anyhow!(e).context(format!(
+                    "NASDAQ membership API error for {trade_date}"
+                )));
+                continue;
+            }
+
+            let payload: serde_json::Value = match resp.json() {
+                Ok(v) => v,
+                Err(e) => {
+                    last_err = Some(anyhow::anyhow!(e).context(format!(
+                        "parsing membership JSON for {trade_date}"
+                    )));
+                    continue;
+                }
+            };
+
+            let aa_data = payload
+                .get("aaData")
+                .and_then(|d| d.as_array())
+                .cloned()
+                .unwrap_or_default();
+
+            for row in &aa_data {
+                if let Some(sym) = row.get("Symbol").and_then(|s| s.as_str()) {
+                    if !sym.is_empty() {
+                        members.insert(sym.to_uppercase());
+                    }
                 }
             }
+
+            last_err = None;
+            break;
         }
 
+        if let Some(err) = last_err {
+            return Err(err);
+        }
+
+        // Skip snapshot dates that return no members (holidays, weekends,
+        // or dates before the API's historical coverage).
+        if members.is_empty() {
+            tracing::warn!(
+                "Snapshot date {} returned 0 members — skipping",
+                trade_date
+            );
+            continue;
+        }
+
+        tracing::info!(
+            "[{}/{}] {} → {} members",
+            idx + 1,
+            snapshot_dates.len(),
+            trade_date,
+            members.len()
+        );
         memberships.insert(trade_date, members);
+
+        // Small delay between requests to avoid rate-limiting.
+        if idx + 1 < snapshot_dates.len() {
+            std::thread::sleep(std::time::Duration::from_millis(200));
+        }
     }
 
     Ok(memberships)
@@ -734,7 +802,7 @@ fn compute_forward_returns_for_asset(
 // Forward return summary
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 struct ForwardReturnRow {
     asset: String,
     horizon: String,
@@ -1878,14 +1946,40 @@ fn build_config_from_args(args: &BreadthWashoutArgs) -> Result<BreadthWashoutCon
 }
 
 /// Run the breadth washout strategy.
-pub fn run(args: &BreadthWashoutArgs) -> Result<()> {
+pub fn run(args: &BreadthWashoutArgs, fmt: OutputFormat) -> Result<()> {
+    let json_mode = fmt == OutputFormat::Json;
     let config = build_config_from_args(args)?;
     let results = run_strategy(config)?;
     let paths = save_strategy_outputs(&results)?;
-    println!("{}", format_strategy_report(&results));
-    println!("\nFiles");
-    for (label, path) in &paths {
-        println!("{}: {}", label, path.display());
+
+    if json_mode {
+        let output = serde_json::json!({
+            "strategy": "breadth-washout",
+            "universe_label": results.universe_label,
+            "target_row": {
+                "trade_date": results.target_row.trade_date.to_string(),
+                "eligible_count": results.target_row.eligible_count,
+                "above_count": results.target_row.above_count,
+                "below_or_equal_count": results.target_row.below_or_equal_count,
+                "unavailable_count": results.target_row.unavailable_count,
+                "pct_above": results.target_row.pct_above,
+                "pct_below_or_equal": results.target_row.pct_below_or_equal,
+            },
+            "trigger_count": results.triggered.len(),
+            "forward_summary": results.forward_summary,
+            "missing_constituent_prices": results.missing_constituent_prices,
+            "missing_forward_assets": results.missing_forward_assets,
+            "files": paths.iter().map(|(label, path)| {
+                serde_json::json!({"label": label, "path": path.display().to_string()})
+            }).collect::<Vec<_>>(),
+        });
+        println!("{}", serde_json::to_string(&output)?);
+    } else {
+        println!("{}", format_strategy_report(&results));
+        println!("\nFiles");
+        for (label, path) in &paths {
+            println!("{}: {}", label, path.display());
+        }
     }
     Ok(())
 }

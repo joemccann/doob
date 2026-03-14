@@ -8,12 +8,13 @@ use chrono::NaiveDate;
 
 use num_format::ToFormattedString;
 
+use crate::cli::OutputFormat;
 use crate::data::readers::{load_ticker_ohlcv, load_vix_from_cboe, OhlcvRow, VixRow};
 use crate::metrics::fees::ibkr_roundtrip_cost;
 use crate::metrics::performance::sharpe_default;
 use crate::strategies::common::{
-    buy_and_hold_equity, daily_returns, format_annual_table, format_results_header,
-    format_strategy_row, StrategyResult,
+    build_json_annual_returns, buy_and_hold_equity, compute_strategy_metrics, daily_returns,
+    format_annual_table, format_results_header, format_strategy_row, JsonOutput, StrategyResult,
 };
 
 pub const DEFAULT_CAPITAL: f64 = 1_000_000.0;
@@ -209,26 +210,35 @@ pub struct OvernightDriftArgs {
 }
 
 /// Run the overnight drift strategy.
-pub fn run(args: &OvernightDriftArgs) -> Result<()> {
-    println!("Loading SPY from bronze parquet...");
+pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
+    let json_mode = fmt == OutputFormat::Json;
+    if !json_mode {
+        println!("Loading SPY from bronze parquet...");
+    }
     let mut spy = load_ticker_ohlcv("SPY", None, None)?;
-    println!(
-        "  SPY: {} bars, {} to {}",
-        spy.len(),
-        spy.first().unwrap().trade_date,
-        spy.last().unwrap().trade_date
-    );
+    if !json_mode {
+        println!(
+            "  SPY: {} bars, {} to {}",
+            spy.len(),
+            spy.first().unwrap().trade_date,
+            spy.last().unwrap().trade_date
+        );
+    }
 
     let include_vix = !args.no_vix_filter;
     let vix_filter_data = if include_vix {
-        println!("Loading VIX from CBOE...");
+        if !json_mode {
+            println!("Loading VIX from CBOE...");
+        }
         let vix_raw = load_vix_from_cboe(None)?;
-        println!(
-            "  VIX: {} bars, {} to {}",
-            vix_raw.len(),
-            vix_raw.first().unwrap().trade_date,
-            vix_raw.last().unwrap().trade_date
-        );
+        if !json_mode {
+            println!(
+                "  VIX: {} bars, {} to {}",
+                vix_raw.len(),
+                vix_raw.first().unwrap().trade_date,
+                vix_raw.last().unwrap().trade_date
+            );
+        }
         let vix = compute_vix_filter(&vix_raw, 200);
         Some(vix)
     } else {
@@ -268,7 +278,6 @@ pub fn run(args: &OvernightDriftArgs) -> Result<()> {
 
     // Build VIX filter mask
     let vix_mask: Vec<bool> = if let Some(ref vfd) = vix_filter_data {
-        // Create a lookup from date -> filter
         let vix_map: std::collections::HashMap<NaiveDate, bool> =
             vfd.iter().map(|(d, _, _, f)| (*d, *f)).collect();
         dates.iter().map(|d| *vix_map.get(d).unwrap_or(&false)).collect()
@@ -320,74 +329,113 @@ pub fn run(args: &OvernightDriftArgs) -> Result<()> {
         as f64
         / 365.25;
 
-    // Print results
-    println!();
-    println!("{}", "=".repeat(80));
-    println!("OVERNIGHT DRIFT BACKTEST RESULTS");
-    println!(
-        "Period: {} to {} ({:.1} years)",
-        dates.first().unwrap(),
-        dates.last().unwrap(),
-        years
-    );
-    println!(
-        "Capital: ${} | Fee model: IBKR Tiered",
-        (args.capital as i64).to_formatted_string(&num_format::Locale::en)
-    );
-    println!("Note: adj_close == close (IB split-adj only); B&H CAGR understates by ~1.3%/yr");
-    println!("{}", "=".repeat(80));
-
-    let (header, sep) = format_results_header();
-    println!("{header}");
-    println!("{sep}");
-
+    // Compute ADF stats for overnight strategies
+    let mut adf_results: Vec<(String, f64, f64)> = Vec::new();
     for strat in &strategies {
-        println!("{}", format_strategy_row(&strat.name, &strat.equity, years));
         if strat.name.contains("Overnight") {
             let dr = daily_returns(&strat.equity);
             let (adf_stat, p_val) = adf_test(&dr);
-            println!(
-                "  {:>23}: {:.4}  p-value: {:.6}",
-                "ADF stat", adf_stat, p_val
-            );
+            adf_results.push((strat.name.clone(), adf_stat, p_val));
         }
     }
 
-    println!("\nAnnual Returns (from {}):", args.start_year_table);
-    println!(
-        "{}",
-        format_annual_table(&strategies, &dates, args.start_year_table, 20)
-    );
+    if json_mode {
+        let mut results: Vec<_> = strategies
+            .iter()
+            .map(|s| compute_strategy_metrics(&s.name, &s.equity, years))
+            .collect();
 
-    if !args.no_plots {
-        println!("\nPlotting not yet implemented in Rust port (use --no-plots)");
-    }
+        // Attach ADF stats
+        for m in &mut results {
+            if let Some((_, stat, pval)) = adf_results.iter().find(|(n, _, _)| *n == m.name) {
+                m.adf_stat = Some(*stat);
+                m.adf_p_value = Some(*pval);
+            }
+        }
 
-    if include_vix {
-        if let Some(vix_strat) = strategies.iter().find(|s| s.name.contains("VIX Filter")) {
-            let all_strat = strategies.iter().find(|s| s.name == "Overnight (All)").unwrap();
-            let dr_all = daily_returns(&all_strat.equity);
-            let dr_vix = daily_returns(&vix_strat.equity);
-            let s_all = sharpe_default(&dr_all);
-            let s_vix = sharpe_default(&dr_vix);
-            let vix_days: usize = vix_mask.iter().filter(|&&v| v).count();
-            let total_days = n;
-            println!(
-                "\nVIX Filter traded {}/{} days ({:.0}%)",
-                vix_days,
-                total_days,
-                vix_days as f64 / total_days as f64 * 100.0
-            );
-            if s_vix > s_all {
+        let output = JsonOutput {
+            strategy: "overnight-drift".to_string(),
+            ticker: "SPY".to_string(),
+            period_start: dates.first().unwrap().to_string(),
+            period_end: dates.last().unwrap().to_string(),
+            years,
+            capital: args.capital,
+            fee_model: "IBKR Tiered".to_string(),
+            results,
+            annual_returns: build_json_annual_returns(
+                &strategies,
+                &dates,
+                args.start_year_table,
+            ),
+        };
+        println!("{}", serde_json::to_string(&output)?);
+    } else {
+        println!();
+        println!("{}", "=".repeat(80));
+        println!("OVERNIGHT DRIFT BACKTEST RESULTS");
+        println!(
+            "Period: {} to {} ({:.1} years)",
+            dates.first().unwrap(),
+            dates.last().unwrap(),
+            years
+        );
+        println!(
+            "Capital: ${} | Fee model: IBKR Tiered",
+            (args.capital as i64).to_formatted_string(&num_format::Locale::en)
+        );
+        println!("Note: adj_close == close (IB split-adj only); B&H CAGR understates by ~1.3%/yr");
+        println!("{}", "=".repeat(80));
+
+        let (header, sep) = format_results_header();
+        println!("{header}");
+        println!("{sep}");
+
+        for strat in &strategies {
+            println!("{}", format_strategy_row(&strat.name, &strat.equity, years));
+            if let Some((_, stat, pval)) = adf_results.iter().find(|(n, _, _)| *n == strat.name) {
                 println!(
-                    "VIX filter improved Sharpe: {:.2} -> {:.2} by avoiding high-vol gap risk",
-                    s_all, s_vix
+                    "  {:>23}: {:.4}  p-value: {:.6}",
+                    "ADF stat", stat, pval
                 );
-            } else {
+            }
+        }
+
+        println!("\nAnnual Returns (from {}):", args.start_year_table);
+        println!(
+            "{}",
+            format_annual_table(&strategies, &dates, args.start_year_table, 20)
+        );
+
+        if !args.no_plots {
+            println!("\nPlotting not yet implemented in Rust port (use --no-plots)");
+        }
+
+        if include_vix {
+            if let Some(vix_strat) = strategies.iter().find(|s| s.name.contains("VIX Filter")) {
+                let all_strat = strategies.iter().find(|s| s.name == "Overnight (All)").unwrap();
+                let dr_all = daily_returns(&all_strat.equity);
+                let dr_vix = daily_returns(&vix_strat.equity);
+                let s_all = sharpe_default(&dr_all);
+                let s_vix = sharpe_default(&dr_vix);
+                let vix_days: usize = vix_mask.iter().filter(|&&v| v).count();
+                let total_days = n;
                 println!(
-                    "VIX filter Sharpe: {:.2} vs unfiltered: {:.2}",
-                    s_vix, s_all
+                    "\nVIX Filter traded {}/{} days ({:.0}%)",
+                    vix_days,
+                    total_days,
+                    vix_days as f64 / total_days as f64 * 100.0
                 );
+                if s_vix > s_all {
+                    println!(
+                        "VIX filter improved Sharpe: {:.2} -> {:.2} by avoiding high-vol gap risk",
+                        s_all, s_vix
+                    );
+                } else {
+                    println!(
+                        "VIX filter Sharpe: {:.2} vs unfiltered: {:.2}",
+                        s_vix, s_all
+                    );
+                }
             }
         }
     }

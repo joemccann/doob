@@ -8,7 +8,7 @@
 ///     doob list-strategies
 ///     doob list-presets
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::strategies::breadth_washout::BreadthWashoutArgs;
 use crate::strategies::intraday_drift::IntradayDriftArgs;
@@ -16,9 +16,19 @@ use crate::strategies::ndx100_breadth_washout::Ndx100BreadthWashoutArgs;
 use crate::strategies::ndx100_sma_breadth::Ndx100SmaBreadthArgs;
 use crate::strategies::overnight_drift::OvernightDriftArgs;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum OutputFormat {
+    Text,
+    Json,
+}
+
 #[derive(Parser)]
 #[command(name = "doob", about = "Quantitative strategy research and backtesting")]
 pub struct Cli {
+    /// Output format: text (default) or json (for programmatic consumption)
+    #[arg(long, default_value = "text", global = true)]
+    pub output: OutputFormat,
+
     #[command(subcommand)]
     pub command: Command,
 }
@@ -237,5 +247,25 @@ mod tests {
                 strategy: StrategyCommand::Ndx100BreadthWashout(_)
             }
         ));
+    }
+
+    #[test]
+    fn test_output_default_is_text() {
+        let cli = Cli::try_parse_from(&["doob", "list-strategies"]).unwrap();
+        assert_eq!(cli.output, OutputFormat::Text);
+    }
+
+    #[test]
+    fn test_output_json_flag() {
+        let cli =
+            Cli::try_parse_from(&["doob", "--output", "json", "run", "overnight-drift"]).unwrap();
+        assert_eq!(cli.output, OutputFormat::Json);
+    }
+
+    #[test]
+    fn test_output_json_flag_after_subcommand() {
+        let cli =
+            Cli::try_parse_from(&["doob", "run", "overnight-drift", "--output", "json"]).unwrap();
+        assert_eq!(cli.output, OutputFormat::Json);
     }
 }

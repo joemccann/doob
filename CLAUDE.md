@@ -53,6 +53,17 @@ doob list-strategies
 doob list-presets
 ```
 
+## JSON Output (for AI agents / programmatic use)
+
+All strategies support `--output json` for structured machine-readable output:
+
+```bash
+doob --output json run overnight-drift --no-vix-filter
+doob run intraday-drift --ticker SPY --output json
+```
+
+The flag is global and can appear before or after the subcommand. When active, all human-readable text and progress messages are suppressed — only a single JSON object is written to stdout.
+
 ## Building & Testing
 
 ```bash
@@ -62,7 +73,7 @@ cargo test
 
 ### Test Rules
 
-1. 114 unit tests covering all modules
+1. 120 unit tests covering all modules
 2. Use `tempfile` crate for temporary directories in tests
 3. Mock all external I/O (file paths, network requests)
 4. Tests run in < 0.1s (no real data dependencies)
@@ -78,7 +89,7 @@ cargo test
 
 ## How to Add a New Strategy
 
-1. Create `src/strategies/my_strategy.rs` with a `run(args)` function
+1. Create `src/strategies/my_strategy.rs` with a `run(args, fmt)` function
 2. Define `MyStrategyArgs` using clap derive
 3. Add the strategy to `StrategyCommand` enum in `src/cli.rs`
 4. Wire it up in `src/main.rs` match arm

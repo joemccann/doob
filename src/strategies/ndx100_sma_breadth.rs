@@ -8,8 +8,9 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use chrono::NaiveDate;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
+use crate::cli::OutputFormat;
 use crate::config::presets_dir;
 use crate::data::readers::load_close_frame;
 
@@ -126,7 +127,7 @@ pub fn compute_breadth(
     Ok(result)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct BreadthRow {
     pub trade_date: NaiveDate,
     pub eligible_count: usize,
@@ -219,7 +220,7 @@ fn percentile(sorted: &[f64], pct: f64) -> f64 {
     sorted[lo] + frac * (sorted[hi] - sorted[lo])
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DistributionSummary {
     pub observations: usize,
     pub mean: f64,
@@ -272,7 +273,7 @@ pub fn build_histogram_table(values: &[f64], bin_size: usize) -> Result<Vec<Hist
     Ok(bins)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct HistogramBin {
     pub label: String,
     pub days: usize,
@@ -327,7 +328,8 @@ pub struct Ndx100SmaBreadthArgs {
 }
 
 /// Run the NDX-100 SMA breadth analysis.
-pub fn run(args: &Ndx100SmaBreadthArgs) -> Result<()> {
+pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
+    let json_mode = fmt == OutputFormat::Json;
     let preset_path = args.preset.clone().unwrap_or_else(default_preset);
     let warehouse = args.warehouse.clone().unwrap_or_else(default_warehouse);
     let end_date = args.end_date.parse::<NaiveDate>()?;
@@ -339,7 +341,9 @@ pub fn run(args: &Ndx100SmaBreadthArgs) -> Result<()> {
     let buffer_days = (args.sessions * 2).max(args.lookback * 10) as i64;
     let start_date = end_date - chrono::Duration::days(buffer_days);
 
-    println!("Loading close prices for {} symbols...", tickers.len());
+    if !json_mode {
+        println!("Loading close prices for {} symbols...", tickers.len());
+    }
     let (price_data, missing) =
         load_close_frame(&tickers, Some(&warehouse), Some(start_date), Some(end_date))?;
 
@@ -359,7 +363,9 @@ pub fn run(args: &Ndx100SmaBreadthArgs) -> Result<()> {
     let dates: Vec<NaiveDate> = all_dates.keys().copied().collect();
     let symbols: Vec<String> = price_data.iter().map(|(s, _)| s.clone()).collect();
 
-    println!("Computing breadth...");
+    if !json_mode {
+        println!("Computing breadth...");
+    }
     let breadth = compute_breadth(&dates, &symbols, &prices_map, args.lookback, universe_size)?;
     let trailing = select_trailing_sessions(&breadth, end_date, args.sessions)?;
 
@@ -372,62 +378,86 @@ pub fn run(args: &Ndx100SmaBreadthArgs) -> Result<()> {
     let summary = summarize_distribution(&pct_above_values)?;
     let histogram = build_histogram_table(&pct_above_values, 10)?;
 
-    // Format report
-    println!("NASDAQ-100 Breadth Report");
-    println!("Universe size: {}", universe_size);
-    println!(
-        "Window: {} to {} ({} sessions)",
-        trailing.first().unwrap().trade_date,
-        trailing.last().unwrap().trade_date,
-        trailing.len()
-    );
-    println!("Signal: close > {}-day SMA", args.lookback);
-
-    if missing.is_empty() {
-        println!("Missing parquet symbols: 0");
+    if json_mode {
+        let output = serde_json::json!({
+            "strategy": "ndx100-sma-breadth",
+            "universe_size": universe_size,
+            "lookback": args.lookback,
+            "sessions": trailing.len(),
+            "period_start": trailing.first().unwrap().trade_date.to_string(),
+            "period_end": trailing.last().unwrap().trade_date.to_string(),
+            "missing_symbols": missing,
+            "current": {
+                "trade_date": target_row.trade_date.to_string(),
+                "above_count": target_row.above_count,
+                "below_or_equal_count": target_row.below_or_equal_count,
+                "unavailable_count": target_row.unavailable_count,
+                "pct_above": target_row.pct_above,
+                "pct_below_or_equal": target_row.pct_below_or_equal,
+            },
+            "distribution": summary,
+            "histogram": histogram,
+            "trailing": trailing,
+        });
+        println!("{}", serde_json::to_string(&output)?);
     } else {
+        // Format report
+        println!("NASDAQ-100 Breadth Report");
+        println!("Universe size: {}", universe_size);
         println!(
-            "Missing parquet symbols: {} ({})",
-            missing.len(),
-            missing.join(", ")
+            "Window: {} to {} ({} sessions)",
+            trailing.first().unwrap().trade_date,
+            trailing.last().unwrap().trade_date,
+            trailing.len()
         );
+        println!("Signal: close > {}-day SMA", args.lookback);
+
+        if missing.is_empty() {
+            println!("Missing parquet symbols: 0");
+        } else {
+            println!(
+                "Missing parquet symbols: {} ({})",
+                missing.len(),
+                missing.join(", ")
+            );
+        }
+
+        println!();
+        println!("As of {}", target_row.trade_date);
+        println!(
+            "Above {}-day SMA: {} ({:.2}%)",
+            args.lookback, target_row.above_count, target_row.pct_above
+        );
+        println!(
+            "At or below {}-day SMA: {} ({:.2}%)",
+            args.lookback, target_row.below_or_equal_count, target_row.pct_below_or_equal
+        );
+        println!("Unavailable: {}", target_row.unavailable_count);
+
+        println!();
+        println!("Trailing distribution for daily % above 5-day SMA");
+        println!("Mean: {:.2}%", summary.mean);
+        println!("Median: {:.2}%", summary.median);
+        println!("Std dev: {:.2} pts", summary.std);
+        println!("Min / Max: {:.2}% / {:.2}%", summary.min, summary.max);
+        println!(
+            "P05 / P10 / P25: {:.2}% / {:.2}% / {:.2}%",
+            summary.p05, summary.p10, summary.p25
+        );
+        println!(
+            "P75 / P90 / P95: {:.2}% / {:.2}% / {:.2}%",
+            summary.p75, summary.p90, summary.p95
+        );
+
+        println!();
+        println!("Breadth histogram");
+        println!("{:>15} {:>6} {:>18}", "breadth_band", "days", "share_of_days_pct");
+        for bin in &histogram {
+            println!("{:>15} {:>6} {:>17.1}", bin.label, bin.days, bin.share_of_days_pct);
+        }
     }
 
-    println!();
-    println!("As of {}", target_row.trade_date);
-    println!(
-        "Above {}-day SMA: {} ({:.2}%)",
-        args.lookback, target_row.above_count, target_row.pct_above
-    );
-    println!(
-        "At or below {}-day SMA: {} ({:.2}%)",
-        args.lookback, target_row.below_or_equal_count, target_row.pct_below_or_equal
-    );
-    println!("Unavailable: {}", target_row.unavailable_count);
-
-    println!();
-    println!("Trailing distribution for daily % above 5-day SMA");
-    println!("Mean: {:.2}%", summary.mean);
-    println!("Median: {:.2}%", summary.median);
-    println!("Std dev: {:.2} pts", summary.std);
-    println!("Min / Max: {:.2}% / {:.2}%", summary.min, summary.max);
-    println!(
-        "P05 / P10 / P25: {:.2}% / {:.2}% / {:.2}%",
-        summary.p05, summary.p10, summary.p25
-    );
-    println!(
-        "P75 / P90 / P95: {:.2}% / {:.2}% / {:.2}%",
-        summary.p75, summary.p90, summary.p95
-    );
-
-    println!();
-    println!("Breadth histogram");
-    println!("{:>15} {:>6} {:>18}", "breadth_band", "days", "share_of_days_pct");
-    for bin in &histogram {
-        println!("{:>15} {:>6} {:>17.1}", bin.label, bin.days, bin.share_of_days_pct);
-    }
-
-    // CSV output
+    // CSV file output (independent of --output flag)
     if let Some(ref csv_path) = args.csv_out {
         if let Some(parent) = csv_path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -450,7 +480,7 @@ pub fn run(args: &Ndx100SmaBreadthArgs) -> Result<()> {
         }
     }
 
-    // JSON output
+    // JSON file output (independent of --output flag)
     if let Some(ref json_path) = args.json_out {
         if let Some(parent) = json_path.parent() {
             std::fs::create_dir_all(parent)?;
