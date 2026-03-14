@@ -1,30 +1,32 @@
 # doob
 
-Quantitative strategy research and backtesting package. Reads from the shared `~/market-warehouse/` data lake.
+Quantitative strategy research and backtesting CLI. Reads from the shared `~/market-warehouse/` data lake.
 
 ## Prerequisites
 
-- Python 3.12+
+- Rust 2024 edition (1.85+)
 - Populated `~/market-warehouse/` data lake (bronze parquet layer) — see [market-data-warehouse](https://github.com/joemccann/market-data-warehouse)
 
 ## Install
 
 ```bash
-pip install -e ".[all]"
+cargo build --release
+# Binary at ./target/release/doob
 ```
 
 ## Quick Start
 
 ```bash
 # List available strategies and presets
-python -m doob list-strategies
-python -m doob list-presets
+doob list-strategies
+doob list-presets
 
 # Run strategies
-python -m doob run overnight-drift --no-plots
-python -m doob run intraday-drift --ticker SPY
-python -m doob run breadth-washout --universe ndx100 --signal-mode oversold
-python -m doob run ndx100-sma-breadth --end-date 2026-03-11
+doob run overnight-drift --no-plots
+doob run intraday-drift --ticker SPY
+doob run intraday-drift --ticker SPY --short
+doob run breadth-washout --universe ndx100 --signal-mode oversold
+doob run ndx100-sma-breadth --end-date 2026-03-11
 ```
 
 ## Strategy Catalog
@@ -39,5 +41,9 @@ python -m doob run ndx100-sma-breadth --end-date 2026-03-11
 ## Testing
 
 ```bash
-python -m pytest tests/ -v --cov=doob --cov-report=term-missing
+cargo test
 ```
+
+## License
+
+MIT

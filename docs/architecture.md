@@ -2,7 +2,7 @@
 
 ## Why the split
 
-The `market-data-warehouse` repo handles data ingestion, storage, and warehouse management. The `doob` package is the standalone home for all quantitative strategy research and backtesting. It reads from the shared `~/market-warehouse/` data lake but has zero dependency on the warehouse repo.
+The `market-data-warehouse` repo handles data ingestion, storage, and warehouse management. The `doob` crate is the standalone home for all quantitative strategy research and backtesting. It reads from the shared `~/market-warehouse/` data lake but has zero dependency on the warehouse repo.
 
 ## Data contract
 
@@ -18,28 +18,42 @@ Expected schema per parquet file:
 - `volume` (int)
 - `adj_close` (float) — equal to `close` in this warehouse (IB TRADES data, split-adjusted but not dividend-adjusted)
 
-## Package layout
+## Crate layout
 
 ```
-src/doob/
-├── __init__.py          # Package root
-├── config.py            # Centralized config (warehouse path, output/presets dirs)
+src/
+├── main.rs                          # Binary entrypoint
+├── lib.rs                           # Library root (re-exports all modules)
+├── cli.rs                           # Unified CLI: doob run <strategy> | list-strategies | list-presets
+├── config.rs                        # Centralized config: warehouse path, output root, presets dir
 ├── data/
-│   ├── paths.py         # Parquet path resolution
-│   ├── discovery.py     # Symbol discovery from bronze layer
-│   ├── readers.py       # Parquet/DuckDB data loaders, CBOE VIX
-│   └── presets.py       # Preset loading + validation
+│   ├── mod.rs
+│   ├── paths.rs                     # Parquet path resolution helpers
+│   ├── discovery.rs                 # Symbol discovery from bronze layer
+│   ├── readers.rs                   # Parquet (polars) data loaders, CBOE VIX cache
+│   └── presets.rs                   # Preset loading + validation
 ├── metrics/
-│   ├── performance.py   # cagr, sharpe, max_drawdown, var_95, annual_returns_table
-│   └── fees.py          # IBKR fee model
-├── strategies/
-│   ├── overnight_drift.py
-│   ├── intraday_drift.py
-│   ├── breadth_washout.py
-│   ├── ndx100_sma_breadth.py
-│   └── ndx100_breadth_washout.py
-└── cli.py               # Unified entrypoint
+│   ├── mod.rs
+│   ├── performance.rs               # cagr, sharpe, max_drawdown, var_95, annual_returns_table
+│   └── fees.rs                      # IBKR fee model constants + ibkr_roundtrip_cost()
+└── strategies/
+    ├── mod.rs
+    ├── common.rs                    # Shared: daily_returns, buy_and_hold_equity, formatting
+    ├── overnight_drift.rs           # Buy close, sell next open; optional VIX filter + ADF test
+    ├── intraday_drift.rs            # Buy open, sell close same day; long or short
+    ├── breadth_washout.rs           # Generic breadth signal across any universe
+    ├── ndx100_sma_breadth.rs        # NDX-100 SMA breadth analysis + forward returns
+    └── ndx100_breadth_washout.rs    # Thin wrapper
 ```
+
+## Key dependencies
+
+- `polars` — DataFrame & parquet I/O (replaces pandas + DuckDB)
+- `nalgebra` — Linear algebra for ADF test OLS (replaces statsmodels)
+- `clap` — CLI argument parsing with derive macros (replaces argparse)
+- `reqwest` — HTTP client for VIX download, Yahoo Finance, NASDAQ API (replaces requests)
+- `chrono` — Date/time operations (replaces pandas Timestamp)
+- `rayon` — Parallel data fetching (replaces ThreadPoolExecutor)
 
 ## Config precedence
 
@@ -49,9 +63,9 @@ DOOB_WAREHOUSE_PATH env var → .env file → ~/market-warehouse (default)
 
 ## How to add a new strategy
 
-1. Create `src/doob/strategies/my_strategy.py`
-2. Implement a `main()` function that uses `argparse`
-3. Import shared modules: `from doob.metrics.performance import cagr, sharpe, ...`
-4. Add the strategy to `STRATEGY_MAP` in `src/doob/cli.py`
-5. Write tests in `tests/test_my_strategy.py`
-6. Run `python -m pytest tests/ -v --cov=doob`
+1. Create `src/strategies/my_strategy.rs`
+2. Define `MyStrategyArgs` struct using clap derive
+3. Add the strategy to `StrategyCommand` enum in `src/cli.rs`
+4. Wire it up in `src/main.rs` match arm
+5. Write tests in the `#[cfg(test)] mod tests` block
+6. Run `cargo test`
