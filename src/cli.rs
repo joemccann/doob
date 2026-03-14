@@ -10,6 +10,8 @@
 
 use clap::{Parser, Subcommand, ValueEnum};
 
+use crate::strategies::breadth_dual_ma::BreadthDualMaArgs;
+use crate::strategies::breadth_ma::BreadthMaArgs;
 use crate::strategies::breadth_washout::BreadthWashoutArgs;
 use crate::strategies::intraday_drift::IntradayDriftArgs;
 use crate::strategies::ndx100_breadth_washout::Ndx100BreadthWashoutArgs;
@@ -54,6 +56,10 @@ pub enum StrategyCommand {
     IntradayDrift(IntradayDriftArgs),
     /// Generic breadth signal across any universe
     BreadthWashout(BreadthWashoutArgs),
+    /// Single MA breadth: % below/above N-day MA (default 50-day)
+    BreadthMa(BreadthMaArgs),
+    /// Dual MA breadth: close < short MA AND close > long MA
+    BreadthDualMa(BreadthDualMaArgs),
     /// NDX-100 SMA breadth analysis + forward returns
     Ndx100SmaBreadth(Ndx100SmaBreadthArgs),
     /// NDX-100 breadth washout wrapper
@@ -62,6 +68,8 @@ pub enum StrategyCommand {
 
 pub fn list_strategies() {
     println!("Available strategies:");
+    println!("  breadth-dual-ma");
+    println!("  breadth-ma");
     println!("  breadth-washout");
     println!("  intraday-drift");
     println!("  ndx100-breadth-washout");
@@ -267,5 +275,56 @@ mod tests {
         let cli =
             Cli::try_parse_from(&["doob", "run", "overnight-drift", "--output", "json"]).unwrap();
         assert_eq!(cli.output, OutputFormat::Json);
+    }
+
+    #[test]
+    fn test_parse_breadth_ma() {
+        let cli = Cli::try_parse_from(&[
+            "doob",
+            "run",
+            "breadth-ma",
+            "--short-period",
+            "50",
+            "--threshold",
+            "80",
+        ])
+        .unwrap();
+        match cli.command {
+            Command::Run { strategy } => match strategy {
+                StrategyCommand::BreadthMa(args) => {
+                    assert_eq!(args.short_period, 50);
+                    assert_eq!(args.threshold, 80.0);
+                }
+                _ => panic!("Expected BreadthMa"),
+            },
+            _ => panic!("Expected Run command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_breadth_dual_ma() {
+        let cli = Cli::try_parse_from(&[
+            "doob",
+            "run",
+            "breadth-dual-ma",
+            "--short-period",
+            "50",
+            "--long-period",
+            "200",
+            "--threshold",
+            "40",
+        ])
+        .unwrap();
+        match cli.command {
+            Command::Run { strategy } => match strategy {
+                StrategyCommand::BreadthDualMa(args) => {
+                    assert_eq!(args.short_period, 50);
+                    assert_eq!(args.long_period, 200);
+                    assert_eq!(args.threshold, 40.0);
+                }
+                _ => panic!("Expected BreadthDualMa"),
+            },
+            _ => panic!("Expected Run command"),
+        }
     }
 }

@@ -3,31 +3,33 @@
 /// Signal: compute the share of a universe that closed above/below its SMA.
 /// Trigger oversold/overbought at a configured threshold.
 ///
-/// Full feature parity with the Python version:
-/// - Yahoo Finance daily close/adjusted-close fetching
-/// - NASDAQ official point-in-time membership fetching
+/// All price data is read from local warehouse parquet files via
+/// `load_price_panel()`. Universe membership is resolved from preset JSON
+/// files — no external API calls for prices or membership.
+///
+/// Features:
+/// - Local parquet price loading (warehouse bronze layer)
+/// - Preset-based universe membership (ndx100, sp500, r2k, custom)
 /// - Point-in-time breadth computation
 /// - Forward-return summarization conditioned on signal triggers
 /// - Membership change tracking
-/// - Multiple universe modes: official-index, preset, tickers, all-stocks
+/// - Multiple universe modes: preset, tickers, all-stocks
 /// - CSV/JSON output artifacts
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
-use std::thread;
 
 use anyhow::{bail, Context, Result};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::cli::OutputFormat;
-use crate::config::{output_dir, presets_dir};
+use crate::config::{output_dir, presets_dir, warehouse_root};
 use crate::data::discovery::discover_symbols;
+use crate::data::readers::load_price_panel;
 use crate::strategies::ndx100_sma_breadth::{BreadthRow, DEFAULT_FORWARD_HORIZONS};
 
 const STRATEGY_SLUG: &str = "breadth_washout";
-const YAHOO_CHART_URL: &str = "https://query1.finance.yahoo.com/v8/finance/chart";
 const NASDAQ_WEIGHTING_URL: &str = "https://indexes.nasdaqomx.com/Index/WeightingData";
 const DEFAULT_USER_AGENT: &str = "Mozilla/5.0";
 
@@ -77,14 +79,11 @@ impl Default for BreadthWashoutConfig {
             lookback: 5,
             signal_mode: "oversold".to_string(),
             signal_threshold: 65.0,
-            universe_mode: "official-index".to_string(),
+            universe_mode: "preset".to_string(),
             universe_label: "ndx100".to_string(),
-            index_symbol: Some("NDX".to_string()),
+            index_symbol: None,
             membership_time_of_day: "EOD".to_string(),
-            membership_snapshot_dates: DEFAULT_NDX_SNAPSHOT_DATES
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
+            membership_snapshot_dates: Vec::new(),
             preset_path: None,
             explicit_tickers: Vec::new(),
             bronze_dir: None,
@@ -115,10 +114,10 @@ fn named_universes() -> Vec<(&'static str, NamedUniverse)> {
         (
             "ndx100",
             NamedUniverse {
-                mode: "official-index",
+                mode: "preset",
                 label: "ndx100",
-                index_symbol: Some("NDX"),
-                preset_name: None,
+                index_symbol: None,
+                preset_name: Some("ndx100"),
             },
         ),
         (
@@ -213,10 +212,6 @@ fn get_trigger_value(row: &BreadthRow, signal_mode: &str) -> f64 {
     }
 }
 
-fn normalize_symbol_for_yahoo(symbol: &str) -> String {
-    symbol.to_uppercase().replace('.', "-")
-}
-
 fn default_analysis_start(end_date: NaiveDate, sessions: usize, lookback: usize) -> NaiveDate {
     let buffer_days = std::cmp::max(sessions * 2, lookback * 10) as i64;
     end_date - chrono::Duration::days(buffer_days)
@@ -243,7 +238,7 @@ fn load_preset_metadata(path: &Path) -> Result<(String, Vec<String>)> {
 }
 
 // ---------------------------------------------------------------------------
-// Yahoo Finance API
+// HTTP client (used for NASDAQ membership API only)
 // ---------------------------------------------------------------------------
 
 fn build_http_client() -> reqwest::blocking::Client {
@@ -252,197 +247,6 @@ fn build_http_client() -> reqwest::blocking::Client {
         .timeout(std::time::Duration::from_secs(20))
         .build()
         .unwrap()
-}
-
-/// Fetch daily close or adjusted-close from Yahoo Finance.
-fn fetch_yahoo_daily_series(
-    client: &reqwest::blocking::Client,
-    symbol: &str,
-    start_date: NaiveDate,
-    end_date: NaiveDate,
-    adjusted: bool,
-) -> Result<Vec<(NaiveDate, f64)>> {
-    let yahoo_symbol = normalize_symbol_for_yahoo(symbol);
-
-    // Convert dates to unix timestamps
-    let start_ts = start_date
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc()
-        .timestamp();
-    let end_ts = (end_date + chrono::Duration::days(1))
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc()
-        .timestamp();
-
-    let url = format!("{YAHOO_CHART_URL}/{yahoo_symbol}");
-    let resp = client
-        .get(&url)
-        .query(&[
-            ("period1", start_ts.to_string()),
-            ("period2", end_ts.to_string()),
-            ("interval", "1d".to_string()),
-            ("includeAdjustedClose", "true".to_string()),
-            ("events", "div,splits".to_string()),
-        ])
-        .send();
-
-    let resp = match resp {
-        Ok(r) => r,
-        Err(_) => return Ok(Vec::new()),
-    };
-
-    if !resp.status().is_success() {
-        return Ok(Vec::new());
-    }
-
-    let payload: serde_json::Value = resp.json().unwrap_or(serde_json::Value::Null);
-
-    let chart = payload.get("chart").and_then(|c| c.as_object());
-    let chart = match chart {
-        Some(c) => c,
-        None => return Ok(Vec::new()),
-    };
-
-    if chart.get("error").and_then(|e| e.as_null()).is_none()
-        && chart.get("error") != Some(&serde_json::Value::Null)
-    {
-        return Ok(Vec::new());
-    }
-
-    let result = chart
-        .get("result")
-        .and_then(|r| r.as_array())
-        .and_then(|a| a.first());
-    let result = match result {
-        Some(r) => r,
-        None => return Ok(Vec::new()),
-    };
-
-    let timestamps = result
-        .get("timestamp")
-        .and_then(|t| t.as_array())
-        .map(|a| {
-            a.iter()
-                .filter_map(|v| v.as_i64())
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-
-    if timestamps.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let values: Vec<f64> = if adjusted {
-        result
-            .get("indicators")
-            .and_then(|i| i.get("adjclose"))
-            .and_then(|a| a.as_array())
-            .and_then(|a| a.first())
-            .and_then(|o| o.get("adjclose"))
-            .and_then(|v| v.as_array())
-            .map(|a| {
-                a.iter()
-                    .map(|v| v.as_f64().unwrap_or(f64::NAN))
-                    .collect()
-            })
-            .unwrap_or_default()
-    } else {
-        result
-            .get("indicators")
-            .and_then(|i| i.get("quote"))
-            .and_then(|q| q.as_array())
-            .and_then(|a| a.first())
-            .and_then(|o| o.get("close"))
-            .and_then(|v| v.as_array())
-            .map(|a| {
-                a.iter()
-                    .map(|v| v.as_f64().unwrap_or(f64::NAN))
-                    .collect()
-            })
-            .unwrap_or_default()
-    };
-
-    let start_norm = start_date;
-    let end_norm = end_date;
-
-    let mut series = Vec::new();
-    for (ts, val) in timestamps.iter().zip(values.iter()) {
-        if val.is_nan() {
-            continue;
-        }
-        let dt = chrono::DateTime::from_timestamp(*ts, 0)
-            .map(|d| d.date_naive());
-        if let Some(date) = dt {
-            if date >= start_norm && date <= end_norm {
-                series.push((date, *val));
-            }
-        }
-    }
-
-    Ok(series)
-}
-
-/// Fetch price panel for multiple symbols in parallel using threads.
-fn fetch_price_panel(
-    symbols: &[String],
-    start_date: NaiveDate,
-    end_date: NaiveDate,
-    adjusted: bool,
-    max_workers: usize,
-) -> Result<(BTreeMap<String, Vec<(NaiveDate, f64)>>, Vec<String>)> {
-    let unique_symbols: BTreeSet<String> = symbols.iter().map(|s| s.to_uppercase()).collect();
-    let symbols_vec: Vec<String> = unique_symbols.into_iter().collect();
-
-    let result: Arc<Mutex<BTreeMap<String, Vec<(NaiveDate, f64)>>>> =
-        Arc::new(Mutex::new(BTreeMap::new()));
-    let missing: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
-
-    // Process in batches using thread pool
-    let chunk_size = std::cmp::max(1, (symbols_vec.len() + max_workers - 1) / max_workers);
-    let chunks: Vec<Vec<String>> = symbols_vec
-        .chunks(chunk_size)
-        .map(|c| c.to_vec())
-        .collect();
-
-    let mut handles = Vec::new();
-    for chunk in chunks {
-        let result = Arc::clone(&result);
-        let missing = Arc::clone(&missing);
-        let sd = start_date;
-        let ed = end_date;
-        let adj = adjusted;
-
-        let handle = thread::spawn(move || {
-            let client = build_http_client();
-            for symbol in chunk {
-                match fetch_yahoo_daily_series(&client, &symbol, sd, ed, adj) {
-                    Ok(series) => {
-                        if series.is_empty() {
-                            missing.lock().unwrap().push(symbol.clone());
-                        }
-                        result.lock().unwrap().insert(symbol, series);
-                    }
-                    Err(_) => {
-                        missing.lock().unwrap().push(symbol.clone());
-                        result.lock().unwrap().insert(symbol, Vec::new());
-                    }
-                }
-            }
-        });
-        handles.push(handle);
-    }
-
-    for handle in handles {
-        handle.join().map_err(|_| anyhow::anyhow!("thread panicked"))?;
-    }
-
-    let result = Arc::try_unwrap(result).unwrap().into_inner().unwrap();
-    let mut missing = Arc::try_unwrap(missing).unwrap().into_inner().unwrap();
-    missing.sort();
-
-    Ok((result, missing))
 }
 
 // ---------------------------------------------------------------------------
@@ -1663,18 +1467,25 @@ fn run_strategy(config: BreadthWashoutConfig) -> Result<StrategyResults> {
     let analysis_start = default_analysis_start(end_date, config.sessions, config.lookback);
     let client = build_http_client();
 
-    // Step 1: Get trading calendar from lead forward asset
+    // Step 1: Get trading calendar from lead forward asset (warehouse parquet)
     tracing::info!(
-        "Fetching trading calendar from {} ...",
+        "Loading trading calendar from {} ...",
         config.forward_assets[0]
     );
-    let calendar = fetch_yahoo_daily_series(
-        &client,
-        &config.forward_assets[0],
-        analysis_start,
-        end_date,
-        false,
+    let wh = warehouse_root().ok();
+    let (cal_panel, cal_missing) = load_price_panel(
+        &config.forward_assets[..1].to_vec(),
+        wh.as_deref(),
+        Some(analysis_start),
+        Some(end_date),
     )?;
+    if !cal_missing.is_empty() {
+        bail!("Lead forward asset {} not found in warehouse", config.forward_assets[0]);
+    }
+    let calendar = cal_panel
+        .get(&config.forward_assets[0])
+        .cloned()
+        .unwrap_or_default();
     if calendar.is_empty() {
         bail!("Could not determine a trading calendar from the lead forward asset");
     }
@@ -1684,17 +1495,16 @@ fn run_strategy(config: BreadthWashoutConfig) -> Result<StrategyResults> {
     tracing::info!("Resolving universe memberships ...");
     let universe = resolve_universe(&config, &trade_dates, &client)?;
 
-    // Step 3: Fetch constituent prices from Yahoo
+    // Step 3: Load constituent prices from warehouse parquet
     tracing::info!(
-        "Fetching constituent prices for {} symbols ...",
+        "Loading constituent prices for {} symbols from warehouse ...",
         universe.all_symbols.len()
     );
-    let (constituent_prices, missing_constituent_prices) = fetch_price_panel(
+    let (constituent_prices, missing_constituent_prices) = load_price_panel(
         &universe.all_symbols,
-        analysis_start,
-        end_date,
-        false,
-        config.max_workers,
+        wh.as_deref(),
+        Some(analysis_start),
+        Some(end_date),
     )?;
 
     // Step 4: Compute breadth
@@ -1712,18 +1522,17 @@ fn run_strategy(config: BreadthWashoutConfig) -> Result<StrategyResults> {
         .cloned()
         .ok_or_else(|| anyhow::anyhow!("end date not found in trailing breadth data"))?;
 
-    // Step 5: Fetch forward-return asset prices
+    // Step 5: Load forward-return asset prices from warehouse parquet
     let fwd_start = trailing_breadth.first().unwrap().trade_date;
     tracing::info!(
-        "Fetching forward-return prices for {} ...",
+        "Loading forward-return prices for {} from warehouse ...",
         config.forward_assets.join(", ")
     );
-    let (forward_prices, missing_forward_assets) = fetch_price_panel(
+    let (forward_prices, missing_forward_assets) = load_price_panel(
         &config.forward_assets,
-        fwd_start,
-        end_date,
-        config.adjusted_forward_returns,
-        std::cmp::min(config.max_workers, config.forward_assets.len()),
+        wh.as_deref(),
+        Some(fwd_start),
+        Some(end_date),
     )?;
 
     // Step 6: Summarize forward returns conditioned on signals
@@ -2016,12 +1825,6 @@ mod tests {
     fn test_threshold_slug() {
         assert_eq!(threshold_slug(65.0), "65pct");
         assert_eq!(threshold_slug(65.5), "65p5pct");
-    }
-
-    #[test]
-    fn test_normalize_symbol_for_yahoo() {
-        assert_eq!(normalize_symbol_for_yahoo("BRK.B"), "BRK-B");
-        assert_eq!(normalize_symbol_for_yahoo("spy"), "SPY");
     }
 
     #[test]
@@ -2334,7 +2137,7 @@ mod tests {
         let config = build_config_from_args(&args).unwrap();
         assert_eq!(config.signal_mode, "oversold");
         assert_eq!(config.signal_threshold, 65.0);
-        assert_eq!(config.universe_mode, "official-index");
+        assert_eq!(config.universe_mode, "preset");
         assert_eq!(config.universe_label, "ndx100");
     }
 

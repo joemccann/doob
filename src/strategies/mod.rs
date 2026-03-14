@@ -1,3 +1,5 @@
+pub mod breadth_dual_ma;
+pub mod breadth_ma;
 pub mod breadth_washout;
 pub mod common;
 pub mod intraday_drift;

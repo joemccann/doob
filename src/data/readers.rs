@@ -189,6 +189,23 @@ pub fn load_close_frame(
     Ok((series_by_symbol, missing))
 }
 
+/// Load a close-price panel from bronze parquet as a `BTreeMap`.
+///
+/// This is the primary price-loading interface for all strategies.
+/// Returns the same `(BTreeMap<symbol, series>, missing)` shape that the
+/// strategy code expects.
+pub fn load_price_panel(
+    symbols: &[String],
+    warehouse: Option<&Path>,
+    start_date: Option<NaiveDate>,
+    end_date: Option<NaiveDate>,
+) -> Result<(std::collections::BTreeMap<String, Vec<(NaiveDate, f64)>>, Vec<String>)> {
+    let (frame, missing) = load_close_frame(symbols, warehouse, start_date, end_date)?;
+    let map: std::collections::BTreeMap<String, Vec<(NaiveDate, f64)>> =
+        frame.into_iter().collect();
+    Ok((map, missing))
+}
+
 const VIX_URL: &str = "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv";
 const STALE_SECONDS: u64 = 86400;
 

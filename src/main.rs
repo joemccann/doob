@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use anyhow::Result;
 use clap::Parser;
 
@@ -17,24 +19,46 @@ fn main() -> Result<()> {
             .init();
     }
 
+    let t0 = Instant::now();
+
     match cli.command {
-        Command::Run { strategy } => match strategy {
-            StrategyCommand::OvernightDrift(args) => {
-                doob::strategies::overnight_drift::run(&args, fmt)?;
+        Command::Run { strategy } => {
+            match strategy {
+                StrategyCommand::OvernightDrift(args) => {
+                    doob::strategies::overnight_drift::run(&args, fmt)?;
+                }
+                StrategyCommand::IntradayDrift(args) => {
+                    doob::strategies::intraday_drift::run(&args, fmt)?;
+                }
+                StrategyCommand::BreadthWashout(args) => {
+                    doob::strategies::breadth_washout::run(&args, fmt)?;
+                }
+                StrategyCommand::BreadthMa(args) => {
+                    doob::strategies::breadth_ma::run(&args, fmt)?;
+                }
+                StrategyCommand::BreadthDualMa(args) => {
+                    doob::strategies::breadth_dual_ma::run(&args, fmt)?;
+                }
+                StrategyCommand::Ndx100SmaBreadth(args) => {
+                    doob::strategies::ndx100_sma_breadth::run(&args, fmt)?;
+                }
+                StrategyCommand::Ndx100BreadthWashout(args) => {
+                    doob::strategies::ndx100_breadth_washout::run(&args, fmt)?;
+                }
             }
-            StrategyCommand::IntradayDrift(args) => {
-                doob::strategies::intraday_drift::run(&args, fmt)?;
+
+            if fmt == OutputFormat::Text {
+                let elapsed = t0.elapsed();
+                let secs = elapsed.as_secs_f64();
+                if secs >= 60.0 {
+                    let mins = (secs / 60.0).floor() as u64;
+                    let rem = secs - (mins as f64 * 60.0);
+                    eprintln!("\n⏱  {}m {:.2}s", mins, rem);
+                } else {
+                    eprintln!("\n⏱  {:.2}s", secs);
+                }
             }
-            StrategyCommand::BreadthWashout(args) => {
-                doob::strategies::breadth_washout::run(&args, fmt)?;
-            }
-            StrategyCommand::Ndx100SmaBreadth(args) => {
-                doob::strategies::ndx100_sma_breadth::run(&args, fmt)?;
-            }
-            StrategyCommand::Ndx100BreadthWashout(args) => {
-                doob::strategies::ndx100_breadth_washout::run(&args, fmt)?;
-            }
-        },
+        }
         Command::ListStrategies => {
             doob::cli::list_strategies();
         }
