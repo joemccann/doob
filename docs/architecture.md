@@ -48,12 +48,12 @@ src/
 
 ## Key dependencies
 
-- `polars` — DataFrame & parquet I/O (replaces pandas + DuckDB)
-- `nalgebra` — Linear algebra for ADF test OLS (replaces statsmodels)
-- `clap` — CLI argument parsing with derive macros (replaces argparse)
-- `reqwest` — HTTP client for VIX download, Yahoo Finance, NASDAQ API (replaces requests)
-- `chrono` — Date/time operations (replaces pandas Timestamp)
-- `rayon` — Parallel data fetching (replaces ThreadPoolExecutor)
+- `polars` — DataFrame & parquet I/O
+- `nalgebra` — Linear algebra for ADF test OLS
+- `clap` — CLI argument parsing with derive macros
+- `reqwest` — HTTP client for VIX download, Yahoo Finance, NASDAQ API
+- `chrono` — Date/time operations
+- `rayon` — Parallel data fetching
 
 ## Config precedence
 
