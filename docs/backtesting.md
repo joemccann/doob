@@ -21,3 +21,10 @@
 A 10-year, 101-ticker backtest with full risk metrics (Sharpe, Sortino, max drawdown, VaR, CVaR, profit factor) runs in ~0.3 seconds on Apple Silicon.
 
 See the full backtesting framework reference in the parent market-data-warehouse repo's `docs/backtesting.md`.
+
+## Automated candidate search
+
+- `src/bin/autoresearch_loop.rs` provides a Rust-native auto-research loop for generating candidates, running train/test backtests, scoring, and ranking strategies.
+- Use `--seed-web` to pull arXiv-inspired candidate ideas via Exa API (`EXA_API_KEY`).
+- Use `--verbose` for detailed per-candidate command and metric output.
+- Best candidate details are reported with command args and summary metrics; full run rows append to `reports/autoresearch-ledger.jsonl`.

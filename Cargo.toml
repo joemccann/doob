@@ -9,10 +9,15 @@ description = "Quantitative strategy research and backtesting"
 name = "doob"
 path = "src/main.rs"
 
+[[bin]]
+name = "autoresearch_loop"
+path = "src/bin/autoresearch_loop.rs"
+
 [dependencies]
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
+comfy-table = "7"
 dirs = "6"
 dotenvy = "0.15"
 nalgebra = "0.33"

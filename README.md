@@ -49,6 +49,42 @@ doob run breadth-dual-ma --universe ndx100 --short-period 50 --long-period 200 -
 doob run ndx100-sma-breadth --end-date 2026-03-11
 ```
 
+## Autoresearch Loop (Rust)
+
+Build and run the automated candidate-discovery loop from Rust:
+
+```bash
+# build binaries
+cargo build --release
+
+# run with verbose output and arXiv/Exa seeding
+cargo run --release --bin autoresearch_loop -- --seed-web --verbose
+
+# limit candidates and keep top N
+cargo run --release --bin autoresearch_loop -- --seed-web --candidates 60 --top 15
+```
+
+Optional settings:
+
+- `--train-start`, `--train-end`, `--test-start`, `--test-end`
+- `--train-sessions`, `--test-sessions`
+- `--doob-bin target/release/doob`
+- `--random-seed`
+
+Output is now table-formatted and includes:
+
+- candidate ID + strategy + strategy category
+- focused assets, horizon, source, and rationale
+- train/test scores and summary stats
+- machine-copyable command args for the best candidate
+
+To provide the Exa key used for web seeding:
+
+```bash
+cp .env.example .env
+# edit .env: EXA_API_KEY=your_exa_api_key_here
+```
+
 ## Strategy Catalog
 
 | Strategy | Description |

@@ -2,6 +2,24 @@
 
 Rust binary for quantitative strategy research. Reads from the shared `~/market-warehouse/` data lake (bronze parquet). **All price data comes from local parquet files — no Yahoo Finance or external API calls for price data.** Universe membership is resolved from local preset JSON files (e.g. `presets/ndx100.json`). The only external HTTP call is the optional CBOE VIX CSV download (cached for 24h).
 
+## Autoresearch Loop (Mandatory Rust-Only Path)
+
+- Use `cargo build --release` (or `cargo build` for debug) to build the Rust binaries.
+- Run autoresearch with the Rust binary, not Python:
+  - `cargo run --release --bin autoresearch_loop -- --seed-web --candidates 60 --top 15`
+  - verbose trace:
+    - `cargo run --release --bin autoresearch_loop -- --seed-web --verbose`
+  - default output now includes strategy category, candidate assets, horizon, and rationale summary in the results table.
+  - `cargo run --release --bin autoresearch_loop -- --doob-bin target/release/doob --seed-web --train-start 2020-01-01 --train-end 2024-12-31 --test-start 2025-01-01 --test-end 2026-03-11 --train-sessions 1008 --test-sessions 252`
+- Results are appended to `reports/autoresearch-ledger.jsonl` and `reports/autoresearch-exa-ideas.json`.
+- Exa seeding uses `EXA_API_KEY` from environment; keep python script usage out of the autoresearch path.
+- Use `.env.example` as a starter file:
+  - `cp .env.example .env`
+  - `EXA_API_KEY=your_exa_api_key_here`
+- Then run:
+  - `printf 'EXA_API_KEY=%s\\n' \"$EXA_API_KEY\" > .env`
+  - `cargo run --release --bin autoresearch_loop -- --seed-web`
+
 ## Crate Layout
 
 ```

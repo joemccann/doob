@@ -784,7 +784,7 @@ fn compute_trade_metrics(realized: &[f64]) -> TradeMetrics {
         avg_win,
         avg_loss,
         cumulative,
-        equity_curve: equity,
+        _equity_curve: equity,
     }
 }
 
@@ -806,7 +806,7 @@ struct TradeMetrics {
     avg_win: f64,
     avg_loss: f64,
     cumulative: f64,
-    equity_curve: Vec<f64>,
+    _equity_curve: Vec<f64>,
 }
 
 impl TradeMetrics {
@@ -829,7 +829,7 @@ impl TradeMetrics {
             avg_win: f64::NAN,
             avg_loss: f64::NAN,
             cumulative: f64::NAN,
-            equity_curve: Vec::new(),
+            _equity_curve: Vec::new(),
         }
     }
 }
