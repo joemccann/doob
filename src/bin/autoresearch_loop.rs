@@ -13,6 +13,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
+use dotenvy::dotenv;
 
 const BREADTH_STRATEGIES: &[&str] = &[
     "breadth-washout",
@@ -27,10 +28,28 @@ const SEED_QUERIES: &[&str] = &[
     "site:arxiv.org momentum mean reversion breakout trading",
 ];
 
+const SEED_RESULTS_PER_QUERY: usize = 20;
 const HORIZON_1W: &str = "1w=5";
 const HORIZON_1M: &str = "1m=21";
+const HORIZON_2W: &str = "2w=10";
+const HORIZON_3M: &str = "3m=63";
 
-const KNOWN_BREADTH_ASSETS: &[&str] = &["SPY", "QQQ", "SPXL", "IWM"];
+const NOVEL_THRESHOLD_STEP: i32 = 5;
+const NOVEL_LOOKBACK_STEP: i32 = 1;
+
+const NOVEL_MIN_THRESHOLD: f64 = 35.0;
+const NOVEL_MAX_THRESHOLD: f64 = 90.0;
+const NOVEL_MIN_LOOKBACK: u32 = 3;
+const NOVEL_MAX_LOOKBACK: u32 = 60;
+const NOVEL_MAX_LONG: u32 = 260;
+
+fn select_str<'a>(items: &'a [&'a str], idx: usize, salt: usize) -> &'a str {
+    items[(idx + salt) % items.len()]
+}
+
+fn select_u32(items: &[u32], idx: usize, salt: usize) -> u32 {
+    items[(idx + salt) % items.len()]
+}
 
 #[derive(Clone, Debug)]
 struct Candidate {
@@ -44,6 +63,7 @@ struct Candidate {
     min_observations: u32,
     min_signals: u32,
     is_diagnostic: bool,
+    is_seeded: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -67,6 +87,7 @@ struct CandidateReport {
     combined_score: f64,
     train_details: Value,
     test_details: Value,
+    is_seeded: bool,
 }
 
 #[derive(Serialize)]
@@ -88,7 +109,7 @@ struct Args {
     #[arg(long, default_value_t = String::from("target/release/doob"))]
     doob_bin: String,
 
-    #[arg(long, default_value_t = 80)]
+    #[arg(long, default_value_t = 100)]
     candidates: usize,
 
     #[arg(long, default_value_t = 20)]
@@ -96,6 +117,9 @@ struct Args {
 
     #[arg(long)]
     seed_web: bool,
+
+    #[arg(long)]
+    include_grid: bool,
 
     #[arg(long, default_value_t = 17)]
     random_seed: u64,
@@ -130,6 +154,198 @@ fn safe_float(value: &Value) -> Option<f64> {
         Value::Bool(false) => Some(0.0),
         _ => None,
     }
+}
+
+fn has_arg(args: &[String], flag: &str) -> bool {
+    args.iter().any(|v| v == flag)
+}
+
+fn set_arg_value(args: &mut [String], flag: &str, value: &str) -> bool {
+    for i in 0..args.len().saturating_sub(1) {
+        if args[i] == flag {
+            args[i + 1] = value.to_string();
+            return true;
+        }
+    }
+    false
+}
+
+fn mutate_u32_arg(args: &mut [String], flag: &str, delta: i32, min: u32, max: u32) -> bool {
+    for i in 0..args.len().saturating_sub(1) {
+        if args[i] != flag {
+            continue;
+        }
+        let Ok(value) = args[i + 1].parse::<i32>() else {
+            continue;
+        };
+        let min = min as i32;
+        let max = max as i32;
+        let new_value = (value + delta).clamp(min, max).to_string();
+        if args[i + 1] != new_value {
+            args[i + 1] = new_value;
+            return true;
+        }
+        return false;
+    }
+    false
+}
+
+fn mutate_f64_arg(args: &mut [String], flag: &str, delta: f64, min: f64, max: f64) -> bool {
+    for i in 0..args.len().saturating_sub(1) {
+        if args[i] != flag {
+            continue;
+        }
+        let Ok(value) = args[i + 1].parse::<f64>() else {
+            continue;
+        };
+        let new_value = (value + delta).clamp(min, max);
+        let new_value = if new_value.fract() == 0.0 {
+            format!("{}", new_value as i32)
+        } else {
+            format!("{:.2}", new_value)
+        };
+        if args[i + 1] != new_value {
+            args[i + 1] = new_value;
+            return true;
+        }
+        return false;
+    }
+    false
+}
+
+fn is_breadth_strategy(strategy: &str) -> bool {
+    BREADTH_STRATEGIES.contains(&strategy)
+}
+
+fn signature_for_candidate(candidate: &Candidate) -> String {
+    format!("{}|{}", candidate.strategy, candidate.args.join("|"))
+}
+
+fn insert_if_novel(
+    pool: &mut Vec<Candidate>,
+    signature_cache: &mut HashSet<String>,
+    known_legacy: &HashSet<String>,
+    candidate: Candidate,
+) -> bool {
+    let sig = signature_for_candidate(&candidate);
+    if known_legacy.contains(&sig) {
+        return false;
+    }
+    if signature_cache.insert(sig) {
+        pool.push(candidate);
+        return true;
+    }
+    false
+}
+
+fn build_known_signature_set() -> HashSet<String> {
+    let mut signatures = HashSet::new();
+    for candidate in build_grid_candidate_pool() {
+        signatures.insert(signature_for_candidate(&candidate));
+    }
+    signatures
+}
+
+fn emit_seed_mutation(mutant_base: &Candidate, seed_idx: usize, variant_offset: usize) -> Option<Candidate> {
+    if variant_offset == 0 {
+        return Some(mutant_base.clone());
+    }
+    mutate_seed_candidate(mutant_base, seed_idx, variant_offset)
+}
+
+fn mutate_seed_candidate(base: &Candidate, seed_idx: usize, variant: usize) -> Option<Candidate> {
+    let mut args = base.args.clone();
+    let mut changed = false;
+
+    if is_breadth_strategy(base.strategy.as_str()) {
+        if !has_arg(&args, "--price-returns") {
+            args.push("--price-returns".to_string());
+            changed = true;
+        }
+        if !has_arg(&args, "--max-workers") {
+            args.push("--max-workers".to_string());
+            args.push("8".to_string());
+            changed = true;
+        }
+
+        let horizon_cycle = [HORIZON_1W, HORIZON_1M, HORIZON_2W, HORIZON_3M];
+        let alt_horizon = horizon_cycle[(seed_idx + variant) % horizon_cycle.len()];
+        if set_arg_value(&mut args, "--horizon", alt_horizon) {
+            changed = true;
+        }
+
+        if mutate_u32_arg(&mut args, "--lookback", NOVEL_LOOKBACK_STEP, NOVEL_MIN_LOOKBACK, NOVEL_MAX_LOOKBACK) {
+            changed = true;
+        }
+        if mutate_u32_arg(&mut args, "--short-period", NOVEL_LOOKBACK_STEP, NOVEL_MIN_LOOKBACK, NOVEL_MAX_LOOKBACK) {
+            changed = true;
+        }
+        if mutate_u32_arg(&mut args, "--long-period", -(NOVEL_LOOKBACK_STEP * 2), NOVEL_MAX_LONG / 2, NOVEL_MAX_LONG) {
+            changed = true;
+        }
+        if mutate_f64_arg(
+            &mut args,
+            "--threshold",
+            if variant % 2 == 0 { NOVEL_THRESHOLD_STEP as f64 } else { -(NOVEL_THRESHOLD_STEP as f64) },
+            NOVEL_MIN_THRESHOLD,
+            NOVEL_MAX_THRESHOLD,
+        ) {
+            changed = true;
+        }
+    } else if base.strategy == "intraday-drift" {
+        if variant % 2 == 0 && !has_arg(&args, "--short") {
+            args.push("--short".to_string());
+            changed = true;
+        }
+        if !has_arg(&args, "--start-year-table") {
+            args.push("--start-year-table".to_string());
+            args.push(if variant % 2 == 0 { "2017".to_string() } else { "2016".to_string() });
+            changed = true;
+        }
+        if !has_arg(&args, "--capital") {
+            args.push("--capital".to_string());
+            args.push("750000".to_string());
+            changed = true;
+        }
+    } else if base.strategy == "overnight-drift" {
+        if !has_arg(&args, "--no-vix-filter") && variant % 3 == 0 {
+            args.push("--no-vix-filter".to_string());
+            changed = true;
+        }
+        if !has_arg(&args, "--capital") {
+            args.push("--capital".to_string());
+            args.push("1100000".to_string());
+            changed = true;
+        }
+        if !has_arg(&args, "--start-year-table") {
+            args.push("--start-year-table".to_string());
+            args.push("2017".to_string());
+            changed = true;
+        }
+    }
+
+    if !changed {
+        return None;
+    }
+
+    Some(Candidate {
+        candidate_id: format!("{}-novel-{}", base.candidate_id, variant),
+        strategy: base.strategy.clone(),
+        args,
+        rationale: format!("Novel mutant from web-seed idea: {}", base.rationale),
+        source: format!("{}#novel", base.source),
+        focus_assets: base.focus_assets.clone(),
+        target_horizon: if is_breadth_strategy(base.strategy.as_str()) {
+            let alt_horizon = [HORIZON_1W, HORIZON_1M, HORIZON_2W, HORIZON_3M][(seed_idx + variant) % 4];
+            alt_horizon.to_string()
+        } else {
+            base.target_horizon.clone()
+        },
+        min_observations: base.min_observations,
+        min_signals: base.min_signals,
+        is_diagnostic: false,
+        is_seeded: true,
+    })
 }
 
 fn safe_u64(value: &Value) -> Option<u64> {
@@ -168,6 +384,12 @@ fn extract_seed_tags(seed: &ExaSeed) -> HashSet<&'static str> {
     }
     if contains_any(&blob, &["intraday", "open", "close", "session", "minute", "daily"]) {
         tags.insert("intraday");
+    }
+    if contains_any(&blob, &["breakout", "swing", "momentum breakout"]) {
+        tags.insert("breakout");
+    }
+    if contains_any(&blob, &["liquidity", "volume", "volume profile", "market regime", "risk parity", "allocation"]) {
+        tags.insert("regime");
     }
     if contains_any(&blob, &["market breadth", "breadth", "sma", "cross-sectional"]) {
         tags.insert("breadth");
@@ -290,118 +512,384 @@ fn build_seed_candidates(seed: &ExaSeed, idx: usize) -> Vec<Candidate> {
         return Vec::new();
     }
 
-    let base = &KNOWN_BREADTH_ASSETS[..3];
     let mut out = Vec::new();
+    let mut asset_buckets = vec![vec!["SPY", "QQQ"], vec!["SPY", "SPXL"], vec!["SPY", "QQQ", "SPXL"]];
+    if title.contains("breakout") || title.contains("S&P") {
+        asset_buckets.push(vec!["QQQ", "SPXL", "IWM"]);
+    }
+    if tags.contains("regime") {
+        asset_buckets.push(vec!["SPY", "QQQ", "IWM"]);
+        asset_buckets.push(vec!["QQQ", "SPXL", "IWM"]);
+    }
+    let universe_pool = ["ndx100", "sp500", "r2k", "all-stocks"];
+    let washout_lookbacks = [3, 5, 8, 10, 12, 20, 25];
+    let dual_short = [2, 5, 8, 10, 15, 20];
+    let dual_long = [20, 50, 100, 150, 200];
+    let dual_thresholds = [8, 10, 12, 15, 18, 20, 25, 30];
+    let ma_lookbacks = [8, 20, 35, 50];
+    let ma_thresholds = [45, 50, 55, 60, 65, 70, 75, 80];
+    let modes = ["oversold", "overbought"];
+    let horizons = [HORIZON_1M, HORIZON_1W];
+
+    let asset_set_for = |slot: usize| -> Vec<String> {
+        asset_buckets[slot % asset_buckets.len()]
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
+    };
 
     if tags.contains("momentum") || tags.contains("breadth") {
-        let lookback = 10 + (idx * 3) % 20;
-        let threshold = 55 + (idx * 2) % 15;
-        let mut args = vec![
-            "--universe".to_string(),
-            "ndx100".to_string(),
-            "--lookback".to_string(),
-            lookback.to_string(),
-            "--signal-mode".to_string(),
-            "oversold".to_string(),
-            "--threshold".to_string(),
-            threshold.to_string(),
-            "--assets".to_string(),
-        ];
-        args.extend(base.iter().map(|s| s.to_string()));
-        push_horizon(&mut args, HORIZON_1M);
-        out.push(Candidate {
-            candidate_id: format!("seed-mom-{idx:02}"),
-            strategy: "breadth-washout".to_string(),
-            args,
-            rationale: format!("Web seed-driven momentum candidate: {title}"),
-            source: source.clone(),
-            focus_assets: base.iter().map(|s| s.to_string()).collect(),
-            target_horizon: "1m".to_string(),
-            min_observations: 18,
-            min_signals: 8,
-            is_diagnostic: false,
-        });
+        for variant in 0..2 {
+            let lookback = select_u32(&washout_lookbacks, idx, variant).to_string();
+            let threshold = select_u32(&ma_thresholds, idx, variant * 2).to_string();
+            let mode = select_str(&modes, idx, variant);
+            let universe = select_str(&universe_pool, idx, variant + 1);
+            let assets = asset_set_for(variant);
+            let mut args = vec![
+                "--universe".to_string(),
+                universe.to_string(),
+                "--lookback".to_string(),
+                lookback,
+                "--signal-mode".to_string(),
+                mode.to_string(),
+                "--threshold".to_string(),
+                threshold,
+                "--assets".to_string(),
+            ];
+            args.extend(assets.iter().map(|s| s.to_string()));
+            push_horizon(&mut args, select_str(&horizons, idx, variant));
+
+            out.push(Candidate {
+                candidate_id: format!("seed-mom-{idx:02}a{variant}"),
+                strategy: "breadth-washout".to_string(),
+                args,
+                rationale: format!("Web-evolved momentum mutant: {title}"),
+                source: source.clone(),
+                focus_assets: assets.clone(),
+                target_horizon: select_str(&horizons, idx, variant).to_string(),
+                min_observations: 18,
+                min_signals: 8,
+                is_diagnostic: false,
+                is_seeded: true,
+            });
+
+            let short = select_u32(&dual_short, idx, variant + 2).to_string();
+            let long = select_u32(&dual_long, idx, variant + 4).to_string();
+            let dual_threshold = select_u32(&dual_thresholds, idx, variant + 1).to_string();
+            let dual_assets = if assets.len() >= 2 { assets.clone() } else { vec!["SPY".to_string(), "QQQ".to_string()] };
+            let mut dual_args = vec![
+                "--short-period".to_string(),
+                short,
+                "--long-period".to_string(),
+                long,
+                "--threshold".to_string(),
+                dual_threshold,
+                "--universe".to_string(),
+                select_str(&universe_pool, idx, variant + 4).to_string(),
+                "--assets".to_string(),
+            ];
+            dual_args.extend(dual_assets.iter().map(|s| s.to_string()));
+            push_horizon(&mut dual_args, select_str(&horizons, idx, variant + 1));
+
+            out.push(Candidate {
+                candidate_id: format!("seed-mom-alt-{idx:02}b{variant}"),
+                strategy: "breadth-dual-ma".to_string(),
+                args: dual_args,
+                rationale: format!("Web-evolved momentum/mean-reversion mutant: {title}"),
+                source: source.clone(),
+                focus_assets: dual_assets,
+                target_horizon: select_str(&horizons, idx, variant + 1).to_string(),
+                min_observations: 20,
+                min_signals: 10,
+                is_diagnostic: false,
+                is_seeded: true,
+            });
+        }
     }
 
     if tags.contains("regime") {
-        let short = 8 + (idx % 3) * 2;
-        let longs = [50, 100, 200];
-        let long = longs[idx % longs.len()];
-        let mut args = vec![
-            "--short-period".to_string(),
-            short.to_string(),
-            "--long-period".to_string(),
-            long.to_string(),
-            "--threshold".to_string(),
-            (15 + (idx % 3) * 5).to_string(),
-            "--universe".to_string(),
-            "sp500".to_string(),
-            "--assets".to_string(),
-        ];
-        args.extend(base.iter().map(|s| s.to_string()));
-        push_horizon(&mut args, HORIZON_1M);
-        out.push(Candidate {
-            candidate_id: format!("seed-reg-{idx:02}"),
-            strategy: "breadth-dual-ma".to_string(),
-            args,
-            rationale: format!("Web seed-driven regime candidate: {title}"),
-            source: source.clone(),
-            focus_assets: base.iter().map(|s| s.to_string()).collect(),
-            target_horizon: "1m".to_string(),
-            min_observations: 20,
-            min_signals: 8,
-            is_diagnostic: false,
-        });
+        for variant in 0..2 {
+            let short = select_u32(&dual_short, idx, variant + 3);
+            let long = select_u32(&dual_long, idx, variant + 1);
+            if short >= long {
+                continue;
+            }
+            let threshold = select_u32(&dual_thresholds, idx, variant + 2);
+            let regime_assets = asset_set_for(variant + 1);
+            let mut args = vec![
+                "--short-period".to_string(),
+                short.to_string(),
+                "--long-period".to_string(),
+                long.to_string(),
+                "--threshold".to_string(),
+                threshold.to_string(),
+                "--universe".to_string(),
+                select_str(&universe_pool, idx, variant + 2).to_string(),
+                "--assets".to_string(),
+            ];
+            args.extend(regime_assets.iter().map(|s| s.to_string()));
+            push_horizon(&mut args, select_str(&horizons, idx, variant + 3));
+
+                out.push(Candidate {
+                    candidate_id: format!("seed-reg-{idx:02}a{variant}"),
+                    strategy: "breadth-dual-ma".to_string(),
+                    args,
+                    rationale: format!("Web-evolved regime mutant: {title}"),
+                    source: source.clone(),
+                    focus_assets: regime_assets,
+                    target_horizon: HORIZON_1M.to_string(),
+                    min_observations: 20,
+                    min_signals: 8,
+                    is_diagnostic: false,
+                    is_seeded: true,
+                });
+
+            let washout_assets = asset_set_for(variant + 2);
+            let lookback = select_u32(&washout_lookbacks, idx, variant + 1).to_string();
+            let threshold = select_u32(&ma_thresholds, idx, variant + 3).to_string();
+            let mode = select_str(&modes, idx, variant + 1);
+            let mut washout_args = vec![
+                "--universe".to_string(),
+                select_str(&universe_pool, idx, variant + 3).to_string(),
+                "--lookback".to_string(),
+                lookback,
+                "--signal-mode".to_string(),
+                mode.to_string(),
+                "--threshold".to_string(),
+                threshold,
+                "--assets".to_string(),
+            ];
+            washout_args.extend(washout_assets.iter().map(|s| s.to_string()));
+            push_horizon(&mut washout_args, HORIZON_1M);
+
+                out.push(Candidate {
+                    candidate_id: format!("seed-reg-{idx:02}b{variant}"),
+                    strategy: "breadth-washout".to_string(),
+                    args: washout_args,
+                    rationale: format!("Web-evolved regime/transition mutant: {title}"),
+                    source: source.clone(),
+                    focus_assets: washout_assets,
+                    target_horizon: HORIZON_1M.to_string(),
+                    min_observations: 18,
+                    min_signals: 8,
+                    is_diagnostic: false,
+                    is_seeded: true,
+                });
+        }
     }
 
     if tags.contains("reversion") {
-        let lookback = 20 + (idx % 3) * 15;
-        let mut args = vec![
-            "--short-period".to_string(),
-            lookback.to_string(),
-            "--signal-mode".to_string(),
-            "oversold".to_string(),
-            "--threshold".to_string(),
-            (50 + (idx % 4) * 5).to_string(),
-            "--universe".to_string(),
-            "sp500".to_string(),
-            "--assets".to_string(),
-        ];
-        args.extend(base.iter().map(|s| s.to_string()));
-        push_horizon(&mut args, HORIZON_1W);
-        out.push(Candidate {
-            candidate_id: format!("seed-rev-{idx:02}"),
-            strategy: "breadth-ma".to_string(),
-            args,
-            rationale: format!("Web seed-driven reversion candidate: {title}"),
-            source: source.clone(),
-            focus_assets: base.iter().map(|s| s.to_string()).collect(),
-            target_horizon: "1w".to_string(),
-            min_observations: 20,
-            min_signals: 8,
-            is_diagnostic: false,
-        });
+        for variant in 0..3 {
+            let lookback = select_u32(&ma_lookbacks, idx, variant + 2).to_string();
+            let mode = select_str(&modes, idx, variant + 1);
+            let threshold = select_u32(&ma_thresholds, idx, variant).to_string();
+            let rev_assets = asset_set_for(variant + 2);
+            let mut args = vec![
+                "--short-period".to_string(),
+                lookback,
+                "--signal-mode".to_string(),
+                mode.to_string(),
+                "--threshold".to_string(),
+                threshold,
+                "--universe".to_string(),
+                select_str(&universe_pool, idx, variant + 1).to_string(),
+                "--assets".to_string(),
+            ];
+            args.extend(rev_assets.iter().map(|s| s.to_string()));
+            push_horizon(&mut args, if variant % 2 == 0 { HORIZON_1W } else { HORIZON_1M });
+
+            out.push(Candidate {
+                candidate_id: format!("seed-rev-{idx:02}a{variant}"),
+                strategy: "breadth-ma".to_string(),
+                args,
+                rationale: format!("Web-evolved reversion mutant: {title}"),
+                source: source.clone(),
+                focus_assets: rev_assets.clone(),
+                target_horizon: if variant % 2 == 0 {
+                    HORIZON_1W.to_string()
+                } else {
+                    HORIZON_1M.to_string()
+                },
+                min_observations: 20,
+                min_signals: 8,
+                is_diagnostic: false,
+                is_seeded: true,
+            });
+
+            let dual_assets = if rev_assets.len() >= 2 { rev_assets } else { vec!["SPY".to_string(), "QQQ".to_string()] };
+            let short = select_u32(&dual_short, idx, variant + 4).to_string();
+            let long = select_u32(&dual_long, idx, variant + 5).to_string();
+            if short < long {
+                let mut args = vec![
+                    "--short-period".to_string(),
+                    short,
+                    "--long-period".to_string(),
+                    long,
+                    "--threshold".to_string(),
+                    select_u32(&dual_thresholds, idx, variant + 6).to_string(),
+                    "--universe".to_string(),
+                    select_str(&universe_pool, idx, variant + 3).to_string(),
+                    "--assets".to_string(),
+                ];
+                args.extend(dual_assets.iter().map(|s| s.to_string()));
+                push_horizon(&mut args, HORIZON_1W);
+
+                out.push(Candidate {
+                    candidate_id: format!("seed-rev-{idx:02}b{variant}"),
+                    strategy: "breadth-dual-ma".to_string(),
+                    args,
+                    rationale: format!("Web-evolved reversion-to-trend mutant: {title}"),
+                    source: source.clone(),
+                    focus_assets: dual_assets,
+                    target_horizon: HORIZON_1W.to_string(),
+                    min_observations: 20,
+                    min_signals: 8,
+                    is_diagnostic: false,
+                    is_seeded: true,
+                });
+            }
+        }
     }
 
     if tags.contains("intraday") {
+        let intraday_assets = ["QQQ", "SPY", "SPXL"];
+        for variant in 0..2 {
+            let ticker = select_str(&intraday_assets, idx, variant);
+            out.push(Candidate {
+                candidate_id: format!("seed-int-{idx:02}a{variant}"),
+                strategy: "intraday-drift".to_string(),
+                args: vec![
+                    "--ticker".to_string(),
+                    ticker.to_string(),
+                    "--no-plots".to_string(),
+                ],
+                rationale: format!("Web-evolved intraday mutant: {title}"),
+                source: source.clone(),
+                focus_assets: vec![ticker.to_string()],
+                target_horizon: "1d".to_string(),
+                min_observations: 20,
+                min_signals: 8,
+                is_diagnostic: false,
+                is_seeded: true,
+            });
+        }
+    }
+
+    if tags.contains("breakout") && !tags.contains("intraday") {
+        let mut args = vec![
+            "--signal-mode".to_string(),
+            "overbought".to_string(),
+            "--threshold".to_string(),
+            (50 + idx % 20).to_string(),
+            "--assets".to_string(),
+            "SPY".to_string(),
+            "QQQ".to_string(),
+        ];
+        push_horizon(&mut args, HORIZON_1W);
         out.push(Candidate {
-            candidate_id: format!("seed-int-{idx:02}"),
-            strategy: "intraday-drift".to_string(),
-            args: vec!["--ticker".to_string(), "QQQ".to_string(), "--no-plots".to_string()],
-            rationale: format!("Web seed-driven intraday candidate: {title}"),
+            candidate_id: format!("seed-bot-{idx:02}"),
+            strategy: "ndx100-breadth-washout".to_string(),
+            args,
+            rationale: format!("Web-evolved breakout mutant: {title}"),
             source: source.clone(),
-            focus_assets: vec!["QQQ".to_string()],
-            target_horizon: "1d".to_string(),
-            min_observations: 20,
-            min_signals: 8,
+            focus_assets: vec!["SPY".to_string(), "QQQ".to_string()],
+            target_horizon: HORIZON_1W.to_string(),
+            min_observations: 16,
+            min_signals: 6,
             is_diagnostic: false,
+            is_seeded: true,
+        });
+    }
+
+    if out.is_empty() {
+        let mut args = vec![
+            "--short-period".to_string(),
+            "12".to_string(),
+            "--long-period".to_string(),
+            "100".to_string(),
+            "--threshold".to_string(),
+            "15".to_string(),
+            "--universe".to_string(),
+            "ndx100".to_string(),
+            "--assets".to_string(),
+            "SPY".to_string(),
+            "SPXL".to_string(),
+        ];
+        push_horizon(&mut args, HORIZON_1M);
+        out.push(Candidate {
+            candidate_id: format!("seed-generic-{idx:02}"),
+            strategy: "breadth-dual-ma".to_string(),
+            args,
+            rationale: format!("Web fallback mutant: {title}"),
+            source: source,
+            focus_assets: vec!["SPY".to_string(), "SPXL".to_string()],
+            target_horizon: HORIZON_1M.to_string(),
+            min_observations: 20,
+            min_signals: 10,
+            is_diagnostic: false,
+            is_seeded: true,
         });
     }
 
     out
 }
 
-fn build_candidate_pool(seed_ideas: &[ExaSeed]) -> Vec<Candidate> {
+fn build_seed_candidate_pool(
+    seed_ideas: &[ExaSeed],
+    min_candidates: usize,
+    known_legacy: &HashSet<String>,
+) -> Vec<Candidate> {
+    let mut pool = Vec::new();
+    let mut seen = HashSet::new();
+    for (i, seed) in seed_ideas.iter().enumerate() {
+        let base = build_seed_candidates(seed, i + 1);
+        for (variant, cand) in base.iter().enumerate() {
+            let mut placed = false;
+            for delta in 0..6 {
+                let to_try = emit_seed_mutation(cand, i + 1, variant + delta);
+                if let Some(candidate) = to_try {
+                    if insert_if_novel(&mut pool, &mut seen, known_legacy, candidate) {
+                        placed = true;
+                        break;
+                    }
+                }
+            }
+            if !placed && pool.len() >= min_candidates {
+                break;
+            }
+        }
+        if pool.len() >= min_candidates {
+            break;
+        }
+    }
+
+    if pool.len() < min_candidates {
+        let seed_pool = pool.clone();
+        let mut attempts = 0usize;
+        while pool.len() < min_candidates && !seed_pool.is_empty() && attempts < min_candidates.saturating_mul(3) {
+            let src = &seed_pool[attempts % seed_pool.len()];
+            let mut inserted = false;
+            for delta in 0..6 {
+                if let Some(mutant) = emit_seed_mutation(src, attempts + 5000, attempts + delta) {
+                    if insert_if_novel(&mut pool, &mut seen, known_legacy, mutant) {
+                        inserted = true;
+                        break;
+                    }
+                }
+            }
+            if !inserted {
+                // If this source cannot produce a novel candidate, move on.
+                if attempts > seed_pool.len() * 3 {
+                    break;
+                }
+            }
+            attempts += 1;
+        }
+    }
+    pool
+}
+
+fn build_grid_candidate_pool() -> Vec<Candidate> {
     let mut pool = Vec::new();
 
     for universe in ["ndx100", "sp500", "r2k", "all-stocks"] {
@@ -430,17 +918,22 @@ fn build_candidate_pool(seed_ideas: &[ExaSeed]) -> Vec<Candidate> {
                     add_candidate(
                         &mut pool,
                         Candidate {
-                            candidate_id: format!("bw-{prefix}-{lookback}-{}{threshold}", &mode[..3]),
+                            candidate_id: format!(
+                                "bw-{prefix}-{lookback}-{}{threshold}",
+                                &mode[..3]
+                            ),
                             strategy: "breadth-washout".to_string(),
                             args,
-                            rationale: "Test oversold/overbought breadth regime with short and medium MA windows."
-                                .to_string(),
+                            rationale:
+                                "Test oversold/overbought breadth regime with short and medium MA windows."
+                                    .to_string(),
                             source: "grid".to_string(),
                             focus_assets: vec!["SPY".to_string(), "SPXL".to_string()],
-                            target_horizon: "1m".to_string(),
+                            target_horizon: HORIZON_1M.to_string(),
                             min_observations: 16,
                             min_signals: 8,
                             is_diagnostic: false,
+                            is_seeded: false,
                         },
                     );
 
@@ -483,10 +976,11 @@ fn build_candidate_pool(seed_ideas: &[ExaSeed]) -> Vec<Candidate> {
                                 .to_string(),
                         source: "grid".to_string(),
                         focus_assets: vec!["SPY".to_string(), "SPXL".to_string()],
-                        target_horizon: "1m".to_string(),
+                        target_horizon: HORIZON_1M.to_string(),
                         min_observations: 20,
                         min_signals: 10,
                         is_diagnostic: false,
+                        is_seeded: false,
                     },
                 );
             }
@@ -496,33 +990,36 @@ fn build_candidate_pool(seed_ideas: &[ExaSeed]) -> Vec<Candidate> {
     for lookback in [8, 20, 50, 100] {
         for threshold in [50, 60, 70, 80] {
             for mode in ["oversold", "overbought"] {
+                let mut args = vec![
+                    "--short-period".to_string(),
+                    lookback.to_string(),
+                    "--signal-mode".to_string(),
+                    mode.to_string(),
+                    "--threshold".to_string(),
+                    threshold.to_string(),
+                    "--universe".to_string(),
+                    "ndx100".to_string(),
+                    "--assets".to_string(),
+                    "SPY".to_string(),
+                    "QQQ".to_string(),
+                ];
+                push_horizon(&mut args, HORIZON_1W);
                 add_candidate(
                     &mut pool,
                     Candidate {
                         candidate_id: format!("bm-{lookback}-t{threshold}-{}", &mode[..3]),
                         strategy: "breadth-ma".to_string(),
-                        args: vec![
-                            "--short-period".to_string(),
-                            lookback.to_string(),
-                            "--signal-mode".to_string(),
-                            mode.to_string(),
-                            "--threshold".to_string(),
-                            threshold.to_string(),
-                            "--universe".to_string(),
-                            "ndx100".to_string(),
-                            "--assets".to_string(),
-                            "SPY".to_string(),
-                            "QQQ".to_string(),
-                        ],
+                        args,
                         rationale:
                             "Single moving-average breadth trigger with threshold sweep and mode sweep."
                                 .to_string(),
                         source: "grid".to_string(),
                         focus_assets: vec!["SPY".to_string(), "QQQ".to_string()],
-                        target_horizon: "1w".to_string(),
+                        target_horizon: HORIZON_1W.to_string(),
                         min_observations: 20,
                         min_signals: 8,
                         is_diagnostic: false,
+                        is_seeded: false,
                     },
                 );
             }
@@ -530,38 +1027,37 @@ fn build_candidate_pool(seed_ideas: &[ExaSeed]) -> Vec<Candidate> {
     }
 
     for threshold in [55, 60, 65, 70] {
+        let mut args = vec![
+            "--signal-mode".to_string(),
+            if threshold % 2 == 0 {
+                "overbought".to_string()
+            } else {
+                "oversold".to_string()
+            },
+            "--threshold".to_string(),
+            threshold.to_string(),
+            "--assets".to_string(),
+            "SPY".to_string(),
+            "QQQ".to_string(),
+        ];
+        push_horizon(&mut args, HORIZON_1W);
+
         add_candidate(
             &mut pool,
-            {
-                let mut args = vec![
-                    "--signal-mode".to_string(),
-                    if threshold % 2 == 0 {
-                        "overbought".to_string()
-                    } else {
-                        "oversold".to_string()
-                    },
-                    "--threshold".to_string(),
-                    threshold.to_string(),
-                    "--assets".to_string(),
-                    "SPY".to_string(),
-                    "QQQ".to_string(),
-                ];
-                push_horizon(&mut args, HORIZON_1W);
-
-                Candidate {
-                    candidate_id: format!("ndx-wrap-{threshold}"),
-                    strategy: "ndx100-breadth-washout".to_string(),
-                    args,
-                    rationale:
-                        "ndx100 wrapper candidate for alternative regime gate and universe settings."
-                            .to_string(),
-                    source: "grid".to_string(),
-                    focus_assets: vec!["SPY".to_string(), "QQQ".to_string()],
-                    target_horizon: "1w".to_string(),
-                    min_observations: 16,
-                    min_signals: 6,
-                    is_diagnostic: false,
-                }
+            Candidate {
+                candidate_id: format!("ndx-wrap-{threshold}"),
+                strategy: "ndx100-breadth-washout".to_string(),
+                args,
+                rationale:
+                    "ndx100 wrapper candidate for alternative regime gate and universe settings."
+                        .to_string(),
+                source: "grid".to_string(),
+                focus_assets: vec!["SPY".to_string(), "QQQ".to_string()],
+                target_horizon: HORIZON_1W.to_string(),
+                min_observations: 16,
+                min_signals: 6,
+                is_diagnostic: false,
+                is_seeded: false,
             },
         );
     }
@@ -578,18 +1074,21 @@ fn build_candidate_pool(seed_ideas: &[ExaSeed]) -> Vec<Candidate> {
             min_observations: 20,
             min_signals: 10,
             is_diagnostic: false,
+            is_seeded: false,
         },
         Candidate {
             candidate_id: "overnight-vix".to_string(),
             strategy: "overnight-drift".to_string(),
             args: vec!["--no-plots".to_string()],
-            rationale: "Execution baseline: built-in VIX filter should prefer safer regimes.".to_string(),
+            rationale: "Execution baseline: built-in VIX filter should prefer safer regimes."
+                .to_string(),
             source: "baseline".to_string(),
             focus_assets: vec!["SPY".to_string()],
             target_horizon: "1d".to_string(),
             min_observations: 20,
             min_signals: 10,
             is_diagnostic: false,
+            is_seeded: false,
         },
         Candidate {
             candidate_id: "intra-long".to_string(),
@@ -602,6 +1101,7 @@ fn build_candidate_pool(seed_ideas: &[ExaSeed]) -> Vec<Candidate> {
             min_observations: 20,
             min_signals: 10,
             is_diagnostic: false,
+            is_seeded: false,
         },
         Candidate {
             candidate_id: "intra-short".to_string(),
@@ -612,30 +1112,102 @@ fn build_candidate_pool(seed_ideas: &[ExaSeed]) -> Vec<Candidate> {
                 "--short".to_string(),
                 "--no-plots".to_string(),
             ],
-            rationale:
-                "Intraday long/short asymmetry probe on same execution structure.".to_string(),
+            rationale: "Intraday long/short asymmetry probe on same execution structure."
+                .to_string(),
             source: "baseline".to_string(),
             focus_assets: vec!["SPY".to_string()],
             target_horizon: "1d".to_string(),
             min_observations: 20,
             min_signals: 10,
             is_diagnostic: false,
+            is_seeded: false,
         },
     ]);
 
-    for (i, seed) in seed_ideas.iter().take(20).enumerate() {
-        pool.extend(build_seed_candidates(seed, i + 1));
+    pool
+}
+
+fn build_candidate_pool(
+    seed_ideas: &[ExaSeed],
+    seed_web: bool,
+    include_grid: bool,
+    min_candidates: usize,
+) -> Vec<Candidate> {
+    let mut pool = Vec::new();
+    let mut seen = HashSet::new();
+    let known_legacy = build_known_signature_set();
+    let seeded = if seed_web {
+        build_seed_candidate_pool(seed_ideas, min_candidates, &known_legacy)
+    } else {
+        Vec::new()
+    };
+    let grid = if include_grid {
+        build_grid_candidate_pool()
+    } else {
+        Vec::new()
+    };
+
+    if seed_web {
+        if !seeded.is_empty() {
+            for cand in seeded {
+                seen.insert(signature_for_candidate(&cand));
+                pool.push(cand);
+            }
+            if !include_grid && pool.len() < min_candidates {
+                eprintln!(
+                    "seed-web produced only {} novel candidates; running seed-only novel pool as-is (target {})",
+                    pool.len(),
+                    min_candidates
+                );
+            }
+            if include_grid && pool.len() < min_candidates {
+                let mut add_from_grid = grid;
+                for cand in add_from_grid.drain(0..add_from_grid.len().min(min_candidates - pool.len()))
+                {
+                    let key = signature_for_candidate(&cand);
+                    if seen.contains(&key) || known_legacy.contains(&key) {
+                        continue;
+                    }
+                    seen.insert(key);
+                    pool.push(cand);
+                }
+            }
+        } else {
+            if include_grid {
+                eprintln!("seed web requested but no web seeds were produced; using grid fallback because --include-grid is enabled.");
+                for cand in grid {
+                    let key = signature_for_candidate(&cand);
+                    if seen.contains(&key) || known_legacy.contains(&key) {
+                        continue;
+                    }
+                    seen.insert(key);
+                    pool.push(cand);
+                }
+            } else {
+                eprintln!("seed web requested but no novel web candidates were generated.");
+            }
+        }
+    } else {
+        for cand in grid {
+            let key = signature_for_candidate(&cand);
+            if seen.insert(key) {
+                pool.push(cand);
+            }
+        }
+    }
+
+    if seed_web && !include_grid && pool.is_empty() {
+        return pool;
+    }
+
+    if pool.is_empty() {
+        pool.extend(build_grid_candidate_pool());
     }
 
     let mut unique = Vec::new();
     let mut seen = HashSet::new();
     for cand in pool {
-        let key = format!(
-            "{}|{}|{}",
-            cand.strategy,
-            cand.args.join("|"),
-            cand.source
-        );
+        let key = signature_for_candidate(&cand);
         if seen.insert(key) {
             unique.push(cand);
         }
@@ -815,10 +1387,6 @@ fn score_payload(candidate: &Candidate, payload: &Value) -> Option<ScoredRun> {
     None
 }
 
-fn has_arg(args: &[String], flag: &str) -> bool {
-    args.iter().any(|v| v == flag)
-}
-
 fn strategy_category(strategy: &str) -> &'static str {
     match strategy {
         "breadth-washout" => "Breadth",
@@ -872,7 +1440,13 @@ fn format_detail_summary(details: &Value) -> String {
     let horizon = details.get("horizon").and_then(Value::as_str).unwrap_or("-");
     let obs = details.get("observations").and_then(Value::as_u64).unwrap_or(0);
     let signals = details.get("signals").and_then(Value::as_u64).unwrap_or(0);
-    let cum = safe_float(details.get("cumulative_return_pct").or_else(|| details.get("cagr")).unwrap_or(&Value::Null)).unwrap_or(0.0);
+    let cum = safe_float(
+        details
+            .get("cumulative_return_pct")
+            .or_else(|| details.get("cagr"))
+            .unwrap_or(&Value::Null),
+    )
+    .unwrap_or(0.0);
     let sharpe = safe_float(details.get("sharpe").unwrap_or(&Value::Null)).unwrap_or(0.0);
     let dd = safe_float(
         details
@@ -881,10 +1455,11 @@ fn format_detail_summary(details: &Value) -> String {
             .unwrap_or(&Value::Null),
     )
     .unwrap_or(0.0);
-    let var95 = safe_float(details
-        .get("var_95_pct")
-        .or_else(|| details.get("var_95"))
-        .unwrap_or(&Value::Null),
+    let var95 = safe_float(
+        details
+            .get("var_95_pct")
+            .or_else(|| details.get("var_95"))
+            .unwrap_or(&Value::Null),
     )
     .unwrap_or(0.0);
     format!(
@@ -1101,6 +1676,7 @@ fn evaluate_candidate(
         combined_score,
         train_details: train_run.details,
         test_details: test_run.details,
+        is_seeded: candidate.is_seeded,
     })
 }
 
@@ -1115,6 +1691,358 @@ fn shuffle_candidates(items: &mut [Candidate], seed: u64) {
         let j = (state % (i as u64 + 1)) as usize;
         items.swap(i, j);
     }
+}
+
+fn rank_rows(rows: &[CandidateReport], prioritize_seeded: bool) -> Vec<CandidateReport> {
+    let mut ranked = rows.to_vec();
+    ranked.sort_by(|a, b| {
+        if prioritize_seeded && a.is_seeded != b.is_seeded {
+            return b.is_seeded.cmp(&a.is_seeded);
+        }
+
+        let score_cmp = b
+            .combined_score
+            .partial_cmp(&a.combined_score)
+            .unwrap_or(std::cmp::Ordering::Equal);
+        if score_cmp != std::cmp::Ordering::Equal {
+            return score_cmp;
+        }
+
+        b.train_score
+            .partial_cmp(&a.train_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    ranked
+}
+
+fn profitability_blurb(
+    category: &str,
+    strategy: &str,
+    train: &Value,
+    test: &Value,
+) -> String {
+    if category != "Breadth" {
+        let train_sharpe = safe_float(train.get("sharpe").or_else(|| train.get("cagr")).unwrap_or(&Value::Null))
+            .unwrap_or(0.0);
+        let test_sharpe = safe_float(test.get("sharpe").or_else(|| test.get("cagr")).unwrap_or(&Value::Null))
+            .unwrap_or(0.0);
+        let train_dd = safe_float(train.get("max_drawdown").or_else(|| train.get("max_drawdown_pct")).unwrap_or(&Value::Null))
+            .unwrap_or(0.0);
+        let test_dd = safe_float(test.get("max_drawdown").or_else(|| test.get("max_drawdown_pct")).unwrap_or(&Value::Null))
+            .unwrap_or(0.0);
+        let mut reasons = Vec::new();
+        if train_sharpe > 0.2 && test_sharpe > 0.1 {
+            reasons.push(format!(
+                "{} (train/test) keeps positive risk-adjusted return ({:.3}, {:.3}) after session selection.",
+                strategy, train_sharpe, test_sharpe
+            ));
+        } else if train_sharpe > 0.0 && test_sharpe > 0.0 {
+            reasons.push(format!(
+                "{} shows disciplined drift behavior with positive Sharpe on both windows ({:.3}, {:.3}).",
+                strategy, train_sharpe, test_sharpe
+            ));
+        } else {
+            reasons.push(format!(
+                "{} has mixed intraday-like return profile; assess position sizing and timing filters.",
+                strategy
+            ));
+        }
+        if train_dd < 40.0 && test_dd < 50.0 {
+            reasons.push(format!(
+                "Drawdown profile appears controlled (train {:.2}%, test {:.2}%).",
+                train_dd, test_dd
+            ));
+        } else {
+            reasons.push(format!(
+                "Large drawdowns (train {:.2}%, test {:.2}%) indicate leverage-aware sizing should be capped.",
+                train_dd, test_dd
+            ));
+        }
+        reasons.join(" ")
+    } else {
+        let train_sharpe = safe_float(train.get("sharpe").unwrap_or(&Value::Null)).unwrap_or(0.0);
+        let test_sharpe = safe_float(test.get("sharpe").unwrap_or(&Value::Null)).unwrap_or(0.0);
+        let train_dd = safe_float(train.get("max_drawdown_pct").unwrap_or(&Value::Null)).unwrap_or(0.0);
+        let test_dd = safe_float(test.get("max_drawdown_pct").unwrap_or(&Value::Null)).unwrap_or(0.0);
+        let train_obs = safe_u64(train.get("observations").unwrap_or(&Value::Null)).unwrap_or(0);
+        let test_obs = safe_u64(test.get("observations").unwrap_or(&Value::Null)).unwrap_or(0);
+        let mut reasons = Vec::new();
+        if train_sharpe > 0.1 && test_sharpe > 0.1 {
+            reasons.push(format!(
+                "Strong breadth signal persistence: positive Sharpe in both train ({:.3}) and test ({:.3}) with {} and {} sample windows.",
+                train_sharpe, test_sharpe, train_obs, test_obs
+            ));
+        } else if train_sharpe > 0.0 || test_sharpe > 0.0 {
+            reasons.push(format!(
+                "Cross-window asymmetry exists (train {:.3}, test {:.3}); regime-specific regime behavior may explain edge.",
+                train_sharpe, test_sharpe
+            ));
+        } else {
+            reasons.push("Breadth signals are noisy or timing-dependent in these windows; execution alpha is currently weak.".to_string());
+        }
+        if train_dd.abs() < 40.0 && test_dd.abs() < 45.0 {
+            reasons.push(format!(
+                "Risk profile is comparatively stable with max-drawdown near {}/{}%.",
+                train_dd.abs(),
+                test_dd.abs()
+            ));
+        } else {
+            reasons.push(format!(
+                "Higher max drawdown in one or both windows ({:.2}% / {:.2}%) suggests position and universe constraints.",
+                train_dd.abs(),
+                test_dd.abs()
+            ));
+        }
+        reasons.join(" ")
+    }
+}
+
+#[derive(Serialize)]
+struct InteractiveRow {
+    rank: usize,
+    candidate_id: String,
+    strategy: String,
+    category: String,
+    source: String,
+    rationale: String,
+    focus_assets: String,
+    target_horizon: String,
+    args: Vec<String>,
+    combined_score: f64,
+    train_score: f64,
+    test_score: f64,
+    train_details: Value,
+    test_details: Value,
+    why: String,
+    is_seeded: bool,
+}
+
+fn save_interactive_report(path: &Path, rows: &[CandidateReport]) -> io::Result<()> {
+    let ranked = rows.to_vec();
+    let top_count = ranked.len().min(10);
+
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let payload_rows: Vec<InteractiveRow> = ranked
+        .iter()
+        .enumerate()
+        .map(|(idx, row)| InteractiveRow {
+            rank: idx + 1,
+            candidate_id: row.candidate_id.clone(),
+            strategy: row.strategy.clone(),
+            category: row.category.clone(),
+            source: row.source.clone(),
+            rationale: row.rationale.clone(),
+            focus_assets: row.focus_assets.join(", "),
+            target_horizon: row.target_horizon.clone(),
+            args: row.args.clone(),
+            combined_score: row.combined_score,
+            train_score: row.train_score,
+            test_score: row.test_score,
+            train_details: row.train_details.clone(),
+            test_details: row.test_details.clone(),
+            why: profitability_blurb(
+                &row.category,
+                &row.strategy,
+                &row.train_details,
+                &row.test_details,
+            ),
+            is_seeded: row.is_seeded,
+        })
+        .collect();
+
+    let row_json = serde_json::to_string_pretty(&payload_rows)
+        .unwrap_or_else(|_| "[]".to_string());
+    let top_seeded = ranked.iter().filter(|r| r.is_seeded).count();
+
+    let state_json = serde_json::to_string_pretty(&json!({
+        "generated_at": Utc::now().to_rfc3339(),
+        "total_candidates": ranked.len(),
+        "top_count": top_count,
+        "seeded_in_top_10": ranked.iter().take(top_count).filter(|r| r.is_seeded).count(),
+        "seeded_total": top_seeded,
+    }))
+    .unwrap_or_else(|_| "{}".to_string());
+
+    let html = format!(
+        r#"<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doob Autoresearch Loop - Top Candidates</title>
+  <style>
+    :root {{ --bg: #071023; --panel: #0f1f3a; --muted: #9db2cf; --text: #ecf4ff; --ok: #4ade80; --warn: #f59e0b; --bad: #f87171; }}
+    body {{ margin: 0; font-family: Arial, Helvetica, sans-serif; background: radial-gradient(circle at 20% 10%, #13274a 0%, var(--bg) 50%, #020915 100%); color: var(--text); }}
+    .container {{ width: min(1320px, 94vw); margin: 14px auto; }}
+    .summary {{ display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }}
+    .card {{ background: linear-gradient(180deg,#102548,#0f1c39); border: 1px solid #21406e; border-radius: 10px; padding: 10px; }}
+    .kpi {{ font-size: 1.4rem; font-weight: 700; }}
+    .muted {{ color: var(--muted); }}
+    .controls {{ margin: 10px 0; display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 8px; }}
+    .panel {{ margin-top: 10px; border: 1px solid #244a79; background: rgba(14, 30, 56, 0.9); border-radius: 10px; padding: 10px; }}
+    table {{ width: 100%; border-collapse: collapse; }}
+    th, td {{ text-align: left; padding: 8px; border-bottom: 1px solid #233c63; font-size: 13px; }}
+    th {{ background: #17325a; color: #d6e5ff; position: sticky; top: 0; }}
+    .pill {{ display:inline-block; border:1px solid #365b8e; border-radius:999px; padding: 2px 8px; margin-right: 6px; font-size: 11px; }}
+    .good {{ color: var(--ok); }}
+    .bad {{ color: var(--bad); }}
+    .muted-small {{ color: var(--muted); font-size: 11px; }}
+    #details {{ margin-top: 12px; }}
+    details {{ border: 1px solid #27508a; border-radius: 8px; background: #0f2450; padding: 6px; margin-top: 6px; }}
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Doob Autoresearch Loop — Top Candidates</h2>
+  <div class="muted-small">Source: seed-web based candidate generation, seed-first ranking, run+test walk-forward windows.</div>
+  <div class="summary">
+    <div class="card"><div class="muted">Candidates passed</div><div class="kpi">{total}</div></div>
+    <div class="card"><div class="muted">Top seeds shown</div><div class="kpi">{top_count}</div></div>
+    <div class="card"><div class="muted">Seeded strategies in top 10</div><div class="kpi">{seeded_top}</div></div>
+  </div>
+  <div class="panel">
+    <div class="controls">
+      <input id="search" placeholder="Search candidate, strategy, rationale, source, asset" style="padding:6px; border-radius:8px; border:1px solid #2f5482; background:#0e2346; color:var(--text)" />
+      <select id="cat" style="padding:6px; border-radius:8px; border:1px solid #2f5482; background:#0e2346; color:var(--text)"></select>
+      <select id="src" style="padding:6px; border-radius:8px; border:1px solid #2f5482; background:#0e2346; color:var(--text)"></select>
+      <select id="seeded" style="padding:6px; border-radius:8px; border:1px solid #2f5482; background:#0e2346; color:var(--text)">
+        <option value="All">All</option>
+        <option value="Seeded">Seeded only</option>
+        <option value="Legacy">Legacy only</option>
+      </select>
+    </div>
+    <div style="overflow:auto; max-height: 68vh;">
+      <table id="table">
+        <thead>
+          <tr><th>Rank</th><th>Candidate</th><th>Category</th><th>Strategy</th><th>Score</th><th>Train</th><th>Test</th><th>Source</th><th>Why profitable?</th></tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+    <div id="details"></div>
+  </div>
+  <div class="muted-small">Generated: {generated}</div>
+</div>
+<script>
+const rows = {rows_json};
+const state = {state_json};
+const sortBy = document.createElement('select');
+const body = document.getElementById('body');
+const details = document.getElementById('details');
+const search = document.getElementById('search');
+const cat = document.getElementById('cat');
+const src = document.getElementById('src');
+const seeded = document.getElementById('seeded');
+
+function fmt(v) {{ return (typeof v === 'number' && Number.isFinite(v)) ? v.toLocaleString(undefined, {{ maximumFractionDigits: 3, minimumFractionDigits: 3 }}) : 'N/A'; }}
+function pct(v) {{ return (typeof v === 'number' && Number.isFinite(v)) ? (v.toLocaleString(undefined, {{ maximumFractionDigits: 2, minimumFractionDigits: 2 }}) + '%') : 'N/A'; }}
+function metric(v, k) {{
+  if (v == null) return 'N/A';
+  if (typeof v === 'number') {{
+    if (['max_drawdown_pct', 'cumulative_return_pct', 'var_95', 'var_95_pct', 'cagr', 'sharpe', 'final_equity'].includes(k)) {{
+      return fmt(v);
+    }}
+    return fmt(v);
+  }}
+  return String(v);
+}}
+
+function uniques(field) {{
+  const values = rows.map(r => r[field]).filter((v, idx, arr) => arr.indexOf(v) === idx).sort();
+  return ['All'].concat(values);
+}}
+
+function metricsHtml(row) {{
+  const t = row.train_details || {{}};
+  const s = row.test_details || {{}};
+  const pick = (obj, a, b) => {{
+    if (obj[a] !== undefined) return obj[a];
+    if (obj[b] !== undefined) return obj[b];
+    return null;
+  }};
+  const tSharpe = pick(t, 'sharpe', 'cagr');
+  const sSharpe = pick(s, 'sharpe', 'cagr');
+  const tDD = pick(t, 'max_drawdown_pct', 'max_drawdown');
+  const sDD = pick(s, 'max_drawdown_pct', 'max_drawdown');
+  const trainObs = t.observations || 0;
+  const testObs = s.observations || 0;
+  return 'Train Sharpe: ' + fmt(tSharpe) + ' / Test Sharpe: ' + fmt(sSharpe) +
+         ' | Train DD: ' + pct(tDD) + ' / Test DD: ' + pct(sDD) +
+         ' | Train obs: ' + trainObs + ' / Test obs: ' + testObs;
+}}
+
+function render() {{
+  const q = search.value.toLowerCase();
+  const catV = cat.value;
+  const srcV = src.value;
+  const seededV = seeded.value;
+  const filtered = rows.filter(r => {{
+    if (catV !== 'All' && r.category !== catV) return false;
+    if (srcV !== 'All' && r.source !== srcV) return false;
+    if (seededV === 'Seeded' && !r.is_seeded) return false;
+    if (seededV === 'Legacy' && r.is_seeded) return false;
+    if (!q) return true;
+    const hay = (r.candidate_id + ' ' + r.strategy + ' ' + r.rationale + ' ' + r.focus_assets + ' ' + r.source + ' ' + r.category).toLowerCase();
+    return hay.indexOf(q) !== -1;
+  }});
+
+  filtered.sort(function(a, b) {{
+    if (b.is_seeded !== a.is_seeded) return b.is_seeded ? 1 : -1;
+    if (b.combined_score !== a.combined_score) return b.combined_score - a.combined_score;
+    return b.train_score - a.train_score;
+  }});
+
+  body.innerHTML = filtered.slice(0, 10).map((r, i) => {{
+    const sourceType = r.source && r.source.indexOf('http') === 0 ? 'seed' : 'grid';
+    const topTag = r.is_seeded ? '<span class=\"pill\">new seed</span>' : '<span class=\"pill\">existing</span>';
+    const style = r.combined_score > 10000 ? 'good' : 'bad';
+    return '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td><b>' + r.candidate_id + '</b> ' + topTag + '<div class=\"muted-small\">' + r.focus_assets + '</div></td>' +
+      '<td><span class=\"pill\">' + r.category + '</span></td>' +
+      '<td><span class=\"pill\">' + r.strategy + '</span></td>' +
+      '<td class=\"' + style + '\">' + fmt(r.combined_score) + '</td>' +
+      '<td>' + fmt(r.train_score) + '</td>' +
+      '<td>' + fmt(r.test_score) + '</td>' +
+      '<td>' + (sourceType === 'seed' ? r.source : r.source) + '</td>' +
+      '<td>' + r.why + '</td>' +
+      '</tr>' +
+      '<tr><td colspan=\"9\"><details><summary>Full details</summary>' +
+      '<div class=\"muted-small\">Args: <code>' + r.args.join(' ') + '</code></div>' +
+      '<div class=\"muted-small\">Horizon: ' + r.target_horizon + ' | Train/Test Metrics: ' + metricsHtml(r) + '</div>' +
+      '<p><strong>Profitable why:</strong> ' + r.why + '</p>' +
+      '</details></td></tr>';
+  }}).join('');
+
+  details.innerHTML = filtered.slice(0, 10).map((r, i) => {{
+    return '<details><summary><b>' + (i + 1) + '. ' + r.candidate_id + '</b> — ' + r.strategy + ' (' + r.category + ')</summary>' +
+      '<p><span class=\"muted-small\">Source:</span> ' + r.source + ' | Horizon: ' + r.target_horizon + '</p>' +
+      '<p><span class=\"muted-small\">Rationale:</span> ' + r.rationale + '</p>' +
+      '<p><strong>Why this can be profitable:</strong> ' + r.why + '</p>' +
+      '<p class=\"muted-small\">Train metric sample: ' + metric((r.train_details || {{}}).asset, 'asset') + ' / Test: ' + metric((r.test_details || {{}}).asset, 'asset') + '</p>' +
+      '</details>';
+  }}).join('');
+}});
+
+cat.innerHTML = uniques('category').map(v => '<option>' + v + '</option>').join('');
+src.innerHTML = uniques('source').map(v => '<option>' + v + '</option>').join('');
+[cat, src, seeded, search].forEach(el => el.addEventListener('input', render));
+render();
+</script>
+</body>
+</html>"#,
+        rows_json = row_json,
+        total = ranked.len(),
+        top_count = top_count,
+        seeded_top = ranked.iter().take(top_count).filter(|r| r.is_seeded).count(),
+        generated = Utc::now().to_rfc3339(),
+        state_json = state_json
+    );
+
+    std::fs::write(path, html)
 }
 
 fn save_ledger(path: &Path, rows: &[CandidateReport]) -> io::Result<()> {
@@ -1142,6 +2070,7 @@ fn save_ledger(path: &Path, rows: &[CandidateReport]) -> io::Result<()> {
             "train_score": row.train_score,
             "test_score": row.test_score,
             "combined_score": row.combined_score,
+            "is_seeded": row.is_seeded,
             "train_details": row.train_details.clone(),
             "test_details": row.test_details.clone(),
         });
@@ -1150,9 +2079,8 @@ fn save_ledger(path: &Path, rows: &[CandidateReport]) -> io::Result<()> {
     Ok(())
 }
 
-fn print_top(rows: &[CandidateReport], k: usize, verbose: bool) {
-    let mut rows = rows.to_vec();
-    rows.sort_by(|a, b| b.combined_score.partial_cmp(&a.combined_score).unwrap_or(std::cmp::Ordering::Equal));
+fn print_top(rows: &[CandidateReport], k: usize, verbose: bool, prioritize_seeded: bool) {
+    let rows = rank_rows(rows, prioritize_seeded);
 
     println!("\nTop candidates:");
     let mut table = Table::new();
@@ -1161,6 +2089,7 @@ fn print_top(rows: &[CandidateReport], k: usize, verbose: bool) {
     table.set_header(vec![
         "rank",
         "score",
+        "seeded",
         "category",
         "strategy",
         "id/assets",
@@ -1183,6 +2112,7 @@ fn print_top(rows: &[CandidateReport], k: usize, verbose: bool) {
         table.add_row(vec![
             (i + 1).to_string(),
             format!("{:.3}", row.combined_score),
+            if row.is_seeded { "new".to_string() } else { "legacy".to_string() },
             row.category.clone(),
             row.strategy.clone(),
             id_assets,
@@ -1256,6 +2186,7 @@ fn save_seed_ideas(path: &Path, items: &[ExaSeed]) -> io::Result<()> {
 }
 
 fn main() {
+    let _ = dotenv();
     let args = Args::parse();
     let doob_bin = PathBuf::from(&args.doob_bin);
     if !doob_bin.exists() {
@@ -1288,9 +2219,17 @@ fn main() {
         );
     }
     if args.seed_web {
-        seed_ideas = fetch_exa_ideas(SEED_QUERIES, 6);
+        seed_ideas = fetch_exa_ideas(SEED_QUERIES, SEED_RESULTS_PER_QUERY);
         if args.verbose {
             println!("fetched {} web seeds", seed_ideas.len());
+            println!(
+                "novelty mode: web seeds must not match legacy strategy+argument signatures from baseline/grid."
+            );
+            if !args.include_grid {
+                println!("running web-seed strategies only (plus novelty mutants).");
+            } else {
+                println!("including grid candidates in seed-web pool.");
+            }
         }
         let report_path = Path::new("reports/autoresearch-exa-ideas.json");
         if let Err(err) = save_seed_ideas(report_path, &seed_ideas) {
@@ -1298,7 +2237,16 @@ fn main() {
         }
     }
 
-    let mut candidates = build_candidate_pool(&seed_ideas);
+    let mut candidates = build_candidate_pool(
+        &seed_ideas,
+        args.seed_web,
+        args.include_grid,
+        args.candidates,
+    );
+    if candidates.is_empty() && args.seed_web && !args.include_grid {
+        eprintln!("No seed-web candidates were produced. Check EXA_API_KEY and API access, or run with --include-grid.");
+        return;
+    }
     if args.verbose {
         println!("candidate pool: {} total", candidates.len());
     }
@@ -1307,15 +2255,45 @@ fn main() {
         println!("candidate pool shuffled with seed {}", args.random_seed);
     }
 
+    let mut seeded = Vec::new();
+    let mut legacy = Vec::new();
+    for candidate in candidates.into_iter() {
+        if candidate.is_seeded {
+            seeded.push(candidate);
+        } else {
+            legacy.push(candidate);
+        }
+    }
+    shuffle_candidates(&mut seeded, args.random_seed ^ 0xA5A5A5A5_01020304);
+    shuffle_candidates(&mut legacy, args.random_seed ^ 0x5A5A5A5A_FF00FF00);
+    let mut candidates_to_run = Vec::new();
+    if args.seed_web {
+        candidates_to_run.extend(seeded);
+        candidates_to_run.extend(legacy);
+    } else {
+        candidates_to_run.extend(legacy);
+    }
+    let total_candidates = candidates_to_run.len().min(args.candidates);
+    if args.verbose {
+        let seeded_count = candidates_to_run.iter().filter(|r| r.is_seeded).count();
+        println!(
+            "candidates selected for execution: {total_candidates} (seeded {seeded_count})"
+        );
+    }
+
     let mut results = Vec::new();
-    for (idx, candidate) in candidates.iter().take(args.candidates).enumerate() {
+    for (idx, candidate) in candidates_to_run.iter().take(total_candidates).enumerate() {
         if args.verbose {
-            println!("evaluating candidate {} of {}", idx + 1, args.candidates);
+            println!(
+                "evaluating candidate {} of {}",
+                idx + 1,
+                total_candidates
+            );
         }
         if let Some(report) = evaluate_candidate(
             candidate,
             idx + 1,
-            args.candidates,
+            total_candidates,
             &doob_bin,
             &args.train_start,
             &args.train_end,
@@ -1334,7 +2312,17 @@ fn main() {
     if args.verbose {
         println!("completed loop: {} candidates passed", results.len());
     }
-    print_top(&results, args.top, args.verbose);
+    let ranked = rank_rows(&results, args.seed_web);
+    let top_k = args.top.min(ranked.len());
+    print_top(&ranked, top_k, args.verbose, args.seed_web);
+    let report_rows = ranked.iter().take(10).cloned().collect::<Vec<_>>();
+    let report_path = Path::new("reports/autoresearch-top10-interactive-report.html");
+    if let Err(err) = save_interactive_report(
+        report_path,
+        &report_rows,
+    ) {
+        eprintln!("Failed to write interactive report: {err}");
+    }
     if let Err(err) = save_ledger(
         Path::new("reports/autoresearch-ledger.jsonl"),
         &results,
@@ -1347,8 +2335,7 @@ fn main() {
         return;
     }
 
-    let mut ranked = results.clone();
-    ranked.sort_by(|a, b| b.combined_score.partial_cmp(&a.combined_score).unwrap_or(std::cmp::Ordering::Equal));
     let best = &ranked[0];
     print_best(best);
+    let _ = Command::new("open").arg(report_path).spawn();
 }

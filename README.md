@@ -58,7 +58,11 @@ Build and run the automated candidate-discovery loop from Rust:
 cargo build --release
 
 # run with verbose output and arXiv/Exa seeding
+# default: web seeds only (plus novelty mutations), ranked before any fallback grid candidates
 cargo run --release --bin autoresearch_loop -- --seed-web --verbose
+
+# run seed-web loop with mixed seeded + grid candidates and keep top N
+cargo run --release --bin autoresearch_loop -- --seed-web --include-grid --verbose
 
 # limit candidates and keep top N
 cargo run --release --bin autoresearch_loop -- --seed-web --candidates 60 --top 15
@@ -70,6 +74,13 @@ Optional settings:
 - `--train-sessions`, `--test-sessions`
 - `--doob-bin target/release/doob`
 - `--random-seed`
+- `--include-grid` to add legacy grid/baseline candidates after seeded candidates (default off)
+
+Output artifacts:
+
+- `reports/autoresearch-top10-interactive-report.html` (interactive top 10 browser report)
+- `reports/autoresearch-ledger.jsonl` (full candidate ledger)
+- `reports/autoresearch-exa-ideas.json` (web-seed scrape and normalization)
 
 Output is now table-formatted and includes:
 
