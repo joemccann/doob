@@ -1343,7 +1343,7 @@ pub struct BreadthDualMaArgs {
     #[arg(long, default_value_t = 200, help = "Long MA period (e.g. 200-day)")]
     pub long_period: usize,
 
-    #[arg(long, default_value_t = 40.0, help = "Signal threshold: trigger when % below short MA and above long MA >= this")]
+    #[arg(long, default_value_t = 20.0, help = "Signal threshold: trigger when % below short MA and above long MA >= this")]
     pub threshold: f64,
 
     #[arg(long, default_value = "ndx100", help = "Named universe")]
@@ -1748,7 +1748,7 @@ mod tests {
             sessions: 252,
             short_period: 50,
             long_period: 200,
-            threshold: 40.0,
+            threshold: 20.0,
             universe: "ndx100".to_string(),
             preset: None,
             tickers: None,
@@ -1764,7 +1764,7 @@ mod tests {
         let config = build_config_from_args(&args).unwrap();
         assert_eq!(config.short_period, 50);
         assert_eq!(config.long_period, 200);
-        assert_eq!(config.signal_threshold, 40.0);
+        assert_eq!(config.signal_threshold, 20.0);
     }
 
     #[test]
