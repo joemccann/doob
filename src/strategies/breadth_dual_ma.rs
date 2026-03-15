@@ -1051,6 +1051,91 @@ fn format_strategy_report(results: &StrategyResults) -> String {
     out
 }
 
+fn format_strategy_report_md(results: &StrategyResults) -> String {
+    let config = &results.config;
+    let target_row = &results.target_row;
+    let trailing = &results.trailing_breadth;
+
+    let mut lines = vec![
+        format!("# Dual-MA Breadth Strategy ({}d / {}d)", config.short_period, config.long_period),
+        String::new(),
+        format!("**Universe:** {}  ", results.universe_label),
+        format!(
+            "**Window:** {} to {} ({} sessions)  ",
+            trailing.first().unwrap().trade_date,
+            trailing.last().unwrap().trade_date,
+            trailing.len()
+        ),
+        format!(
+            "**Signal:** ≥ {:.0}% of universe has close < {}d MA AND close > {}d MA  ",
+            config.signal_threshold, config.short_period, config.long_period
+        ),
+        String::new(),
+        format!("## As of {}", target_row.trade_date),
+        String::new(),
+        format!(
+            "- **Below {}d MA & above {}d MA:** {} ({:.2}%)",
+            config.short_period, config.long_period,
+            target_row.below_short_above_long, target_row.pct_below_short_above_long
+        ),
+        format!(
+            "- **Below both MAs:** {} ({:.2}%)",
+            target_row.below_both, target_row.pct_below_both
+        ),
+        format!(
+            "- **Above {}d MA:** {} ({:.2}%)",
+            config.short_period, target_row.above_short, target_row.pct_above_short
+        ),
+        format!("- **Insufficient data:** {}", target_row.insufficient_data),
+        format!("- **Triggered sessions:** {}", results.triggered.len()),
+    ];
+
+    if !results.forward_summary.is_empty() {
+        lines.push(String::new());
+        lines.push("## Forward Returns".to_string());
+        lines.push(String::new());
+        lines.push("| Asset | Horizon | Signals | Obs | Mean % | Win Rate % |".to_string());
+        lines.push("|-------|---------|---------|-----|--------|------------|".to_string());
+        for row in &results.forward_summary {
+            lines.push(format!(
+                "| {} | {} | {} | {} | {:.2} | {:.1} |",
+                row.asset, row.horizon, row.signals, row.observations,
+                row.mean_return_pct, row.positive_rate_pct,
+            ));
+        }
+
+        let mut seen_assets: Vec<String> = Vec::new();
+        for row in &results.forward_summary {
+            if !seen_assets.contains(&row.asset) {
+                seen_assets.push(row.asset.clone());
+            }
+        }
+
+        for asset in &seen_assets {
+            lines.push(String::new());
+            lines.push(format!("## Risk Metrics — {asset}"));
+            lines.push(String::new());
+            lines.push("| Horizon | Sharpe | Sortino | Max DD | VaR 95 | CVaR 95 | Std Dev | Best | Worst | Prof Factor |".to_string());
+            lines.push("|---------|--------|---------|--------|--------|---------|---------|------|-------|-------------|".to_string());
+            for row in results.forward_summary.iter().filter(|r| r.asset == *asset) {
+                let pf_str = if row.profit_factor.is_infinite() {
+                    "∞".to_string()
+                } else {
+                    format!("{:.2}", row.profit_factor)
+                };
+                lines.push(format!(
+                    "| {} | {:.3} | {:.3} | {:.2}% | {:.2}% | {:.2}% | {:.2}% | {:.2}% | {:.2}% | {} |",
+                    row.horizon, row.sharpe, row.sortino,
+                    row.max_drawdown_pct, row.var_95_pct, row.cvar_95_pct,
+                    row.std_dev_pct, row.best_trade_pct, row.worst_trade_pct, pf_str,
+                ));
+            }
+        }
+    }
+
+    lines.join("\n")
+}
+
 fn save_strategy_outputs(results: &StrategyResults) -> Result<Vec<(String, PathBuf)>> {
     let out = output_dir();
     std::fs::create_dir_all(&out)?;
@@ -1534,6 +1619,8 @@ pub fn run(args: &BreadthDualMaArgs, fmt: OutputFormat) -> Result<()> {
             }).collect::<Vec<_>>(),
         });
         println!("{}", serde_json::to_string(&output)?);
+    } else if fmt == OutputFormat::Md {
+        println!("{}", format_strategy_report_md(&results));
     } else {
         println!("{}", format_strategy_report(&results));
         println!("\nFiles");

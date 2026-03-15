@@ -197,6 +197,97 @@ pub fn build_json_annual_returns(
         .collect()
 }
 
+/// Format backtest results as a markdown table.
+pub fn format_results_md(
+    title: &str,
+    ticker: &str,
+    dates: &[NaiveDate],
+    years: f64,
+    capital: f64,
+    strategies: &[StrategyResult],
+    adf_results: &[(String, f64, f64)],
+    start_year: i32,
+) -> String {
+    let mut lines = Vec::new();
+
+    lines.push(format!("# {title}"));
+    lines.push(String::new());
+    lines.push(format!(
+        "**Ticker:** {} | **Period:** {} to {} ({:.1} years) | **Capital:** ${:.0}  ",
+        ticker, dates.first().unwrap(), dates.last().unwrap(), years, capital,
+    ));
+    lines.push(String::new());
+    lines.push("## Results".to_string());
+    lines.push(String::new());
+    lines.push("| Strategy | Final ($) | CAGR | Sharpe | Max DD | VaR 95 |".to_string());
+    lines.push("|----------|-----------|------|--------|--------|--------|".to_string());
+
+    for strat in strategies {
+        let dr = daily_returns(&strat.equity);
+        let c = cagr(&strat.equity, years);
+        let s = sharpe_default(&dr);
+        let md = max_drawdown(&strat.equity);
+        let v = var_95(&dr);
+        let final_val = *strat.equity.last().unwrap() as i64;
+        let final_str = final_val.to_formatted_string(&Locale::en);
+
+        let mut row = format!(
+            "| {} | {} | {:.1}% | {:.2} | {:.1}% | {:.4} |",
+            strat.name, final_str, c * 100.0, s, md * 100.0, v,
+        );
+
+        if let Some((_, stat, pval)) = adf_results.iter().find(|(n, _, _)| *n == strat.name) {
+            row = format!(
+                "| {} | {} | {:.1}% | {:.2} | {:.1}% | {:.4} | ADF: {:.4} (p={:.6})",
+                strat.name, final_str, c * 100.0, s, md * 100.0, v, stat, pval,
+            );
+        }
+
+        lines.push(row);
+    }
+
+    // Annual returns
+    let tables: Vec<Vec<(i32, f64)>> = strategies
+        .iter()
+        .map(|s| annual_returns_table(&s.equity, dates, start_year))
+        .collect();
+
+    let mut all_years: std::collections::BTreeSet<i32> = std::collections::BTreeSet::new();
+    for tbl in &tables {
+        for (year, _) in tbl {
+            all_years.insert(*year);
+        }
+    }
+
+    if !all_years.is_empty() {
+        lines.push(String::new());
+        lines.push(format!("## Annual Returns (from {})", start_year));
+        lines.push(String::new());
+        let mut header = "| Year |".to_string();
+        let mut sep = "|------|".to_string();
+        for strat in strategies {
+            header += &format!(" {} |", strat.name);
+            sep += &format!("{}|", "-".repeat(strat.name.len() + 2));
+        }
+        lines.push(header);
+        lines.push(sep);
+
+        for year in &all_years {
+            let mut row = format!("| {} |", year);
+            for tbl in &tables {
+                if let Some((_, ret)) = tbl.iter().find(|(y, _)| y == year) {
+                    row += &format!(" {:.1}% |", ret * 100.0);
+                } else {
+                    row += " N/A |";
+                }
+            }
+            lines.push(row);
+        }
+    }
+
+    lines.join("\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

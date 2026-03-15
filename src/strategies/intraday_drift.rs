@@ -83,13 +83,14 @@ pub struct IntradayDriftArgs {
 /// Run the intraday drift strategy.
 pub fn run(args: &IntradayDriftArgs, fmt: OutputFormat) -> Result<()> {
     let json_mode = fmt == OutputFormat::Json;
+    let quiet = json_mode || fmt == OutputFormat::Md;
     let ticker = args.ticker.to_uppercase();
 
-    if !json_mode {
+    if !quiet {
         println!("Loading {} from bronze parquet...", ticker);
     }
     let mut spy = load_ticker_ohlcv(&ticker, None, None)?;
-    if !json_mode {
+    if !quiet {
         println!(
             "  {}: {} bars, {} to {}",
             ticker,
@@ -169,6 +170,22 @@ pub fn run(args: &IntradayDriftArgs, fmt: OutputFormat) -> Result<()> {
             ),
         };
         println!("{}", serde_json::to_string(&output)?);
+    } else if fmt == OutputFormat::Md {
+        let mode = if args.short {
+            "Short Open, Cover Close"
+        } else {
+            "Intraday Drift (Open→Close)"
+        };
+        println!("{}", crate::strategies::common::format_results_md(
+            &format!("{} — {}", mode, ticker),
+            &ticker,
+            &dates,
+            years,
+            args.capital,
+            &strategies,
+            &[],
+            args.start_year_table,
+        ));
     } else {
         println!();
         println!("{}", "=".repeat(80));

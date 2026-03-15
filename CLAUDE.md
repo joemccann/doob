@@ -117,16 +117,23 @@ All breadth strategies resolve universe membership locally:
 
 Preset JSON format: `{ "name": "ndx100", "tickers": ["AAPL", "MSFT", ...] }`
 
-## JSON Output (for AI agents / programmatic use)
+## Output Formats
 
-All strategies support `--output json` for structured machine-readable output:
+All strategies support three output formats via the global `--output` flag:
+
+| Format | Flag | Description |
+|--------|------|-------------|
+| Text | `--output text` | Default. Human-readable tables with progress messages. |
+| JSON | `--output json` | Structured JSON object. No progress text. |
+| Markdown | `--output md` | Clean markdown with headers and tables. No progress text. |
 
 ```bash
 doob --output json run overnight-drift --no-vix-filter
+doob --output md run breadth-washout --universe ndx100
 doob run intraday-drift --ticker SPY --output json
 ```
 
-The flag is global and can appear before or after the subcommand. When active, all human-readable text and progress messages are suppressed — only a single JSON object is written to stdout.
+The flag is global and can appear before or after the subcommand.
 
 ## Install & Update
 
@@ -149,14 +156,14 @@ cargo build --release && cp target/release/doob ~/.cargo/bin/doob
 # Unit tests (145 tests, < 0.1s, no external dependencies)
 cargo test
 
-# CLI integration tests (93 tests, requires ~/market-warehouse)
+# CLI integration tests (106 tests, requires ~/market-warehouse)
 ./tests/cli_integration.sh
 ```
 
 ### Test Rules
 
-1. 145 unit tests covering all modules (mock all I/O, use `tempfile`)
-2. 93 CLI integration tests covering every command, flag combination, output format, and error case
+1. 146 unit tests covering all modules (mock all I/O, use `tempfile`)
+2. 106 CLI integration tests covering every command, flag combination, output format (text/json/md), and error case
 3. Tests run with `set -euo pipefail` — any unexpected failure stops the suite
 4. Edge cases tested: future dates, 0 sessions, missing tickers, invalid modes, invalid output formats
 

@@ -330,6 +330,7 @@ pub struct Ndx100SmaBreadthArgs {
 /// Run the NDX-100 SMA breadth analysis.
 pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
     let json_mode = fmt == OutputFormat::Json;
+    let quiet = json_mode || fmt == OutputFormat::Md;
     let preset_path = args.preset.clone().unwrap_or_else(default_preset);
     let warehouse = args.warehouse.clone().unwrap_or_else(default_warehouse);
     let end_date = args.end_date.parse::<NaiveDate>()?;
@@ -341,7 +342,7 @@ pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
     let buffer_days = (args.sessions * 2).max(args.lookback * 10) as i64;
     let start_date = end_date - chrono::Duration::days(buffer_days);
 
-    if !json_mode {
+    if !quiet {
         println!("Loading close prices for {} symbols...", tickers.len());
     }
     let (price_data, missing) =
@@ -363,7 +364,7 @@ pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
     let dates: Vec<NaiveDate> = all_dates.keys().copied().collect();
     let symbols: Vec<String> = price_data.iter().map(|(s, _)| s.clone()).collect();
 
-    if !json_mode {
+    if !quiet {
         println!("Computing breadth...");
     }
     let breadth = compute_breadth(&dates, &symbols, &prices_map, args.lookback, universe_size)?;
@@ -400,6 +401,59 @@ pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
             "trailing": trailing,
         });
         println!("{}", serde_json::to_string(&output)?);
+    } else if fmt == OutputFormat::Md {
+        let mut lines = vec![
+            "# NASDAQ-100 Breadth Report".to_string(),
+            String::new(),
+            format!("**Universe size:** {}  ", universe_size),
+            format!(
+                "**Window:** {} to {} ({} sessions)  ",
+                trailing.first().unwrap().trade_date,
+                trailing.last().unwrap().trade_date,
+                trailing.len()
+            ),
+            format!("**Signal:** close > {}-day SMA  ", args.lookback),
+        ];
+
+        if !missing.is_empty() {
+            lines.push(format!("**Missing:** {} ({})", missing.len(), missing.join(", ")));
+        }
+
+        lines.push(String::new());
+        lines.push(format!("## As of {}", target_row.trade_date));
+        lines.push(String::new());
+        lines.push(format!(
+            "- **Above {}-day SMA:** {} ({:.2}%)",
+            args.lookback, target_row.above_count, target_row.pct_above
+        ));
+        lines.push(format!(
+            "- **At or below {}-day SMA:** {} ({:.2}%)",
+            args.lookback, target_row.below_or_equal_count, target_row.pct_below_or_equal
+        ));
+        lines.push(format!("- **Unavailable:** {}", target_row.unavailable_count));
+
+        lines.push(String::new());
+        lines.push("## Distribution".to_string());
+        lines.push(String::new());
+        lines.push(format!("| Stat | Value |"));
+        lines.push(format!("|------|-------|"));
+        lines.push(format!("| Mean | {:.2}% |", summary.mean));
+        lines.push(format!("| Median | {:.2}% |", summary.median));
+        lines.push(format!("| Std Dev | {:.2} pts |", summary.std));
+        lines.push(format!("| Min / Max | {:.2}% / {:.2}% |", summary.min, summary.max));
+        lines.push(format!("| P05 / P10 / P25 | {:.2}% / {:.2}% / {:.2}% |", summary.p05, summary.p10, summary.p25));
+        lines.push(format!("| P75 / P90 / P95 | {:.2}% / {:.2}% / {:.2}% |", summary.p75, summary.p90, summary.p95));
+
+        lines.push(String::new());
+        lines.push("## Breadth Histogram".to_string());
+        lines.push(String::new());
+        lines.push("| Breadth Band | Days | Share % |".to_string());
+        lines.push("|--------------|------|---------|".to_string());
+        for bin in &histogram {
+            lines.push(format!("| {} | {} | {:.1} |", bin.label, bin.days, bin.share_of_days_pct));
+        }
+
+        println!("{}", lines.join("\n"));
     } else {
         // Format report
         println!("NASDAQ-100 Breadth Report");

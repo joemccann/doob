@@ -1211,6 +1211,113 @@ fn format_strategy_report(results: &StrategyResults) -> String {
     lines.join("\n")
 }
 
+fn format_strategy_report_md(results: &StrategyResults) -> String {
+    let config = &results.config;
+    let target_row = &results.target_row;
+    let trailing = &results.trailing_breadth;
+
+    let mut lines = vec![
+        format!("# Breadth Washout Strategy ({})", results.universe_label),
+        String::new(),
+        format!(
+            "**Window:** {} to {} ({} sessions)  ",
+            trailing.first().unwrap().trade_date,
+            trailing.last().unwrap().trade_date,
+            trailing.len()
+        ),
+        format!(
+            "**Signal:** {}  ",
+            signal_summary(&config.signal_mode, config.signal_threshold, config.lookback)
+                .unwrap_or_default()
+        ),
+        format!(
+            "**Forward returns:** {} for {}  ",
+            if config.adjusted_forward_returns { "adjusted close" } else { "close" },
+            config.forward_assets.join(", ")
+        ),
+        String::new(),
+        format!("## As of {}", target_row.trade_date),
+        String::new(),
+        format!("- **Above {}-day SMA:** {}", config.lookback, target_row.above_count),
+        format!(
+            "- **At or below {}-day SMA:** {} ({:.2}%)",
+            config.lookback, target_row.below_or_equal_count, target_row.pct_below_or_equal
+        ),
+        format!("- **Signals in trailing window:** {}", results.triggered.len()),
+    ];
+
+    if results.missing_constituent_prices.is_empty() {
+        lines.push("- **Missing constituent prices:** none".to_string());
+    } else {
+        lines.push(format!(
+            "- **Missing constituent prices:** {}",
+            results.missing_constituent_prices.join(", ")
+        ));
+    }
+
+    // Membership changes
+    if !results.membership_changes.is_empty() {
+        lines.push(String::new());
+        lines.push("## Membership Changes".to_string());
+        lines.push(String::new());
+        lines.push("| Date | Added | Removed |".to_string());
+        lines.push("|------|-------|---------|".to_string());
+        for change in &results.membership_changes {
+            lines.push(format!(
+                "| {} | {} | {} |",
+                change.trade_date,
+                change.added.join(", "),
+                change.removed.join(", "),
+            ));
+        }
+    }
+
+    // Forward return summary
+    lines.push(String::new());
+    lines.push("## Forward Returns".to_string());
+    lines.push(String::new());
+    lines.push("| Asset | Horizon | Signals | Obs | Mean % | Median % | Win Rate % |".to_string());
+    lines.push("|-------|---------|---------|-----|--------|----------|------------|".to_string());
+    for row in &results.forward_summary {
+        lines.push(format!(
+            "| {} | {} | {} | {} | {:.2} | {:.2} | {:.1} |",
+            row.asset, row.horizon, row.signals, row.observations,
+            row.mean_return_pct, row.median_return_pct, row.positive_rate_pct,
+        ));
+    }
+
+    // Risk metrics per asset
+    let mut seen_assets: Vec<String> = Vec::new();
+    for row in &results.forward_summary {
+        if !seen_assets.contains(&row.asset) {
+            seen_assets.push(row.asset.clone());
+        }
+    }
+
+    for asset in &seen_assets {
+        lines.push(String::new());
+        lines.push(format!("## Risk Metrics — {asset}"));
+        lines.push(String::new());
+        lines.push("| Horizon | Sharpe | Sortino | Max DD | VaR 95 | CVaR 95 | Std Dev | Best | Worst | Prof Factor |".to_string());
+        lines.push("|---------|--------|---------|--------|--------|---------|---------|------|-------|-------------|".to_string());
+        for row in results.forward_summary.iter().filter(|r| r.asset == *asset) {
+            let pf_str = if row.profit_factor.is_infinite() {
+                "∞".to_string()
+            } else {
+                format!("{:.2}", row.profit_factor)
+            };
+            lines.push(format!(
+                "| {} | {:.3} | {:.3} | {:.2}% | {:.2}% | {:.2}% | {:.2}% | {:.2}% | {:.2}% | {} |",
+                row.horizon, row.sharpe, row.sortino,
+                row.max_drawdown_pct, row.var_95_pct, row.cvar_95_pct,
+                row.std_dev_pct, row.best_trade_pct, row.worst_trade_pct, pf_str,
+            ));
+        }
+    }
+
+    lines.join("\n")
+}
+
 fn save_strategy_outputs(results: &StrategyResults) -> Result<Vec<(String, PathBuf)>> {
     let config = &results.config;
     let end_label = &config.end_date;
@@ -1783,6 +1890,8 @@ pub fn run(args: &BreadthWashoutArgs, fmt: OutputFormat) -> Result<()> {
             }).collect::<Vec<_>>(),
         });
         println!("{}", serde_json::to_string(&output)?);
+    } else if fmt == OutputFormat::Md {
+        println!("{}", format_strategy_report_md(&results));
     } else {
         println!("{}", format_strategy_report(&results));
         println!("\nFiles");

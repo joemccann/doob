@@ -22,12 +22,13 @@ use crate::strategies::overnight_drift::OvernightDriftArgs;
 pub enum OutputFormat {
     Text,
     Json,
+    Md,
 }
 
 #[derive(Parser)]
 #[command(name = "doob", about = "Quantitative strategy research and backtesting")]
 pub struct Cli {
-    /// Output format: text (default) or json (for programmatic consumption)
+    /// Output format: text (default), json (structured), or md (markdown)
     #[arg(long, default_value = "text", global = true)]
     pub output: OutputFormat,
 
@@ -275,6 +276,13 @@ mod tests {
         let cli =
             Cli::try_parse_from(&["doob", "run", "overnight-drift", "--output", "json"]).unwrap();
         assert_eq!(cli.output, OutputFormat::Json);
+    }
+
+    #[test]
+    fn test_output_md_flag() {
+        let cli =
+            Cli::try_parse_from(&["doob", "--output", "md", "run", "overnight-drift"]).unwrap();
+        assert_eq!(cli.output, OutputFormat::Md);
     }
 
     #[test]

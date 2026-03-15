@@ -289,6 +289,18 @@ run_test "global --output json breadth-dual-ma" \
     "$DOOB --output json run breadth-dual-ma"
 run_test "global --output json ndx100-sma-breadth" \
     "$DOOB --output json run ndx100-sma-breadth"
+run_test "global --output md overnight-drift" \
+    "$DOOB --output md run overnight-drift --no-plots --no-vix-filter"
+run_test "global --output md intraday-drift" \
+    "$DOOB --output md run intraday-drift --no-plots"
+run_test "global --output md breadth-washout" \
+    "$DOOB --output md run breadth-washout"
+run_test "global --output md breadth-ma" \
+    "$DOOB --output md run breadth-ma"
+run_test "global --output md breadth-dual-ma" \
+    "$DOOB --output md run breadth-dual-ma"
+run_test "global --output md ndx100-sma-breadth" \
+    "$DOOB --output md run ndx100-sma-breadth"
 run_test_fail "invalid output format" \
     "$DOOB --output csv run overnight-drift --no-plots"
 
@@ -310,6 +322,27 @@ run_test_grep "json breadth-dual-ma is valid JSON" "strategy" \
     "$DOOB --output json run breadth-dual-ma | python3 -m json.tool > /dev/null && echo strategy"
 run_test_grep "json ndx100-sma-breadth is valid JSON" "strategy" \
     "$DOOB --output json run ndx100-sma-breadth | python3 -m json.tool > /dev/null && echo strategy"
+
+echo ""
+
+# ---------------------------------------------------------------
+echo "${YELLOW}── Markdown output validation ──${NC}"
+# ---------------------------------------------------------------
+
+run_test_grep "md overnight-drift has h1" "^# " \
+    "$DOOB --output md run overnight-drift --no-plots --no-vix-filter"
+run_test_grep "md overnight-drift has table" "|---" \
+    "$DOOB --output md run overnight-drift --no-plots --no-vix-filter"
+run_test_grep "md breadth-washout has h1" "^# " \
+    "$DOOB --output md run breadth-washout"
+run_test_grep "md breadth-washout has Forward Returns table" "Forward Returns" \
+    "$DOOB --output md run breadth-washout"
+run_test_grep "md breadth-dual-ma has Risk Metrics" "Risk Metrics" \
+    "$DOOB --output md run breadth-dual-ma"
+run_test_grep "md ndx100-sma-breadth has Distribution" "Distribution" \
+    "$DOOB --output md run ndx100-sma-breadth"
+run_test_grep "md has no log noise" "^#" \
+    "$DOOB --output md run breadth-washout | head -1"
 
 echo ""
 

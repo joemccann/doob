@@ -70,22 +70,23 @@ All price data is read from local warehouse parquet files. No Yahoo Finance or e
 
 A 10-year, 101-ticker backtest with full risk metrics runs in **~0.3 seconds**.
 
-## JSON Output
+## Output Formats
 
-For AI agents or programmatic consumption, pass `--output json` to get structured output:
+All strategies support `--output text` (default), `--output json`, and `--output md`:
 
 ```bash
 doob --output json run overnight-drift --no-vix-filter
+doob --output md run breadth-washout --universe ndx100
 doob run intraday-drift --ticker SPY --output json
 ```
 
 ## Testing
 
 ```bash
-# Unit tests (145 tests)
+# Unit tests (146 tests)
 cargo test
 
-# CLI integration tests (93 tests, requires ~/market-warehouse)
+# CLI integration tests (106 tests, requires ~/market-warehouse)
 ./tests/cli_integration.sh
 ```
 

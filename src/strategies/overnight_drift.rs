@@ -212,11 +212,12 @@ pub struct OvernightDriftArgs {
 /// Run the overnight drift strategy.
 pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
     let json_mode = fmt == OutputFormat::Json;
-    if !json_mode {
+    let quiet = json_mode || fmt == OutputFormat::Md;
+    if !quiet {
         println!("Loading SPY from bronze parquet...");
     }
     let mut spy = load_ticker_ohlcv("SPY", None, None)?;
-    if !json_mode {
+    if !quiet {
         println!(
             "  SPY: {} bars, {} to {}",
             spy.len(),
@@ -227,11 +228,11 @@ pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
 
     let include_vix = !args.no_vix_filter;
     let vix_filter_data = if include_vix {
-        if !json_mode {
+        if !quiet {
             println!("Loading VIX from CBOE...");
         }
         let vix_raw = load_vix_from_cboe(None)?;
-        if !json_mode {
+        if !quiet {
             println!(
                 "  VIX: {} bars, {} to {}",
                 vix_raw.len(),
@@ -369,6 +370,17 @@ pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
             ),
         };
         println!("{}", serde_json::to_string(&output)?);
+    } else if fmt == OutputFormat::Md {
+        println!("{}", crate::strategies::common::format_results_md(
+            "Overnight Drift Backtest",
+            "SPY",
+            &dates,
+            years,
+            args.capital,
+            &strategies,
+            &adf_results,
+            args.start_year_table,
+        ));
     } else {
         println!();
         println!("{}", "=".repeat(80));
