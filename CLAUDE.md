@@ -128,10 +128,24 @@ doob run intraday-drift --ticker SPY --output json
 
 The flag is global and can appear before or after the subcommand. When active, all human-readable text and progress messages are suppressed — only a single JSON object is written to stdout.
 
-## Building & Testing
+## Install & Update
+
+Build and install to `~/.cargo/bin` (must be in `$PATH`):
 
 ```bash
 cargo build --release
+cp target/release/doob ~/.cargo/bin/doob
+```
+
+After any code changes, rebuild and reinstall:
+
+```bash
+cargo build --release && cp target/release/doob ~/.cargo/bin/doob
+```
+
+## Testing
+
+```bash
 cargo test
 ```
 

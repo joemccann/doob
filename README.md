@@ -9,9 +9,25 @@ Quantitative strategy research and backtesting CLI. Reads all price data from lo
 
 ## Install
 
+Build and install to `~/.cargo/bin` (must be in your `$PATH`):
+
 ```bash
 cargo build --release
-# Binary at ./target/release/doob
+cp target/release/doob ~/.cargo/bin/doob
+```
+
+Verify:
+
+```bash
+doob list-strategies
+```
+
+## Update
+
+After pulling changes or making edits, rebuild and reinstall:
+
+```bash
+cargo build --release && cp target/release/doob ~/.cargo/bin/doob
 ```
 
 ## Quick Start
