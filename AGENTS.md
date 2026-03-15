@@ -9,6 +9,7 @@ It complements `CLAUDE.md` with mandatory constraints for automated work.
 
 - Autoresearch loops MUST be implemented and executed in Rust.
 - Do not use Python for looping or orchestration of candidate generation, backtest runs, scoring, or ranking.
+- This repository’s automated discovery workflow is paper-research-first: use arXiv/Exa seeds, then execute as `paper-research`.
 
 ## Doob architecture at a glance
 
@@ -24,9 +25,8 @@ It complements `CLAUDE.md` with mandatory constraints for automated work.
 - Build:
   - `cargo build --release`
 - Run:
-  - `cargo run --release --bin autoresearch_loop -- --seed-web --candidates 60 --top 15`
-  - verbose:
-    - `cargo run --release --bin autoresearch_loop -- --seed-web --verbose`
+  - `cargo run --release --bin autoresearch_loop -- --seed-web --candidates 100 --top 10 --verbose`
+  - `cargo run --release --bin autoresearch_loop -- --seed-web --verbose`
   - Optional dates/sessions override:
     - `--train-start 2020-01-01 --train-end 2024-12-31 --test-start 2025-01-01 --test-end 2026-03-11 --train-sessions 1008 --test-sessions 252`
   - Optional binary override:
@@ -35,39 +35,31 @@ It complements `CLAUDE.md` with mandatory constraints for automated work.
 ## Data and candidate constraints
 
 - Backtests use local warehouse parquet data only.
-- Candidate execution must stay within doob-native strategies:
-  - `breadth-washout`
-  - `breadth-ma`
-  - `breadth-dual-ma`
-  - `ndx100-breadth-washout`
-  - `overnight-drift`
-  - `intraday-drift`
+- Loop candidates must execute as `paper-research` only.
+- The loop should run with Exa/arXiv candidate seeding via `--seed-web` for new strategy discovery.
+- Candidate pool should target at least 100 research candidates by default.
 
 ## Output artifacts
 
 - `reports/autoresearch-ledger.jsonl`
 - `reports/autoresearch-exa-ideas.json` (when `--seed-web` is set)
-- Prefer reading these after each run before accepting candidate upgrades.
+- `reports/autoresearch-top10-interactive-report.html`
+- Prefer reading these after each production loop before promoting candidates.
 
 ## Required behavior for the loop
 
 - Candidate discovery uses arXiv-focused Exa search when `--seed-web` is provided.
-- Build a net-new candidate pool from both seeded variants and deterministic grids.
+- Build net-new candidates from web-seeded hypotheses + deterministic paper-research mutations.
 - Run walk-forward train/test windows.
-- Score train/test and rank using the existing formulas in the report.
+- Score train/test and rank using the loop scoring formula.
 - Keep only candidates that pass JSON parsing and metric gates.
 
 ## Environment
 
 - For seed fetching, `EXA_API_KEY` must be loaded in environment.
-- For local runs, keep `EXA_API_KEY` in `.env`.
-- Start from `.env.example`:
+- `.env` should include this key; start from `.env.example`:
   - `cp .env.example .env`
   - Fill `EXA_API_KEY`.
 - One-time sync from shell:
-  - `source ~/.zshrc >/dev/null 2>&1 && printf 'EXA_API_KEY=%s\n' \"$EXA_API_KEY\" > .env`
-
-## Notes
-
-- Do not reintroduce Python scripts for the autoresearch pipeline once the Rust binary is present.
-- If Python is required for manual data exploration, keep it outside the automated loop path.
+  - `source ~/.zshrc >/dev/null 2>&1 && printf 'EXA_API_KEY=%s\n' "$EXA_API_KEY" > .env`
+- `EXA_API_KEY` is required for seeded production loops.

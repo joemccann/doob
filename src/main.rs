@@ -45,6 +45,9 @@ fn main() -> Result<()> {
                 StrategyCommand::Ndx100BreadthWashout(args) => {
                     doob::strategies::ndx100_breadth_washout::run(&args, fmt)?;
                 }
+                StrategyCommand::PaperResearch(args) => {
+                    doob::strategies::paper_research::run(&args, fmt)?;
+                }
             }
 
             if fmt == OutputFormat::Text {

@@ -57,15 +57,15 @@ Build and run the automated candidate-discovery loop from Rust:
 # build binaries
 cargo build --release
 
-# run with verbose output and arXiv/Exa seeding
-# default: web seeds only (plus novelty mutations), ranked before any fallback grid candidates
+# run with arXiv/Exa web seeding and web-driven net-new candidate exploration
+# defaults: --seed-web --candidates 100 --top 10 --verbose --sessions 1008/252
 cargo run --release --bin autoresearch_loop -- --seed-web --verbose
 
-# run seed-web loop with mixed seeded + grid candidates and keep top N
-cargo run --release --bin autoresearch_loop -- --seed-web --include-grid --verbose
+# set explicit run envelope and ranking depth
+cargo run --release --bin autoresearch_loop -- --seed-web --candidates 100 --top 10 --verbose
 
-# limit candidates and keep top N
-cargo run --release --bin autoresearch_loop -- --seed-web --candidates 60 --top 15
+# run a larger search (or shorter top list) as needed
+cargo run --release --bin autoresearch_loop -- --seed-web --candidates 200 --top 15 --verbose
 ```
 
 Optional settings:
@@ -74,7 +74,8 @@ Optional settings:
 - `--train-sessions`, `--test-sessions`
 - `--doob-bin target/release/doob`
 - `--random-seed`
-- `--include-grid` to add legacy grid/baseline candidates after seeded candidates (default off)
+- paper-research loop uses `paper-research` strategy only (no built-in breadth/overnight baseline strategies are queued by default)
+- `--seed-web` uses Exa/arXiv discovery and then generates deterministic mutations around web-proposed ideas
 
 Output artifacts:
 

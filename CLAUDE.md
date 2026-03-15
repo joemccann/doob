@@ -6,12 +6,14 @@ Rust binary for quantitative strategy research. Reads from the shared `~/market-
 
 - Use `cargo build --release` (or `cargo build` for debug) to build the Rust binaries.
 - Run autoresearch with the Rust binary, not Python:
-  - `cargo run --release --bin autoresearch_loop -- --seed-web --candidates 60 --top 15`
+  - `cargo run --release --bin autoresearch_loop -- --seed-web --candidates 100 --top 10 --verbose`
   - verbose trace:
-    - `cargo run --release --bin autoresearch_loop -- --seed-web --verbose`
+    - `cargo run --release --bin autoresearch_loop -- --seed-web --candidates 100 --top 10 --verbose`
   - default output now includes strategy category, candidate assets, horizon, and rationale summary in the results table.
+  - **production mode is paper-research only**: arXiv/Exa-hypothesis-driven loops are executed as `paper-research` strategies.
   - `cargo run --release --bin autoresearch_loop -- --doob-bin target/release/doob --seed-web --train-start 2020-01-01 --train-end 2024-12-31 --test-start 2025-01-01 --test-end 2026-03-11 --train-sessions 1008 --test-sessions 252`
 - Results are appended to `reports/autoresearch-ledger.jsonl` and `reports/autoresearch-exa-ideas.json`.
+- Interactive report output: `reports/autoresearch-top10-interactive-report.html`.
 - Exa seeding uses `EXA_API_KEY` from environment; keep python script usage out of the autoresearch path.
 - Use `.env.example` as a starter file:
   - `cp .env.example .env`
@@ -79,6 +81,7 @@ Expected parquet columns: `trade_date`, `open`, `high`, `low`, `close`, `volume`
 ```bash
 doob run overnight-drift --no-vix-filter --no-plots
 doob run intraday-drift --ticker SPY --short
+doob run paper-research --output json --asset TQQQ --rule rsi_reversion --fast-window 16 --slow-window 18 --rsi-window 16 --rsi-oversold 28 --rsi-overbought 76 --vol-window 20 --vol-cap 0.40
 doob run breadth-washout --universe ndx100 --signal-mode oversold
 doob run breadth-washout --universe ndx100 --lookback 50 --signal-mode oversold --threshold 80
 doob run ndx100-sma-breadth --end-date 2026-03-11

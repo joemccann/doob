@@ -14,6 +14,7 @@ use crate::strategies::breadth_dual_ma::BreadthDualMaArgs;
 use crate::strategies::breadth_ma::BreadthMaArgs;
 use crate::strategies::breadth_washout::BreadthWashoutArgs;
 use crate::strategies::intraday_drift::IntradayDriftArgs;
+use crate::strategies::paper_research::PaperResearchArgs;
 use crate::strategies::ndx100_breadth_washout::Ndx100BreadthWashoutArgs;
 use crate::strategies::ndx100_sma_breadth::Ndx100SmaBreadthArgs;
 use crate::strategies::overnight_drift::OvernightDriftArgs;
@@ -65,6 +66,8 @@ pub enum StrategyCommand {
     Ndx100SmaBreadth(Ndx100SmaBreadthArgs),
     /// NDX-100 breadth washout wrapper
     Ndx100BreadthWashout(Ndx100BreadthWashoutArgs),
+    /// Paper-research strategy synthesized from paper-inspired rules
+    PaperResearch(PaperResearchArgs),
 }
 
 pub fn list_strategies() {
@@ -76,6 +79,7 @@ pub fn list_strategies() {
     println!("  ndx100-breadth-washout");
     println!("  ndx100-sma-breadth");
     println!("  overnight-drift");
+    println!("  paper-research");
 }
 
 pub fn list_presets() {
@@ -256,6 +260,30 @@ mod tests {
                 strategy: StrategyCommand::Ndx100BreadthWashout(_)
             }
         ));
+    }
+
+    #[test]
+    fn test_parse_paper_research() {
+        let cli = Cli::try_parse_from(&[
+            "doob",
+            "run",
+            "paper-research",
+            "--rule",
+            "trend_pullback",
+            "--asset",
+            "QQQ",
+        ])
+        .unwrap();
+        match cli.command {
+            Command::Run { strategy } => match strategy {
+                StrategyCommand::PaperResearch(args) => {
+                    assert_eq!(args.asset, "QQQ");
+                    assert_eq!(args.rule, "trend_pullback");
+                }
+                _ => panic!("Expected PaperResearch"),
+            },
+            _ => panic!("Expected Run command"),
+        }
     }
 
     #[test]
