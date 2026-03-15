@@ -146,15 +146,19 @@ cargo build --release && cp target/release/doob ~/.cargo/bin/doob
 ## Testing
 
 ```bash
+# Unit tests (145 tests, < 0.1s, no external dependencies)
 cargo test
+
+# CLI integration tests (93 tests, requires ~/market-warehouse)
+./tests/cli_integration.sh
 ```
 
 ### Test Rules
 
-1. 145 unit tests covering all modules
-2. Use `tempfile` crate for temporary directories in tests
-3. Mock all external I/O (file paths, network requests)
-4. Tests run in < 0.1s (no real data dependencies)
+1. 145 unit tests covering all modules (mock all I/O, use `tempfile`)
+2. 93 CLI integration tests covering every command, flag combination, output format, and error case
+3. Tests run with `set -euo pipefail` — any unexpected failure stops the suite
+4. Edge cases tested: future dates, 0 sessions, missing tickers, invalid modes, invalid output formats
 
 ## Key Dependencies
 

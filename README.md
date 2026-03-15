@@ -82,7 +82,11 @@ doob run intraday-drift --ticker SPY --output json
 ## Testing
 
 ```bash
+# Unit tests (145 tests)
 cargo test
+
+# CLI integration tests (93 tests, requires ~/market-warehouse)
+./tests/cli_integration.sh
 ```
 
 ## License
