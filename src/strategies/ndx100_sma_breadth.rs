@@ -2,11 +2,10 @@
 ///
 /// Computes for each trading session how many NDX-100 members closed above
 /// their 5-day SMA and summarizes the distribution.
-
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
@@ -14,12 +13,8 @@ use crate::cli::OutputFormat;
 use crate::config::presets_dir;
 use crate::data::readers::load_close_frame;
 
-pub const DEFAULT_FORWARD_HORIZONS: &[(&str, usize)] = &[
-    ("1d", 1),
-    ("1w", 5),
-    ("1m", 21),
-    ("3m", 63),
-];
+pub const DEFAULT_FORWARD_HORIZONS: &[(&str, usize)] =
+    &[("1d", 1), ("1w", 5), ("1m", 21), ("3m", 63)];
 
 fn default_preset() -> PathBuf {
     presets_dir().join("ndx100.json")
@@ -71,15 +66,15 @@ pub fn compute_breadth(
     // Compute rolling SMA for each symbol
     let mut sma_map: HashMap<(NaiveDate, &str), f64> = HashMap::new();
     for sym in symbols {
-        let mut sym_prices: Vec<(NaiveDate, f64)> = prices
-            .get(sym)
-            .cloned()
-            .unwrap_or_default();
+        let mut sym_prices: Vec<(NaiveDate, f64)> = prices.get(sym).cloned().unwrap_or_default();
         sym_prices.sort_by_key(|(d, _)| *d);
 
         for i in 0..sym_prices.len() {
             if i + 1 >= lookback {
-                let sum: f64 = sym_prices[i + 1 - lookback..=i].iter().map(|(_, p)| p).sum();
+                let sum: f64 = sym_prices[i + 1 - lookback..=i]
+                    .iter()
+                    .map(|(_, p)| p)
+                    .sum();
                 sma_map.insert((sym_prices[i].0, sym.as_str()), sum / lookback as f64);
             }
         }
@@ -91,9 +86,10 @@ pub fn compute_breadth(
         let mut above_count = 0;
 
         for sym in symbols {
-            if let (Some(&price), Some(&sma)) =
-                (price_map.get(&(date, sym.as_str())), sma_map.get(&(date, sym.as_str())))
-            {
+            if let (Some(&price), Some(&sma)) = (
+                price_map.get(&(date, sym.as_str())),
+                sma_map.get(&(date, sym.as_str())),
+            ) {
                 eligible_count += 1;
                 if price > sma {
                     above_count += 1;
@@ -311,7 +307,11 @@ pub struct Ndx100SmaBreadthArgs {
     #[arg(long, help = "Warehouse root path")]
     pub warehouse: Option<PathBuf>,
 
-    #[arg(long, default_value = "2026-03-11", help = "Inclusive analysis end date (YYYY-MM-DD)")]
+    #[arg(
+        long,
+        default_value = "2026-03-11",
+        help = "Inclusive analysis end date (YYYY-MM-DD)"
+    )]
     pub end_date: String,
 
     #[arg(long, default_value_t = 252, help = "Trailing trading sessions")]
@@ -416,7 +416,11 @@ pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
         ];
 
         if !missing.is_empty() {
-            lines.push(format!("**Missing:** {} ({})", missing.len(), missing.join(", ")));
+            lines.push(format!(
+                "**Missing:** {} ({})",
+                missing.len(),
+                missing.join(", ")
+            ));
         }
 
         lines.push(String::new());
@@ -430,7 +434,10 @@ pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
             "- **At or below {}-day SMA:** {} ({:.2}%)",
             args.lookback, target_row.below_or_equal_count, target_row.pct_below_or_equal
         ));
-        lines.push(format!("- **Unavailable:** {}", target_row.unavailable_count));
+        lines.push(format!(
+            "- **Unavailable:** {}",
+            target_row.unavailable_count
+        ));
 
         lines.push(String::new());
         lines.push("## Distribution".to_string());
@@ -440,9 +447,18 @@ pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
         lines.push(format!("| Mean | {:.2}% |", summary.mean));
         lines.push(format!("| Median | {:.2}% |", summary.median));
         lines.push(format!("| Std Dev | {:.2} pts |", summary.std));
-        lines.push(format!("| Min / Max | {:.2}% / {:.2}% |", summary.min, summary.max));
-        lines.push(format!("| P05 / P10 / P25 | {:.2}% / {:.2}% / {:.2}% |", summary.p05, summary.p10, summary.p25));
-        lines.push(format!("| P75 / P90 / P95 | {:.2}% / {:.2}% / {:.2}% |", summary.p75, summary.p90, summary.p95));
+        lines.push(format!(
+            "| Min / Max | {:.2}% / {:.2}% |",
+            summary.min, summary.max
+        ));
+        lines.push(format!(
+            "| P05 / P10 / P25 | {:.2}% / {:.2}% / {:.2}% |",
+            summary.p05, summary.p10, summary.p25
+        ));
+        lines.push(format!(
+            "| P75 / P90 / P95 | {:.2}% / {:.2}% / {:.2}% |",
+            summary.p75, summary.p90, summary.p95
+        ));
 
         lines.push(String::new());
         lines.push("## Breadth Histogram".to_string());
@@ -450,7 +466,10 @@ pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
         lines.push("| Breadth Band | Days | Share % |".to_string());
         lines.push("|--------------|------|---------|".to_string());
         for bin in &histogram {
-            lines.push(format!("| {} | {} | {:.1} |", bin.label, bin.days, bin.share_of_days_pct));
+            lines.push(format!(
+                "| {} | {} | {:.1} |",
+                bin.label, bin.days, bin.share_of_days_pct
+            ));
         }
 
         println!("{}", lines.join("\n"));
@@ -505,9 +524,15 @@ pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
 
         println!();
         println!("Breadth histogram");
-        println!("{:>15} {:>6} {:>18}", "breadth_band", "days", "share_of_days_pct");
+        println!(
+            "{:>15} {:>6} {:>18}",
+            "breadth_band", "days", "share_of_days_pct"
+        );
         for bin in &histogram {
-            println!("{:>15} {:>6} {:>17.1}", bin.label, bin.days, bin.share_of_days_pct);
+            println!(
+                "{:>15} {:>6} {:>17.1}",
+                bin.label, bin.days, bin.share_of_days_pct
+            );
         }
     }
 
@@ -518,7 +543,10 @@ pub fn run(args: &Ndx100SmaBreadthArgs, fmt: OutputFormat) -> Result<()> {
         }
         let mut wtr = std::fs::File::create(csv_path)?;
         use std::io::Write;
-        writeln!(wtr, "trade_date,eligible_count,above_count,below_or_equal_count,unavailable_count,pct_above,pct_below_or_equal")?;
+        writeln!(
+            wtr,
+            "trade_date,eligible_count,above_count,below_or_equal_count,unavailable_count,pct_above,pct_below_or_equal"
+        )?;
         for row in &trailing {
             writeln!(
                 wtr,
@@ -641,7 +669,11 @@ mod tests {
     }
 
     // Helper to create test price data
-    fn make_test_prices() -> (Vec<NaiveDate>, Vec<String>, HashMap<String, Vec<(NaiveDate, f64)>>) {
+    fn make_test_prices() -> (
+        Vec<NaiveDate>,
+        Vec<String>,
+        HashMap<String, Vec<(NaiveDate, f64)>>,
+    ) {
         let dates = vec![
             NaiveDate::from_ymd_opt(2026, 3, 2).unwrap(),
             NaiveDate::from_ymd_opt(2026, 3, 3).unwrap(),
@@ -656,17 +688,32 @@ mod tests {
         let symbols = vec!["AAA".to_string(), "BBB".to_string(), "CCC".to_string()];
         let mut prices = HashMap::new();
 
-        prices.insert("AAA".to_string(), dates.iter().zip(
-            [10.0, 10.0, 10.0, 10.0, 11.0, 12.0, 13.0, 14.0].iter()
-        ).map(|(d, p)| (*d, *p)).collect());
+        prices.insert(
+            "AAA".to_string(),
+            dates
+                .iter()
+                .zip([10.0, 10.0, 10.0, 10.0, 11.0, 12.0, 13.0, 14.0].iter())
+                .map(|(d, p)| (*d, *p))
+                .collect(),
+        );
 
-        prices.insert("BBB".to_string(), dates.iter().zip(
-            [10.0, 10.0, 10.0, 10.0, 9.0, 8.0, 7.0, 6.0].iter()
-        ).map(|(d, p)| (*d, *p)).collect());
+        prices.insert(
+            "BBB".to_string(),
+            dates
+                .iter()
+                .zip([10.0, 10.0, 10.0, 10.0, 9.0, 8.0, 7.0, 6.0].iter())
+                .map(|(d, p)| (*d, *p))
+                .collect(),
+        );
 
-        prices.insert("CCC".to_string(), dates.iter().zip(
-            [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0].iter()
-        ).map(|(d, p)| (*d, *p)).collect());
+        prices.insert(
+            "CCC".to_string(),
+            dates
+                .iter()
+                .zip([10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0].iter())
+                .map(|(d, p)| (*d, *p))
+                .collect(),
+        );
 
         (dates, symbols, prices)
     }
@@ -775,7 +822,8 @@ mod tests {
             pct_below_or_equal: 50.0,
         }];
         // sessions=0 should fail
-        let result = select_trailing_sessions(&rows, NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(), 0);
+        let result =
+            select_trailing_sessions(&rows, NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(), 0);
         assert!(result.is_err());
     }
 
@@ -787,9 +835,14 @@ mod tests {
 
     #[test]
     fn test_compute_forward_returns_default_horizons() {
-        let series: Vec<(NaiveDate, f64)> = (0..100).map(|i| {
-            (NaiveDate::from_ymd_opt(2024, 1, 2).unwrap() + chrono::Duration::days(i), 100.0 + i as f64)
-        }).collect();
+        let series: Vec<(NaiveDate, f64)> = (0..100)
+            .map(|i| {
+                (
+                    NaiveDate::from_ymd_opt(2024, 1, 2).unwrap() + chrono::Duration::days(i),
+                    100.0 + i as f64,
+                )
+            })
+            .collect();
         let result = compute_forward_returns(&series, DEFAULT_FORWARD_HORIZONS);
         assert_eq!(result.len(), 100);
         // First row should have both 1d and 1w horizons

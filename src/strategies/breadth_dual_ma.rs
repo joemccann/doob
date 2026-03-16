@@ -10,11 +10,10 @@
 ///
 /// Forward returns on specified assets (SPY, SPXL, QQQ, TQQQ, etc.) are
 /// computed at each signal date with full risk metrics.
-
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use chrono::NaiveDate;
 use serde::Serialize;
 
@@ -40,12 +39,8 @@ const DEFAULT_NDX_SNAPSHOT_DATES: &[&str] = &[
     "2026-01-20",
 ];
 
-pub const DEFAULT_FORWARD_HORIZONS: &[(&str, usize)] = &[
-    ("1d", 1),
-    ("1w", 5),
-    ("1m", 21),
-    ("3m", 63),
-];
+pub const DEFAULT_FORWARD_HORIZONS: &[(&str, usize)] =
+    &[("1d", 1), ("1w", 5), ("1m", 21), ("3m", 63)];
 
 // ---------------------------------------------------------------------------
 // Dual-MA breadth row
@@ -242,7 +237,10 @@ fn fetch_nasdaq_memberships(
                 let backoff = std::time::Duration::from_millis(500 * (1 << attempt));
                 tracing::warn!(
                     "Retrying membership fetch for {} (attempt {}/{}) after {:?}",
-                    trade_date, attempt + 1, max_retries + 1, backoff,
+                    trade_date,
+                    attempt + 1,
+                    max_retries + 1,
+                    backoff,
                 );
                 std::thread::sleep(backoff);
             }
@@ -315,7 +313,10 @@ fn fetch_nasdaq_memberships(
 
         tracing::info!(
             "[{}/{}] {} → {} members",
-            idx + 1, snapshot_dates.len(), trade_date, members.len()
+            idx + 1,
+            snapshot_dates.len(),
+            trade_date,
+            members.len()
         );
         memberships.insert(trade_date, members);
 
@@ -548,7 +549,8 @@ fn select_trailing(
         let latest = filtered.last().unwrap().trade_date;
         bail!(
             "Requested end date {} is not present in the data; latest available date is {}",
-            end_date, latest
+            end_date,
+            latest
         );
     }
 
@@ -678,7 +680,11 @@ fn compute_trade_metrics(realized: &[f64]) -> TradeMetrics {
     };
 
     let sharpe = if std_dev > 1e-15 { mean / std_dev } else { 0.0 };
-    let sortino = if downside_dev > 1e-15 { mean / downside_dev } else { 0.0 };
+    let sortino = if downside_dev > 1e-15 {
+        mean / downside_dev
+    } else {
+        0.0
+    };
 
     // Max drawdown from compounding equity curve
     let mut equity = Vec::with_capacity(n + 1);
@@ -689,28 +695,42 @@ fn compute_trade_metrics(realized: &[f64]) -> TradeMetrics {
     let mut peak = equity[0];
     let mut max_dd: f64 = 0.0;
     for &val in &equity {
-        if val > peak { peak = val; }
+        if val > peak {
+            peak = val;
+        }
         let dd = (peak - val) / peak;
-        if dd > max_dd { max_dd = dd; }
+        if dd > max_dd {
+            max_dd = dd;
+        }
     }
 
     let cumulative = *equity.last().unwrap() / equity[0] - 1.0;
     let var_95 = percentile_linear(&sorted, 5.0);
     let tail: Vec<f64> = sorted.iter().copied().filter(|&r| r <= var_95).collect();
-    let cvar_95 = if tail.is_empty() { var_95 } else { tail.iter().sum::<f64>() / tail.len() as f64 };
+    let cvar_95 = if tail.is_empty() {
+        var_95
+    } else {
+        tail.iter().sum::<f64>() / tail.len() as f64
+    };
 
     let best = *sorted.last().unwrap();
     let worst = sorted[0];
 
     let skewness = if n > 2 && std_dev > 1e-15 {
-        let m3 = realized.iter().map(|r| ((r - mean) / std_dev).powi(3)).sum::<f64>();
+        let m3 = realized
+            .iter()
+            .map(|r| ((r - mean) / std_dev).powi(3))
+            .sum::<f64>();
         m3 * n as f64 / ((n - 1) as f64 * (n - 2) as f64)
     } else {
         0.0
     };
 
     let kurtosis = if n > 3 && std_dev > 1e-15 {
-        let m4 = realized.iter().map(|r| ((r - mean) / std_dev).powi(4)).sum::<f64>();
+        let m4 = realized
+            .iter()
+            .map(|r| ((r - mean) / std_dev).powi(4))
+            .sum::<f64>();
         let nf = n as f64;
         (nf * (nf + 1.0)) / ((nf - 1.0) * (nf - 2.0) * (nf - 3.0)) * m4
             - 3.0 * (nf - 1.0).powi(2) / ((nf - 2.0) * (nf - 3.0))
@@ -728,13 +748,35 @@ fn compute_trade_metrics(realized: &[f64]) -> TradeMetrics {
         0.0
     };
 
-    let avg_win = if winners.is_empty() { 0.0 } else { winners.iter().sum::<f64>() / winners.len() as f64 };
-    let avg_loss = if losers.is_empty() { 0.0 } else { losers.iter().sum::<f64>() / losers.len() as f64 };
+    let avg_win = if winners.is_empty() {
+        0.0
+    } else {
+        winners.iter().sum::<f64>() / winners.len() as f64
+    };
+    let avg_loss = if losers.is_empty() {
+        0.0
+    } else {
+        losers.iter().sum::<f64>() / losers.len() as f64
+    };
 
     TradeMetrics {
-        mean, median, positive_rate, std_dev, sharpe, sortino,
-        max_drawdown: max_dd, var_95, cvar_95, best, worst,
-        skewness, kurtosis, profit_factor, avg_win, avg_loss, cumulative,
+        mean,
+        median,
+        positive_rate,
+        std_dev,
+        sharpe,
+        sortino,
+        max_drawdown: max_dd,
+        var_95,
+        cvar_95,
+        best,
+        worst,
+        skewness,
+        kurtosis,
+        profit_factor,
+        avg_win,
+        avg_loss,
+        cumulative,
     }
 }
 
@@ -874,7 +916,10 @@ fn resolve_universe(
                 .collect::<Result<Vec<_>, _>>()?;
 
             let snapshots = fetch_nasdaq_memberships(
-                client, &snapshot_dates, index_symbol, &config.membership_time_of_day,
+                client,
+                &snapshot_dates,
+                index_symbol,
+                &config.membership_time_of_day,
             )?;
             let memberships = expand_snapshot_memberships(trade_dates, &snapshots)?;
             let changes = build_membership_change_table(&snapshots);
@@ -909,8 +954,11 @@ fn resolve_universe(
             if config.explicit_tickers.is_empty() {
                 bail!("tickers universe mode requires explicit_tickers");
             }
-            let tickers: Vec<String> =
-                config.explicit_tickers.iter().map(|s| s.to_uppercase()).collect();
+            let tickers: Vec<String> = config
+                .explicit_tickers
+                .iter()
+                .map(|s| s.to_uppercase())
+                .collect();
             let memberships = build_static_memberships(trade_dates, &tickers)?;
             Ok(UniverseResolution {
                 label: config.universe_label.clone(),
@@ -978,8 +1026,10 @@ fn format_strategy_report(results: &StrategyResults) -> String {
     out.push_str(&format!("\nAs of {}\n", target_row.trade_date));
     out.push_str(&format!(
         "Below {}d MA & above {}d MA: {} ({:.2}%)\n",
-        config.short_period, config.long_period,
-        target_row.below_short_above_long, target_row.pct_below_short_above_long
+        config.short_period,
+        config.long_period,
+        target_row.below_short_above_long,
+        target_row.pct_below_short_above_long
     ));
     out.push_str(&format!(
         "Below both MAs: {} ({:.2}%)\n",
@@ -994,19 +1044,25 @@ fn format_strategy_report(results: &StrategyResults) -> String {
         target_row.insufficient_data
     ));
 
-    out.push_str(&format!("\nTriggered sessions: {}\n", results.triggered.len()));
+    out.push_str(&format!(
+        "\nTriggered sessions: {}\n",
+        results.triggered.len()
+    ));
 
     if !results.forward_summary.is_empty() {
         out.push_str(&format!(
             "\n{:>5} {:>7}  {:>7}  {:>13}  {:>16}  {:>17}\n",
-            "asset", "horizon", "signals", "observations",
-            "mean_return_pct", "positive_rate_pct"
+            "asset", "horizon", "signals", "observations", "mean_return_pct", "positive_rate_pct"
         ));
         for row in &results.forward_summary {
             out.push_str(&format!(
                 "{:>5} {:>7}  {:>7}  {:>13}  {:>16.6}  {:>17.6}\n",
-                row.asset, row.horizon, row.signals, row.observations,
-                row.mean_return_pct, row.positive_rate_pct
+                row.asset,
+                row.horizon,
+                row.signals,
+                row.observations,
+                row.mean_return_pct,
+                row.positive_rate_pct
             ));
         }
 
@@ -1057,7 +1113,10 @@ fn format_strategy_report_md(results: &StrategyResults) -> String {
     let trailing = &results.trailing_breadth;
 
     let mut lines = vec![
-        format!("# Dual-MA Breadth Strategy ({}d / {}d)", config.short_period, config.long_period),
+        format!(
+            "# Dual-MA Breadth Strategy ({}d / {}d)",
+            config.short_period, config.long_period
+        ),
         String::new(),
         format!("**Universe:** {}  ", results.universe_label),
         format!(
@@ -1075,8 +1134,10 @@ fn format_strategy_report_md(results: &StrategyResults) -> String {
         String::new(),
         format!(
             "- **Below {}d MA & above {}d MA:** {} ({:.2}%)",
-            config.short_period, config.long_period,
-            target_row.below_short_above_long, target_row.pct_below_short_above_long
+            config.short_period,
+            config.long_period,
+            target_row.below_short_above_long,
+            target_row.pct_below_short_above_long
         ),
         format!(
             "- **Below both MAs:** {} ({:.2}%)",
@@ -1099,8 +1160,12 @@ fn format_strategy_report_md(results: &StrategyResults) -> String {
         for row in &results.forward_summary {
             lines.push(format!(
                 "| {} | {} | {} | {} | {:.2} | {:.1} |",
-                row.asset, row.horizon, row.signals, row.observations,
-                row.mean_return_pct, row.positive_rate_pct,
+                row.asset,
+                row.horizon,
+                row.signals,
+                row.observations,
+                row.mean_return_pct,
+                row.positive_rate_pct,
             ));
         }
 
@@ -1173,11 +1238,27 @@ fn save_strategy_outputs(results: &StrategyResults) -> Result<Vec<(String, PathB
             writeln!(
                 wtr,
                 "{},{},{},{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{},{:.6},{:.6}",
-                r.asset, r.horizon, r.signals, r.observations,
-                r.mean_return_pct, r.median_return_pct, r.positive_rate_pct,
-                r.cumulative_return_pct, r.sharpe, r.sortino, r.max_drawdown_pct,
-                r.var_95_pct, r.cvar_95_pct, r.best_trade_pct, r.worst_trade_pct,
-                r.std_dev_pct, r.skewness, r.kurtosis, pf, r.avg_win_pct, r.avg_loss_pct,
+                r.asset,
+                r.horizon,
+                r.signals,
+                r.observations,
+                r.mean_return_pct,
+                r.median_return_pct,
+                r.positive_rate_pct,
+                r.cumulative_return_pct,
+                r.sharpe,
+                r.sortino,
+                r.max_drawdown_pct,
+                r.var_95_pct,
+                r.cvar_95_pct,
+                r.best_trade_pct,
+                r.worst_trade_pct,
+                r.std_dev_pct,
+                r.skewness,
+                r.kurtosis,
+                pf,
+                r.avg_win_pct,
+                r.avg_loss_pct,
             )?;
         }
     }
@@ -1197,10 +1278,15 @@ fn save_strategy_outputs(results: &StrategyResults) -> Result<Vec<(String, PathB
             writeln!(
                 wtr,
                 "{},{},{},{},{},{},{:.6},{:.6},{:.6}",
-                row.trade_date, row.eligible_count,
-                row.below_short_above_long, row.below_both, row.above_short,
-                row.insufficient_data, row.pct_below_short_above_long,
-                row.pct_below_both, row.pct_above_short,
+                row.trade_date,
+                row.eligible_count,
+                row.below_short_above_long,
+                row.below_both,
+                row.above_short,
+                row.insufficient_data,
+                row.pct_below_short_above_long,
+                row.pct_below_both,
+                row.pct_above_short,
             )?;
         }
     }
@@ -1333,7 +1419,10 @@ fn run_strategy(config: DualMaConfig) -> Result<StrategyResults> {
         Some(end_date),
     )?;
     if !cal_missing.is_empty() {
-        bail!("Lead forward asset {} not found in warehouse", config.forward_assets[0]);
+        bail!(
+            "Lead forward asset {} not found in warehouse",
+            config.forward_assets[0]
+        );
     }
     let calendar = cal_panel
         .get(&config.forward_assets[0])
@@ -1363,11 +1452,14 @@ fn run_strategy(config: DualMaConfig) -> Result<StrategyResults> {
     // Step 4: Compute dual-MA breadth
     tracing::info!(
         "Computing dual-MA breadth ({}d / {}d) ...",
-        config.short_period, config.long_period
+        config.short_period,
+        config.long_period
     );
     let breadth = compute_dual_ma_breadth(
-        &constituent_prices, &universe.memberships,
-        config.short_period, config.long_period,
+        &constituent_prices,
+        &universe.memberships,
+        config.short_period,
+        config.long_period,
     )?;
     let trailing_breadth = select_trailing(&breadth, end_date, config.sessions)?;
 
@@ -1393,7 +1485,10 @@ fn run_strategy(config: DualMaConfig) -> Result<StrategyResults> {
     // Step 6: Summarize forward returns conditioned on signals
     tracing::info!("Summarizing forward returns ...");
     let (triggered, forward_summary) = summarize_signal_forward_returns(
-        &trailing_breadth, &forward_prices, config.signal_threshold, &config.horizons,
+        &trailing_breadth,
+        &forward_prices,
+        config.signal_threshold,
+        &config.horizons,
     )?;
 
     Ok(StrategyResults {
@@ -1416,7 +1511,11 @@ fn run_strategy(config: DualMaConfig) -> Result<StrategyResults> {
 /// CLI arguments for the breadth-dual-ma strategy.
 #[derive(Debug, clap::Args)]
 pub struct BreadthDualMaArgs {
-    #[arg(long, default_value = "2026-03-11", help = "Signal evaluation end date")]
+    #[arg(
+        long,
+        default_value = "2026-03-11",
+        help = "Signal evaluation end date"
+    )]
     pub end_date: String,
 
     #[arg(long, default_value_t = 252, help = "Trailing trading sessions")]
@@ -1428,7 +1527,11 @@ pub struct BreadthDualMaArgs {
     #[arg(long, default_value_t = 200, help = "Long MA period (e.g. 200-day)")]
     pub long_period: usize,
 
-    #[arg(long, default_value_t = 20.0, help = "Signal threshold: trigger when % below short MA and above long MA >= this")]
+    #[arg(
+        long,
+        default_value_t = 20.0,
+        help = "Signal threshold: trigger when % below short MA and above long MA >= this"
+    )]
     pub threshold: f64,
 
     #[arg(long, default_value = "ndx100", help = "Named universe")]
@@ -1495,7 +1598,8 @@ fn build_config_from_args(args: &BreadthDualMaArgs) -> Result<DualMaConfig> {
     if args.short_period >= args.long_period {
         bail!(
             "short_period ({}) must be less than long_period ({})",
-            args.short_period, args.long_period
+            args.short_period,
+            args.long_period
         );
     }
 
@@ -1508,7 +1612,10 @@ fn build_config_from_args(args: &BreadthDualMaArgs) -> Result<DualMaConfig> {
             long_period: args.long_period,
             signal_threshold: args.threshold,
             universe_mode: "tickers".to_string(),
-            universe_label: args.universe_label.clone().unwrap_or_else(|| "tickers".to_string()),
+            universe_label: args
+                .universe_label
+                .clone()
+                .unwrap_or_else(|| "tickers".to_string()),
             index_symbol: None,
             membership_time_of_day: args.membership_time_of_day.clone(),
             membership_snapshot_dates: Vec::new(),
@@ -1554,13 +1661,19 @@ fn build_config_from_args(args: &BreadthDualMaArgs) -> Result<DualMaConfig> {
         .map(|(_, u)| u)
         .ok_or_else(|| anyhow::anyhow!("Unknown universe: {}", args.universe))?;
 
-    let preset_path = named
-        .preset_name
-        .map(|name| presets_dir().join(format!("{name}.json")).to_string_lossy().to_string());
+    let preset_path = named.preset_name.map(|name| {
+        presets_dir()
+            .join(format!("{name}.json"))
+            .to_string_lossy()
+            .to_string()
+    });
 
     let snapshot_dates = match &args.snapshot_date {
         Some(dates) => dates.clone(),
-        None => DEFAULT_NDX_SNAPSHOT_DATES.iter().map(|s| s.to_string()).collect(),
+        None => DEFAULT_NDX_SNAPSHOT_DATES
+            .iter()
+            .map(|s| s.to_string())
+            .collect(),
     };
 
     Ok(DualMaConfig {
@@ -1570,7 +1683,10 @@ fn build_config_from_args(args: &BreadthDualMaArgs) -> Result<DualMaConfig> {
         long_period: args.long_period,
         signal_threshold: args.threshold,
         universe_mode: named.mode.to_string(),
-        universe_label: args.universe_label.clone().unwrap_or_else(|| named.label.to_string()),
+        universe_label: args
+            .universe_label
+            .clone()
+            .unwrap_or_else(|| named.label.to_string()),
         index_symbol: named.index_symbol.map(|s| s.to_string()),
         membership_time_of_day: args.membership_time_of_day.clone(),
         membership_snapshot_dates: snapshot_dates,
@@ -1649,13 +1765,21 @@ mod tests {
 
         let mut prices = BTreeMap::new();
         // Stock A: steady uptrend, then pullback
-        prices.insert("A".to_string(), vec![
-            (d1, 100.0), (d2, 102.0), (d3, 104.0), (d4, 106.0), (d5, 99.0),
-        ]);
+        prices.insert(
+            "A".to_string(),
+            vec![
+                (d1, 100.0),
+                (d2, 102.0),
+                (d3, 104.0),
+                (d4, 106.0),
+                (d5, 99.0),
+            ],
+        );
         // Stock B: steady decline
-        prices.insert("B".to_string(), vec![
-            (d1, 100.0), (d2, 98.0), (d3, 96.0), (d4, 94.0), (d5, 92.0),
-        ]);
+        prices.insert(
+            "B".to_string(),
+            vec![(d1, 100.0), (d2, 98.0), (d3, 96.0), (d4, 94.0), (d5, 92.0)],
+        );
 
         let members: HashSet<String> = vec!["A", "B"].into_iter().map(String::from).collect();
         let mut memberships = BTreeMap::new();
@@ -1690,7 +1814,9 @@ mod tests {
         // Day 10 (128): 3d SMA = (135+140+128)/3 = 134.3, 5d SMA = (125+130+135+140+128)/5 = 131.6
         //   close=128 < 134.3 (short) AND 128 < 131.6 (long) → below_both, not pullback
         // But let's set up a proper case:
-        let series_a: Vec<f64> = vec![90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 118.0];
+        let series_a: Vec<f64> = vec![
+            90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 118.0,
+        ];
         // Day 10: 3d SMA = (125+130+118)/3 = 124.3, 5d SMA = (110+115+120+125+130)/5 = 120
         //   Wait, we need 5d SMA at day 10, using days 6-10: (115+120+125+130+118)/5 = 121.6
         //   close=118 < 124.3 (short) AND 118 < 121.6 → below_both
@@ -1705,7 +1831,14 @@ mod tests {
         // Day 10: short (2d) SMA = (100+88)/2 = 94, long (5d) SMA = (75+80+90+100+88)/5 = 86.6
         //   close=88 < 94 (below short) AND 88 > 86.6 (above long) → PULLBACK IN UPTREND ✓
 
-        prices.insert("C".to_string(), dates.iter().zip(series_c.iter()).map(|(d, p)| (*d, *p)).collect());
+        prices.insert(
+            "C".to_string(),
+            dates
+                .iter()
+                .zip(series_c.iter())
+                .map(|(d, p)| (*d, *p))
+                .collect(),
+        );
 
         let members: HashSet<String> = vec!["C"].into_iter().map(String::from).collect();
         for &d in &dates {
@@ -1759,9 +1892,7 @@ mod tests {
 
     #[test]
     fn test_select_trailing_zero_sessions() {
-        let result = select_trailing(
-            &[], NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(), 0,
-        );
+        let result = select_trailing(&[], NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(), 0);
         assert!(result.is_err());
     }
 
@@ -1780,10 +1911,12 @@ mod tests {
     #[test]
     fn test_forward_returns_for_asset() {
         let series: Vec<(NaiveDate, f64)> = (0..10)
-            .map(|i| (
-                NaiveDate::from_ymd_opt(2024, 1, 2 + i).unwrap(),
-                100.0 + i as f64,
-            ))
+            .map(|i| {
+                (
+                    NaiveDate::from_ymd_opt(2024, 1, 2 + i).unwrap(),
+                    100.0 + i as f64,
+                )
+            })
             .collect();
         let horizons = vec![("1d".to_string(), 1_usize)];
         let result = compute_forward_returns_for_asset(&series, &horizons);
@@ -1810,10 +1943,12 @@ mod tests {
 
         let mut forward_prices = BTreeMap::new();
         let spy_series: Vec<(NaiveDate, f64)> = (0..20)
-            .map(|i| (
-                NaiveDate::from_ymd_opt(2024, 1, 2 + i).unwrap(),
-                100.0 + i as f64,
-            ))
+            .map(|i| {
+                (
+                    NaiveDate::from_ymd_opt(2024, 1, 2 + i).unwrap(),
+                    100.0 + i as f64,
+                )
+            })
             .collect();
         forward_prices.insert("SPY".to_string(), spy_series);
 

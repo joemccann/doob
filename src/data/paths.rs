@@ -1,5 +1,4 @@
 /// Parquet path resolution helpers for the warehouse data lake.
-
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;

@@ -8,7 +8,6 @@
 /// This is functionally equivalent to `breadth-washout --lookback N` but uses
 /// a 50-day default and provides a clearer entry point for MA-based breadth
 /// analysis.
-
 use anyhow::Result;
 use clap;
 
@@ -18,16 +17,28 @@ use crate::strategies::breadth_washout::{self, BreadthWashoutArgs};
 /// CLI arguments for the breadth-ma strategy.
 #[derive(Debug, clap::Args)]
 pub struct BreadthMaArgs {
-    #[arg(long, default_value = "2026-03-11", help = "Signal evaluation end date")]
+    #[arg(
+        long,
+        default_value = "2026-03-11",
+        help = "Signal evaluation end date"
+    )]
     pub end_date: String,
 
     #[arg(long, default_value_t = 252, help = "Trailing trading sessions")]
     pub sessions: usize,
 
-    #[arg(long, default_value_t = 50, help = "Moving average period (e.g. 50 for 50-day MA)")]
+    #[arg(
+        long,
+        default_value_t = 50,
+        help = "Moving average period (e.g. 50 for 50-day MA)"
+    )]
     pub short_period: usize,
 
-    #[arg(long, default_value = "oversold", help = "Breadth signal mode: oversold or overbought")]
+    #[arg(
+        long,
+        default_value = "oversold",
+        help = "Breadth signal mode: oversold or overbought"
+    )]
     pub signal_mode: String,
 
     #[arg(long, default_value_t = 80.0, help = "Signal threshold percent")]

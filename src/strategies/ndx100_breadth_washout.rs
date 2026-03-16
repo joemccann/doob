@@ -1,5 +1,4 @@
 /// Compatibility wrapper for the generic breadth washout strategy.
-
 use anyhow::Result;
 
 use crate::cli::OutputFormat;

@@ -7,17 +7,16 @@
 ///     doob run ndx100-sma-breadth [OPTIONS]
 ///     doob list-strategies
 ///     doob list-presets
-
 use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::strategies::breadth_dual_ma::BreadthDualMaArgs;
 use crate::strategies::breadth_ma::BreadthMaArgs;
 use crate::strategies::breadth_washout::BreadthWashoutArgs;
 use crate::strategies::intraday_drift::IntradayDriftArgs;
-use crate::strategies::paper_research::PaperResearchArgs;
 use crate::strategies::ndx100_breadth_washout::Ndx100BreadthWashoutArgs;
 use crate::strategies::ndx100_sma_breadth::Ndx100SmaBreadthArgs;
 use crate::strategies::overnight_drift::OvernightDriftArgs;
+use crate::strategies::paper_research::PaperResearchArgs;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
@@ -27,7 +26,10 @@ pub enum OutputFormat {
 }
 
 #[derive(Parser)]
-#[command(name = "doob", about = "Quantitative strategy research and backtesting")]
+#[command(
+    name = "doob",
+    about = "Quantitative strategy research and backtesting"
+)]
 pub struct Cli {
     /// Output format: text (default), json (structured), or md (markdown)
     #[arg(long, default_value = "text", global = true)]

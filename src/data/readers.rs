@@ -1,9 +1,8 @@
 /// Data loaders for parquet and external sources (VIX from CBOE).
-
 use std::path::Path;
 use std::time::SystemTime;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use chrono::NaiveDate;
 use polars::prelude::*;
 
@@ -199,7 +198,10 @@ pub fn load_price_panel(
     warehouse: Option<&Path>,
     start_date: Option<NaiveDate>,
     end_date: Option<NaiveDate>,
-) -> Result<(std::collections::BTreeMap<String, Vec<(NaiveDate, f64)>>, Vec<String>)> {
+) -> Result<(
+    std::collections::BTreeMap<String, Vec<(NaiveDate, f64)>>,
+    Vec<String>,
+)> {
     let (frame, missing) = load_close_frame(symbols, warehouse, start_date, end_date)?;
     let map: std::collections::BTreeMap<String, Vec<(NaiveDate, f64)>> =
         frame.into_iter().collect();
@@ -248,8 +250,8 @@ pub fn load_vix_from_cboe(cache_path: Option<&Path>) -> Result<Vec<VixRow>> {
         if let Some(parent) = cache.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        let resp = reqwest::blocking::get(VIX_URL)
-            .with_context(|| "downloading VIX data from CBOE")?;
+        let resp =
+            reqwest::blocking::get(VIX_URL).with_context(|| "downloading VIX data from CBOE")?;
         let text = resp.text()?;
         std::fs::write(&cache, &text)?;
     }
@@ -264,11 +266,26 @@ fn parse_vix_csv(path: &Path) -> Result<Vec<VixRow>> {
     let mut lines = content.lines();
     let header = lines.next().context("empty VIX CSV")?;
     let headers: Vec<String> = header.split(',').map(|s| s.trim().to_lowercase()).collect();
-    let date_idx = headers.iter().position(|h| h == "date").context("no date column in VIX CSV")?;
-    let open_idx = headers.iter().position(|h| h == "open").context("no open column")?;
-    let high_idx = headers.iter().position(|h| h == "high").context("no high column")?;
-    let low_idx = headers.iter().position(|h| h == "low").context("no low column")?;
-    let close_idx = headers.iter().position(|h| h == "close").context("no close column")?;
+    let date_idx = headers
+        .iter()
+        .position(|h| h == "date")
+        .context("no date column in VIX CSV")?;
+    let open_idx = headers
+        .iter()
+        .position(|h| h == "open")
+        .context("no open column")?;
+    let high_idx = headers
+        .iter()
+        .position(|h| h == "high")
+        .context("no high column")?;
+    let low_idx = headers
+        .iter()
+        .position(|h| h == "low")
+        .context("no low column")?;
+    let close_idx = headers
+        .iter()
+        .position(|h| h == "close")
+        .context("no close column")?;
 
     for line in lines {
         let line = line.trim();
@@ -321,9 +338,15 @@ mod tests {
 
         let rows = parse_vix_csv(&csv_path).unwrap();
         assert_eq!(rows.len(), 2);
-        assert_eq!(rows[0].trade_date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(
+            rows[0].trade_date,
+            NaiveDate::from_ymd_opt(2020, 1, 2).unwrap()
+        );
         assert_eq!(rows[0].close, 13.50);
-        assert_eq!(rows[1].trade_date, NaiveDate::from_ymd_opt(2020, 1, 3).unwrap());
+        assert_eq!(
+            rows[1].trade_date,
+            NaiveDate::from_ymd_opt(2020, 1, 3).unwrap()
+        );
     }
 
     #[test]
@@ -354,7 +377,10 @@ mod tests {
 
         let rows = parse_vix_csv(&csv_path).unwrap();
         assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0].trade_date, NaiveDate::from_ymd_opt(2020, 1, 2).unwrap());
+        assert_eq!(
+            rows[0].trade_date,
+            NaiveDate::from_ymd_opt(2020, 1, 2).unwrap()
+        );
     }
 
     #[test]
@@ -368,7 +394,10 @@ mod tests {
     fn test_load_close_frame_missing_symbols() {
         let tmp = tempfile::tempdir().unwrap();
         let warehouse = tmp.path().join("warehouse");
-        let bronze = warehouse.join("data-lake").join("bronze").join("asset_class=equity");
+        let bronze = warehouse
+            .join("data-lake")
+            .join("bronze")
+            .join("asset_class=equity");
         fs::create_dir_all(&bronze).unwrap();
 
         let symbols = vec!["NOPE".to_string()];

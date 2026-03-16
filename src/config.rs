@@ -1,10 +1,9 @@
 /// Centralized configuration: warehouse path, output root, presets dir.
 ///
 /// Resolution order: DOOB_WAREHOUSE_PATH env var -> .env file -> ~/market-warehouse
-
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 fn default_warehouse() -> PathBuf {
     dirs::home_dir()
@@ -136,7 +135,10 @@ mod tests {
     fn test_bronze_equity_dir_returns_correct_path() {
         let tmp = tempfile::tempdir().unwrap();
         let warehouse = tmp.path().join("wh");
-        let equity_dir = warehouse.join("data-lake").join("bronze").join("asset_class=equity");
+        let equity_dir = warehouse
+            .join("data-lake")
+            .join("bronze")
+            .join("asset_class=equity");
         std::fs::create_dir_all(&equity_dir).unwrap();
         let result = bronze_equity_dir(Some(warehouse.as_path())).unwrap();
         assert_eq!(result, equity_dir);

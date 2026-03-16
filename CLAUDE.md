@@ -207,9 +207,9 @@ All price data reads from local parquet. Typical benchmarks on Apple Silicon:
 | 10-year backtest (2,516 sessions, 101 tickers) | ~0.32s |
 | 10-year dual-MA (2,516 sessions, 101 tickers) | ~0.55s |
 
-## Brand & Report Styling (Mandatory)
+## Brand & Visual Design (Mandatory — All Artifacts)
 
-All generated HTML reports **must** use the doob design system derived from radial.org. This is non-negotiable.
+**Every visual artifact** produced in this project — HTML reports, dashboards, websites, landing pages, interactive tools, data visualizations, charts, email templates, or any other browser-rendered output — **must** use the doob design system derived from radial.org. This is non-negotiable and applies to all code paths, not just autoresearch reports.
 
 ### Design System Location
 
@@ -220,9 +220,9 @@ branding/
 └── report-template.html    # Drop-in template for autoresearch HTML reports
 ```
 
-### Rules for HTML Report Generation
+### Rules for All Visual Output
 
-1. **Use `branding/report-template.html` as the base** for any autoresearch HTML report.
+1. **Use `branding/report-template.html` as the base** for any HTML report or visual artifact. Adapt the template structure (header, KPI bar, table, footer) to the specific use case.
 2. **Inline the tokens from `branding/tokens.css`** (the `:root` block) into the report `<style>` tag — reports must be self-contained single-file HTML.
 3. **Required design tokens** — always reference these CSS variables, never hardcode colors:
    - `--doob-teal` (#3e5b63) — headers, footer, primary panels
@@ -240,6 +240,7 @@ branding/
 7. **No dark-blue themes** — the old `#071023` / `#0f1f3a` dark-blue report style is deprecated. All new reports use the light theme with teal accents.
 8. **Components**: use pills (`.pill-teal`, `.pill-sky`, `.pill-lime`) for tags/badges, expandable row details for per-strategy deep-dive, and the KPI card pattern for summary metrics.
 9. **Load DM Mono** from Google Fonts: `<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />`
+10. **Scope**: These rules apply to ALL visual artifacts — not just autoresearch reports. Any HTML, dashboard, chart, website, or visual output in this project must follow this design system.
 
 ### Quick Reference: Color Palette
 

@@ -1,5 +1,4 @@
 /// Performance metrics: CAGR, Sharpe, max drawdown, VaR95, annual returns.
-
 use chrono::{Datelike, NaiveDate};
 
 pub const RISK_FREE_RATE: f64 = 0.04;

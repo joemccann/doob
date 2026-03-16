@@ -1,18 +1,16 @@
 /// Shared strategy utilities: buy-and-hold, report formatting, daily returns, JSON output.
-
 use chrono::NaiveDate;
 use num_format::{Locale, ToFormattedString};
 use serde::Serialize;
 
 use crate::metrics::fees::ibkr_roundtrip_cost;
-use crate::metrics::performance::{annual_returns_table, cagr, max_drawdown, sharpe_default, var_95};
+use crate::metrics::performance::{
+    annual_returns_table, cagr, max_drawdown, sharpe_default, var_95,
+};
 
 /// Compute daily returns from an equity curve.
 pub fn daily_returns(equity: &[f64]) -> Vec<f64> {
-    equity
-        .windows(2)
-        .map(|w| (w[1] - w[0]) / w[0])
-        .collect()
+    equity.windows(2).map(|w| (w[1] - w[0]) / w[0]).collect()
 }
 
 /// Simulate buy-and-hold equity curve.
@@ -214,7 +212,11 @@ pub fn format_results_md(
     lines.push(String::new());
     lines.push(format!(
         "**Ticker:** {} | **Period:** {} to {} ({:.1} years) | **Capital:** ${:.0}  ",
-        ticker, dates.first().unwrap(), dates.last().unwrap(), years, capital,
+        ticker,
+        dates.first().unwrap(),
+        dates.last().unwrap(),
+        years,
+        capital,
     ));
     lines.push(String::new());
     lines.push("## Results".to_string());
@@ -233,13 +235,25 @@ pub fn format_results_md(
 
         let mut row = format!(
             "| {} | {} | {:.1}% | {:.2} | {:.1}% | {:.4} |",
-            strat.name, final_str, c * 100.0, s, md * 100.0, v,
+            strat.name,
+            final_str,
+            c * 100.0,
+            s,
+            md * 100.0,
+            v,
         );
 
         if let Some((_, stat, pval)) = adf_results.iter().find(|(n, _, _)| *n == strat.name) {
             row = format!(
                 "| {} | {} | {:.1}% | {:.2} | {:.1}% | {:.4} | ADF: {:.4} (p={:.6})",
-                strat.name, final_str, c * 100.0, s, md * 100.0, v, stat, pval,
+                strat.name,
+                final_str,
+                c * 100.0,
+                s,
+                md * 100.0,
+                v,
+                stat,
+                pval,
             );
         }
 
@@ -315,7 +329,9 @@ mod tests {
         assert!(
             (equity[2] - expected_day2).abs() < 1e-6,
             "equity[2]={}, expected={}, cost={}",
-            equity[2], expected_day2, cost
+            equity[2],
+            expected_day2,
+            cost
         );
     }
 

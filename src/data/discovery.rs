@@ -1,8 +1,7 @@
 /// Symbol discovery from the bronze parquet layer.
-
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 use crate::config::bronze_equity_dir;
 

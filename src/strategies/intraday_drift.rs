@@ -1,18 +1,17 @@
 /// Intraday Drift Backtesting Engine.
 ///
 /// Buy at the open, sell at the close same day. Optional short mode.
-
 use anyhow::Result;
 use chrono::NaiveDate;
 
 use num_format::ToFormattedString;
 
 use crate::cli::OutputFormat;
-use crate::data::readers::{load_ticker_ohlcv, OhlcvRow};
+use crate::data::readers::{OhlcvRow, load_ticker_ohlcv};
 use crate::metrics::fees::ibkr_roundtrip_cost;
 use crate::strategies::common::{
-    build_json_annual_returns, buy_and_hold_equity, compute_strategy_metrics, format_annual_table,
-    format_results_header, format_strategy_row, JsonOutput, StrategyResult,
+    JsonOutput, StrategyResult, build_json_annual_returns, buy_and_hold_equity,
+    compute_strategy_metrics, format_annual_table, format_results_header, format_strategy_row,
 };
 
 pub const DEFAULT_CAPITAL: f64 = 1_000_000.0;
@@ -144,8 +143,11 @@ pub fn run(args: &IntradayDriftArgs, fmt: OutputFormat) -> Result<()> {
         equity: eq_intra,
     });
 
-    let years = (dates.last().unwrap().signed_duration_since(*dates.first().unwrap())).num_days()
-        as f64
+    let years = (dates
+        .last()
+        .unwrap()
+        .signed_duration_since(*dates.first().unwrap()))
+    .num_days() as f64
         / 365.25;
 
     if json_mode {
@@ -163,11 +165,7 @@ pub fn run(args: &IntradayDriftArgs, fmt: OutputFormat) -> Result<()> {
             capital: args.capital,
             fee_model: "IBKR Tiered".to_string(),
             results,
-            annual_returns: build_json_annual_returns(
-                &strategies,
-                &dates,
-                args.start_year_table,
-            ),
+            annual_returns: build_json_annual_returns(&strategies, &dates, args.start_year_table),
         };
         println!("{}", serde_json::to_string(&output)?);
     } else if fmt == OutputFormat::Md {
@@ -176,16 +174,19 @@ pub fn run(args: &IntradayDriftArgs, fmt: OutputFormat) -> Result<()> {
         } else {
             "Intraday Drift (Open→Close)"
         };
-        println!("{}", crate::strategies::common::format_results_md(
-            &format!("{} — {}", mode, ticker),
-            &ticker,
-            &dates,
-            years,
-            args.capital,
-            &strategies,
-            &[],
-            args.start_year_table,
-        ));
+        println!(
+            "{}",
+            crate::strategies::common::format_results_md(
+                &format!("{} — {}", mode, ticker),
+                &ticker,
+                &dates,
+                years,
+                args.capital,
+                &strategies,
+                &[],
+                args.start_year_table,
+            )
+        );
     } else {
         println!();
         println!("{}", "=".repeat(80));
@@ -299,8 +300,14 @@ mod tests {
         let closes = [100.0];
         let mask = [true];
 
-        let equity =
-            simulate_strategy(&opens, &closes, &mask, 10_000.0, &ibkr_roundtrip_cost, false);
+        let equity = simulate_strategy(
+            &opens,
+            &closes,
+            &mask,
+            10_000.0,
+            &ibkr_roundtrip_cost,
+            false,
+        );
         assert!(equity[1] < 10_000.0);
     }
 

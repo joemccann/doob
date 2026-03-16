@@ -15,11 +15,10 @@
 /// - Membership change tracking
 /// - Multiple universe modes: preset, tickers, all-stocks
 /// - CSV/JSON output artifacts
-
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
@@ -296,26 +295,29 @@ fn fetch_nasdaq_memberships(
             let resp = match send_result {
                 Ok(r) => r,
                 Err(e) => {
-                    last_err = Some(anyhow::anyhow!(e).context(format!(
-                        "fetching NASDAQ memberships for {trade_date}"
-                    )));
+                    last_err = Some(
+                        anyhow::anyhow!(e)
+                            .context(format!("fetching NASDAQ memberships for {trade_date}")),
+                    );
                     continue;
                 }
             };
 
             if let Err(e) = resp.error_for_status_ref() {
-                last_err = Some(anyhow::anyhow!(e).context(format!(
-                    "NASDAQ membership API error for {trade_date}"
-                )));
+                last_err = Some(
+                    anyhow::anyhow!(e)
+                        .context(format!("NASDAQ membership API error for {trade_date}")),
+                );
                 continue;
             }
 
             let payload: serde_json::Value = match resp.json() {
                 Ok(v) => v,
                 Err(e) => {
-                    last_err = Some(anyhow::anyhow!(e).context(format!(
-                        "parsing membership JSON for {trade_date}"
-                    )));
+                    last_err = Some(
+                        anyhow::anyhow!(e)
+                            .context(format!("parsing membership JSON for {trade_date}")),
+                    );
                     continue;
                 }
             };
@@ -345,10 +347,7 @@ fn fetch_nasdaq_memberships(
         // Skip snapshot dates that return no members (holidays, weekends,
         // or dates before the API's historical coverage).
         if members.is_empty() {
-            tracing::warn!(
-                "Snapshot date {} returned 0 members — skipping",
-                trade_date
-            );
+            tracing::warn!("Snapshot date {} returned 0 members — skipping", trade_date);
             continue;
         }
 
@@ -437,10 +436,8 @@ fn build_membership_change_table(
     for (date, current) in memberships {
         if let Some(prev) = previous {
             if current != prev {
-                let mut added: Vec<String> =
-                    current.difference(prev).cloned().collect();
-                let mut removed: Vec<String> =
-                    prev.difference(current).cloned().collect();
+                let mut added: Vec<String> = current.difference(prev).cloned().collect();
+                let mut removed: Vec<String> = prev.difference(current).cloned().collect();
                 added.sort();
                 removed.sort();
                 changes.push(MembershipChange {
@@ -568,7 +565,8 @@ fn select_trailing(
         let latest = filtered.last().unwrap().trade_date;
         bail!(
             "Requested end date {} is not present in the data; latest available date is {}",
-            end_date, latest
+            end_date,
+            latest
         );
     }
 
@@ -668,11 +666,7 @@ fn compute_trade_metrics(realized: &[f64]) -> TradeMetrics {
 
     // Downside deviation (target = 0)
     let downside_dev = if n > 1 {
-        let dvar = realized
-            .iter()
-            .map(|r| r.min(0.0).powi(2))
-            .sum::<f64>()
-            / (n - 1) as f64;
+        let dvar = realized.iter().map(|r| r.min(0.0).powi(2)).sum::<f64>() / (n - 1) as f64;
         dvar.sqrt()
     } else {
         0.0
@@ -726,7 +720,10 @@ fn compute_trade_metrics(realized: &[f64]) -> TradeMetrics {
 
     // Skewness
     let skewness = if n > 2 && std_dev > 1e-15 {
-        let m3 = realized.iter().map(|r| ((r - mean) / std_dev).powi(3)).sum::<f64>();
+        let m3 = realized
+            .iter()
+            .map(|r| ((r - mean) / std_dev).powi(3))
+            .sum::<f64>();
         m3 * n as f64 / ((n - 1) as f64 * (n - 2) as f64)
     } else {
         0.0
@@ -734,7 +731,10 @@ fn compute_trade_metrics(realized: &[f64]) -> TradeMetrics {
 
     // Excess kurtosis
     let kurtosis = if n > 3 && std_dev > 1e-15 {
-        let m4 = realized.iter().map(|r| ((r - mean) / std_dev).powi(4)).sum::<f64>();
+        let m4 = realized
+            .iter()
+            .map(|r| ((r - mean) / std_dev).powi(4))
+            .sum::<f64>();
         let nf = n as f64;
         let k = (nf * (nf + 1.0)) / ((nf - 1.0) * (nf - 2.0) * (nf - 3.0)) * m4
             - 3.0 * (nf - 1.0).powi(2) / ((nf - 2.0) * (nf - 3.0));
@@ -876,8 +876,7 @@ fn summarize_signal_forward_returns(
         );
     }
 
-    let trigger_dates: HashSet<NaiveDate> =
-        triggered.iter().map(|r| r.trade_date).collect();
+    let trigger_dates: HashSet<NaiveDate> = triggered.iter().map(|r| r.trade_date).collect();
 
     let mut rows = Vec::new();
     for (asset, close_series) in forward_prices {
@@ -1002,8 +1001,11 @@ fn resolve_universe(
             if config.explicit_tickers.is_empty() {
                 bail!("tickers universe mode requires explicit_tickers");
             }
-            let tickers: Vec<String> =
-                config.explicit_tickers.iter().map(|s| s.to_uppercase()).collect();
+            let tickers: Vec<String> = config
+                .explicit_tickers
+                .iter()
+                .map(|s| s.to_uppercase())
+                .collect();
             let memberships = build_static_memberships(trade_dates, &tickers)?;
             Ok(UniverseResolution {
                 label: config.universe_label.clone(),
@@ -1061,8 +1063,12 @@ fn format_strategy_report(results: &StrategyResults) -> String {
         ),
         format!(
             "Signal: {}",
-            signal_summary(&config.signal_mode, config.signal_threshold, config.lookback)
-                .unwrap_or_default()
+            signal_summary(
+                &config.signal_mode,
+                config.signal_threshold,
+                config.lookback
+            )
+            .unwrap_or_default()
         ),
         format!(
             "Forward returns: {} for {}",
@@ -1081,14 +1087,9 @@ fn format_strategy_report(results: &StrategyResults) -> String {
         ),
         format!(
             "At or below {}-day SMA: {} ({:.2}%)",
-            config.lookback,
-            target_row.below_or_equal_count,
-            target_row.pct_below_or_equal
+            config.lookback, target_row.below_or_equal_count, target_row.pct_below_or_equal
         ),
-        format!(
-            "Signals in trailing window: {}",
-            results.triggered.len()
-        ),
+        format!("Signals in trailing window: {}", results.triggered.len()),
     ];
 
     if results.missing_constituent_prices.is_empty() {
@@ -1227,23 +1228,37 @@ fn format_strategy_report_md(results: &StrategyResults) -> String {
         ),
         format!(
             "**Signal:** {}  ",
-            signal_summary(&config.signal_mode, config.signal_threshold, config.lookback)
-                .unwrap_or_default()
+            signal_summary(
+                &config.signal_mode,
+                config.signal_threshold,
+                config.lookback
+            )
+            .unwrap_or_default()
         ),
         format!(
             "**Forward returns:** {} for {}  ",
-            if config.adjusted_forward_returns { "adjusted close" } else { "close" },
+            if config.adjusted_forward_returns {
+                "adjusted close"
+            } else {
+                "close"
+            },
             config.forward_assets.join(", ")
         ),
         String::new(),
         format!("## As of {}", target_row.trade_date),
         String::new(),
-        format!("- **Above {}-day SMA:** {}", config.lookback, target_row.above_count),
+        format!(
+            "- **Above {}-day SMA:** {}",
+            config.lookback, target_row.above_count
+        ),
         format!(
             "- **At or below {}-day SMA:** {} ({:.2}%)",
             config.lookback, target_row.below_or_equal_count, target_row.pct_below_or_equal
         ),
-        format!("- **Signals in trailing window:** {}", results.triggered.len()),
+        format!(
+            "- **Signals in trailing window:** {}",
+            results.triggered.len()
+        ),
     ];
 
     if results.missing_constituent_prices.is_empty() {
@@ -1281,8 +1296,13 @@ fn format_strategy_report_md(results: &StrategyResults) -> String {
     for row in &results.forward_summary {
         lines.push(format!(
             "| {} | {} | {} | {} | {:.2} | {:.2} | {:.1} |",
-            row.asset, row.horizon, row.signals, row.observations,
-            row.mean_return_pct, row.median_return_pct, row.positive_rate_pct,
+            row.asset,
+            row.horizon,
+            row.signals,
+            row.observations,
+            row.mean_return_pct,
+            row.median_return_pct,
+            row.positive_rate_pct,
         ));
     }
 
@@ -1308,9 +1328,16 @@ fn format_strategy_report_md(results: &StrategyResults) -> String {
             };
             lines.push(format!(
                 "| {} | {:.3} | {:.3} | {:.2}% | {:.2}% | {:.2}% | {:.2}% | {:.2}% | {:.2}% | {} |",
-                row.horizon, row.sharpe, row.sortino,
-                row.max_drawdown_pct, row.var_95_pct, row.cvar_95_pct,
-                row.std_dev_pct, row.best_trade_pct, row.worst_trade_pct, pf_str,
+                row.horizon,
+                row.sharpe,
+                row.sortino,
+                row.max_drawdown_pct,
+                row.var_95_pct,
+                row.cvar_95_pct,
+                row.std_dev_pct,
+                row.best_trade_pct,
+                row.worst_trade_pct,
+                pf_str,
             ));
         }
     }
@@ -1587,7 +1614,10 @@ fn run_strategy(config: BreadthWashoutConfig) -> Result<StrategyResults> {
         Some(end_date),
     )?;
     if !cal_missing.is_empty() {
-        bail!("Lead forward asset {} not found in warehouse", config.forward_assets[0]);
+        bail!(
+            "Lead forward asset {} not found in warehouse",
+            config.forward_assets[0]
+        );
     }
     let calendar = cal_panel
         .get(&config.forward_assets[0])
@@ -1616,11 +1646,8 @@ fn run_strategy(config: BreadthWashoutConfig) -> Result<StrategyResults> {
 
     // Step 4: Compute breadth
     tracing::info!("Computing point-in-time breadth ...");
-    let breadth = compute_point_in_time_breadth(
-        &constituent_prices,
-        &universe.memberships,
-        config.lookback,
-    )?;
+    let breadth =
+        compute_point_in_time_breadth(&constituent_prices, &universe.memberships, config.lookback)?;
     let trailing_breadth = select_trailing(&breadth, end_date, config.sessions)?;
 
     let target_row = trailing_breadth
@@ -1672,7 +1699,11 @@ fn run_strategy(config: BreadthWashoutConfig) -> Result<StrategyResults> {
 /// CLI arguments for the breadth-washout strategy.
 #[derive(Debug, clap::Args)]
 pub struct BreadthWashoutArgs {
-    #[arg(long, default_value = "2026-03-11", help = "Signal evaluation end date")]
+    #[arg(
+        long,
+        default_value = "2026-03-11",
+        help = "Signal evaluation end date"
+    )]
     pub end_date: String,
 
     #[arg(long, default_value_t = 252, help = "Trailing trading sessions")]
@@ -1795,10 +1826,7 @@ fn build_config_from_args(args: &BreadthWashoutArgs) -> Result<BreadthWashoutCon
             signal_mode: args.signal_mode.clone(),
             signal_threshold,
             universe_mode: "preset".to_string(),
-            universe_label: args
-                .universe_label
-                .clone()
-                .unwrap_or(preset_name),
+            universe_label: args.universe_label.clone().unwrap_or(preset_name),
             index_symbol: None,
             membership_time_of_day: args.membership_time_of_day.clone(),
             membership_snapshot_dates: Vec::new(),
@@ -1820,14 +1848,12 @@ fn build_config_from_args(args: &BreadthWashoutArgs) -> Result<BreadthWashoutCon
         .map(|(_, u)| u)
         .ok_or_else(|| anyhow::anyhow!("Unknown universe: {}", args.universe))?;
 
-    let preset_path = named
-        .preset_name
-        .map(|name| {
-            presets_dir()
-                .join(format!("{name}.json"))
-                .to_string_lossy()
-                .to_string()
-        });
+    let preset_path = named.preset_name.map(|name| {
+        presets_dir()
+            .join(format!("{name}.json"))
+            .to_string_lossy()
+            .to_string()
+    });
 
     let snapshot_dates = match &args.snapshot_date {
         Some(dates) => dates.clone(),
@@ -1997,24 +2023,15 @@ mod tests {
         let d3 = NaiveDate::from_ymd_opt(2024, 3, 1).unwrap();
         memberships.insert(
             d1,
-            vec!["AAPL", "MSFT"]
-                .into_iter()
-                .map(String::from)
-                .collect(),
+            vec!["AAPL", "MSFT"].into_iter().map(String::from).collect(),
         );
         memberships.insert(
             d2,
-            vec!["AAPL", "MSFT"]
-                .into_iter()
-                .map(String::from)
-                .collect(),
+            vec!["AAPL", "MSFT"].into_iter().map(String::from).collect(),
         );
         memberships.insert(
             d3,
-            vec!["AAPL", "GOOG"]
-                .into_iter()
-                .map(String::from)
-                .collect(),
+            vec!["AAPL", "GOOG"].into_iter().map(String::from).collect(),
         );
 
         let changes = build_membership_change_table(&memberships);
@@ -2041,10 +2058,7 @@ mod tests {
         );
 
         let mut memberships = BTreeMap::new();
-        let members: HashSet<String> = vec!["AAPL", "MSFT"]
-            .into_iter()
-            .map(String::from)
-            .collect();
+        let members: HashSet<String> = vec!["AAPL", "MSFT"].into_iter().map(String::from).collect();
         memberships.insert(d1, members.clone());
         memberships.insert(d2, members.clone());
         memberships.insert(d3, members);
@@ -2216,7 +2230,11 @@ mod tests {
     fn test_load_preset_metadata_basic() {
         let tmp = tempfile::tempdir().unwrap();
         let preset = tmp.path().join("custom.json");
-        std::fs::write(&preset, r#"{"name": "custom-set", "tickers": ["spy", "qqq"]}"#).unwrap();
+        std::fs::write(
+            &preset,
+            r#"{"name": "custom-set", "tickers": ["spy", "qqq"]}"#,
+        )
+        .unwrap();
         let (name, tickers) = load_preset_metadata(&preset).unwrap();
         assert_eq!(name, "custom-set");
         assert_eq!(tickers, vec!["SPY", "QQQ"]);

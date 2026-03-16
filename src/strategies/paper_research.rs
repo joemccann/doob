@@ -4,8 +4,7 @@
 /// hypotheses that are not yet encoded as native strategy families.
 /// It applies a single-rule signal on close-price history and evaluates a
 /// long-only equity curve against a buy-and-hold baseline.
-
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use chrono::NaiveDate;
 
 use num_format::ToFormattedString;
@@ -14,8 +13,8 @@ use crate::cli::OutputFormat;
 use crate::data::readers::load_ticker_ohlcv;
 use crate::metrics::fees::ibkr_roundtrip_cost;
 use crate::strategies::common::{
-    build_json_annual_returns, buy_and_hold_equity, compute_strategy_metrics, format_annual_table,
-    format_results_header, format_strategy_row, JsonOutput, StrategyResult,
+    JsonOutput, StrategyResult, build_json_annual_returns, buy_and_hold_equity,
+    compute_strategy_metrics, format_annual_table, format_results_header, format_strategy_row,
 };
 
 const DEFAULT_CAPITAL: f64 = 1_000_000.0;
@@ -64,10 +63,18 @@ pub struct PaperResearchArgs {
     #[arg(long, default_value_t = DEFAULT_SESSIONS, help = "Trailing trading sessions")]
     pub sessions: usize,
 
-    #[arg(long, default_value = "SPY", help = "Asset to generate signals and trade")]
+    #[arg(
+        long,
+        default_value = "SPY",
+        help = "Asset to generate signals and trade"
+    )]
     pub asset: String,
 
-    #[arg(long, default_value = "trend_momentum", help = "Research rule: trend_momentum|trend_pullback|rsi_reversion|volatility_regime")]
+    #[arg(
+        long,
+        default_value = "trend_momentum",
+        help = "Research rule: trend_momentum|trend_pullback|rsi_reversion|volatility_regime"
+    )]
     pub rule: String,
 
     #[arg(long, default_value_t = DEFAULT_FAST_WINDOW, help = "Primary lookback for MA and momentum signal rules")]
@@ -79,16 +86,28 @@ pub struct PaperResearchArgs {
     #[arg(long, default_value_t = DEFAULT_RSI_WINDOW, help = "RSI lookback")]
     pub rsi_window: usize,
 
-    #[arg(long, default_value_t = 35.0, help = "RSI oversold threshold for reversion candidates")]
+    #[arg(
+        long,
+        default_value_t = 35.0,
+        help = "RSI oversold threshold for reversion candidates"
+    )]
     pub rsi_oversold: f64,
 
-    #[arg(long, default_value_t = 65.0, help = "RSI overbought threshold (not used unless strategy variant requires it)")]
+    #[arg(
+        long,
+        default_value_t = 65.0,
+        help = "RSI overbought threshold (not used unless strategy variant requires it)"
+    )]
     pub rsi_overbought: f64,
 
     #[arg(long, default_value_t = DEFAULT_VOL_WINDOW, help = "Realized-volatility lookback")]
     pub vol_window: usize,
 
-    #[arg(long, default_value_t = 0.45, help = "Volatility percentile cap [0,1] for volatility_regime")]
+    #[arg(
+        long,
+        default_value_t = 0.45,
+        help = "Volatility percentile cap [0,1] for volatility_regime"
+    )]
     pub vol_cap: f64,
 
     #[arg(long, help = "Optional hypothesis id")]
@@ -187,7 +206,9 @@ fn build_signal_mask(
     let vols: Vec<f64> = closes
         .iter()
         .enumerate()
-        .map(|(idx, _)| rolling_volatility(&returns, idx.saturating_sub(1), vol_window).unwrap_or(f64::NAN))
+        .map(|(idx, _)| {
+            rolling_volatility(&returns, idx.saturating_sub(1), vol_window).unwrap_or(f64::NAN)
+        })
         .collect();
     let valid_vol: Vec<f64> = vols.iter().copied().filter(|v| v.is_finite()).collect();
     let mut vol_threshold = None;
@@ -281,7 +302,10 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
         .end_date
         .parse::<NaiveDate>()
         .map_err(|e| anyhow::anyhow!("invalid --end-date: {e}"))?;
-    let max_lookback = args.slow_window.max(args.vol_window).max(args.rsi_window.max(2));
+    let max_lookback = args
+        .slow_window
+        .max(args.vol_window)
+        .max(args.rsi_window.max(2));
     let buffer = args
         .sessions
         .saturating_mul(6)
@@ -353,37 +377,37 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
         let output = JsonOutput {
             strategy: "paper-research".to_string(),
             ticker: asset.clone(),
-            period_start: eval_dates
-                .first()
-                .unwrap()
-                .to_string(),
+            period_start: eval_dates.first().unwrap().to_string(),
             period_end: eval_dates.last().unwrap().to_string(),
             years,
             capital: DEFAULT_CAPITAL,
             fee_model: "IBKR Tiered".to_string(),
             results,
-            annual_returns: build_json_annual_returns(&strategies, eval_dates, args.start_year_table),
+            annual_returns: build_json_annual_returns(
+                &strategies,
+                eval_dates,
+                args.start_year_table,
+            ),
         };
         println!("{}", serde_json::to_string(&output)?);
     } else if fmt == OutputFormat::Md {
-        println!("{}", crate::strategies::common::format_results_md(
-            &format!("Paper Research: {} {}", asset, rule.as_str()),
-            &asset,
-            eval_dates,
-            years,
-            DEFAULT_CAPITAL,
-            &strategies,
-            &[],
-            args.start_year_table,
-        ));
+        println!(
+            "{}",
+            crate::strategies::common::format_results_md(
+                &format!("Paper Research: {} {}", asset, rule.as_str()),
+                &asset,
+                eval_dates,
+                years,
+                DEFAULT_CAPITAL,
+                &strategies,
+                &[],
+                args.start_year_table,
+            )
+        );
     } else {
         println!();
         println!("{}", "=".repeat(80));
-        println!(
-            "Paper Research Strategy: {} ({})",
-            asset,
-            rule.as_str()
-        );
+        println!("Paper Research Strategy: {} ({})", asset, rule.as_str());
         println!(
             "Period: {} to {} ({:.1} years)",
             eval_dates.first().unwrap(),
@@ -400,7 +424,10 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
         println!("{header}");
         println!("{sep}");
         for strategy in &strategies {
-            println!("{}", format_strategy_row(&strategy.name, &strategy.equity, years));
+            println!(
+                "{}",
+                format_strategy_row(&strategy.name, &strategy.equity, years)
+            );
         }
         println!("\nAnnual Returns (from {}):", args.start_year_table);
         println!(

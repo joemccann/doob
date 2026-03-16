@@ -1,9 +1,8 @@
 /// Preset loading and validation.
-
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use serde::Deserialize;
 
 use crate::config::presets_dir;
@@ -33,8 +32,8 @@ pub fn load_preset(name_or_path: &str) -> Result<(String, Vec<String>)> {
 
     let content = std::fs::read_to_string(&path)
         .with_context(|| format!("reading preset {}", path.display()))?;
-    let payload: PresetPayload =
-        serde_json::from_str(&content).with_context(|| format!("parsing preset {}", path.display()))?;
+    let payload: PresetPayload = serde_json::from_str(&content)
+        .with_context(|| format!("parsing preset {}", path.display()))?;
 
     let name = payload
         .name
@@ -43,7 +42,10 @@ pub fn load_preset(name_or_path: &str) -> Result<(String, Vec<String>)> {
     let tickers = payload.tickers;
     match tickers {
         Some(ref t) if !t.is_empty() => {}
-        _ => bail!("Preset {} does not contain a non-empty ticker list", path.display()),
+        _ => bail!(
+            "Preset {} does not contain a non-empty ticker list",
+            path.display()
+        ),
     }
     let tickers = tickers.unwrap();
 
@@ -67,12 +69,12 @@ pub fn list_presets() -> Vec<String> {
         .into_iter()
         .flatten()
         .filter_map(|e| e.ok())
-        .filter(|e| {
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "json"))
+        .filter_map(|e| {
             e.path()
-                .extension()
-                .is_some_and(|ext| ext == "json")
+                .file_stem()
+                .map(|s| s.to_string_lossy().to_string())
         })
-        .filter_map(|e| e.path().file_stem().map(|s| s.to_string_lossy().to_string()))
         .collect();
     names.sort();
     names
@@ -136,7 +138,11 @@ mod tests {
             .flatten()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().is_some_and(|ext| ext == "json"))
-            .filter_map(|e| e.path().file_stem().map(|s| s.to_string_lossy().to_string()))
+            .filter_map(|e| {
+                e.path()
+                    .file_stem()
+                    .map(|s| s.to_string_lossy().to_string())
+            })
             .collect();
         names.sort();
         assert_eq!(names, vec!["a", "b"]);

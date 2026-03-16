@@ -2,19 +2,19 @@
 ///
 /// Buy SPY at close, sell at next open.
 /// Optional VIX regime filter: only take overnight trades when VIX < 200-day MA.
-
 use anyhow::Result;
 use chrono::NaiveDate;
 
 use num_format::ToFormattedString;
 
 use crate::cli::OutputFormat;
-use crate::data::readers::{load_ticker_ohlcv, load_vix_from_cboe, OhlcvRow, VixRow};
+use crate::data::readers::{OhlcvRow, VixRow, load_ticker_ohlcv, load_vix_from_cboe};
 use crate::metrics::fees::ibkr_roundtrip_cost;
 use crate::metrics::performance::sharpe_default;
 use crate::strategies::common::{
-    build_json_annual_returns, buy_and_hold_equity, compute_strategy_metrics, daily_returns,
-    format_annual_table, format_results_header, format_strategy_row, JsonOutput, StrategyResult,
+    JsonOutput, StrategyResult, build_json_annual_returns, buy_and_hold_equity,
+    compute_strategy_metrics, daily_returns, format_annual_table, format_results_header,
+    format_strategy_row,
 };
 
 pub const DEFAULT_CAPITAL: f64 = 1_000_000.0;
@@ -34,17 +34,17 @@ pub fn compute_overnight_returns(rows: &[OhlcvRow]) -> Vec<f64> {
 }
 
 /// Compute VIX filter: True when VIX close < VIX MA (low-vol regime).
-pub fn compute_vix_filter(vix_rows: &[VixRow], lookback: usize) -> Vec<(NaiveDate, f64, f64, bool)> {
+pub fn compute_vix_filter(
+    vix_rows: &[VixRow],
+    lookback: usize,
+) -> Vec<(NaiveDate, f64, f64, bool)> {
     let n = vix_rows.len();
     let mut result = Vec::with_capacity(n);
 
     for i in 0..n {
         let vix_close = vix_rows[i].close;
         let vix_ma = if i + 1 >= lookback {
-            let sum: f64 = vix_rows[i + 1 - lookback..=i]
-                .iter()
-                .map(|r| r.close)
-                .sum();
+            let sum: f64 = vix_rows[i + 1 - lookback..=i].iter().map(|r| r.close).sum();
             sum / lookback as f64
         } else {
             f64::NAN
@@ -281,7 +281,10 @@ pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
     let vix_mask: Vec<bool> = if let Some(ref vfd) = vix_filter_data {
         let vix_map: std::collections::HashMap<NaiveDate, bool> =
             vfd.iter().map(|(d, _, _, f)| (*d, *f)).collect();
-        dates.iter().map(|d| *vix_map.get(d).unwrap_or(&false)).collect()
+        dates
+            .iter()
+            .map(|d| *vix_map.get(d).unwrap_or(&false))
+            .collect()
     } else {
         vec![false; n]
     };
@@ -326,8 +329,11 @@ pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
         });
     }
 
-    let years = (dates.last().unwrap().signed_duration_since(*dates.first().unwrap())).num_days()
-        as f64
+    let years = (dates
+        .last()
+        .unwrap()
+        .signed_duration_since(*dates.first().unwrap()))
+    .num_days() as f64
         / 365.25;
 
     // Compute ADF stats for overnight strategies
@@ -363,24 +369,23 @@ pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
             capital: args.capital,
             fee_model: "IBKR Tiered".to_string(),
             results,
-            annual_returns: build_json_annual_returns(
-                &strategies,
-                &dates,
-                args.start_year_table,
-            ),
+            annual_returns: build_json_annual_returns(&strategies, &dates, args.start_year_table),
         };
         println!("{}", serde_json::to_string(&output)?);
     } else if fmt == OutputFormat::Md {
-        println!("{}", crate::strategies::common::format_results_md(
-            "Overnight Drift Backtest",
-            "SPY",
-            &dates,
-            years,
-            args.capital,
-            &strategies,
-            &adf_results,
-            args.start_year_table,
-        ));
+        println!(
+            "{}",
+            crate::strategies::common::format_results_md(
+                "Overnight Drift Backtest",
+                "SPY",
+                &dates,
+                years,
+                args.capital,
+                &strategies,
+                &adf_results,
+                args.start_year_table,
+            )
+        );
     } else {
         println!();
         println!("{}", "=".repeat(80));
@@ -405,10 +410,7 @@ pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
         for strat in &strategies {
             println!("{}", format_strategy_row(&strat.name, &strat.equity, years));
             if let Some((_, stat, pval)) = adf_results.iter().find(|(n, _, _)| *n == strat.name) {
-                println!(
-                    "  {:>23}: {:.4}  p-value: {:.6}",
-                    "ADF stat", stat, pval
-                );
+                println!("  {:>23}: {:.4}  p-value: {:.6}", "ADF stat", stat, pval);
             }
         }
 
@@ -424,7 +426,10 @@ pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
 
         if include_vix {
             if let Some(vix_strat) = strategies.iter().find(|s| s.name.contains("VIX Filter")) {
-                let all_strat = strategies.iter().find(|s| s.name == "Overnight (All)").unwrap();
+                let all_strat = strategies
+                    .iter()
+                    .find(|s| s.name == "Overnight (All)")
+                    .unwrap();
                 let dr_all = daily_returns(&all_strat.equity);
                 let dr_vix = daily_returns(&vix_strat.equity);
                 let s_all = sharpe_default(&dr_all);
@@ -498,14 +503,8 @@ mod tests {
             .collect();
         let mask = [true, true, true];
 
-        let equity = simulate_strategy(
-            &returns,
-            &closes,
-            &opens_next,
-            &mask,
-            10_000.0,
-            &|_, _| 0.0,
-        );
+        let equity =
+            simulate_strategy(&returns, &closes, &opens_next, &mask, 10_000.0, &|_, _| 0.0);
         assert_eq!(equity.len(), 4);
         assert_eq!(equity[0], 10_000.0);
         assert!((equity[1] - 10_150.0).abs() < 1e-6);
@@ -522,7 +521,8 @@ mod tests {
             .collect();
         let mask = [false, true];
 
-        let equity = simulate_strategy(&returns, &closes, &opens_next, &mask, 10_000.0, &|_, _| 0.0);
+        let equity =
+            simulate_strategy(&returns, &closes, &opens_next, &mask, 10_000.0, &|_, _| 0.0);
         assert_eq!(equity[1], 10_000.0);
         assert!(equity[2] > 10_000.0);
     }
@@ -534,8 +534,14 @@ mod tests {
         let returns = [(100.0_f64 / 100.0).ln()];
         let mask = [true];
 
-        let equity =
-            simulate_strategy(&returns, &closes, &opens_next, &mask, 10_000.0, &ibkr_roundtrip_cost);
+        let equity = simulate_strategy(
+            &returns,
+            &closes,
+            &opens_next,
+            &mask,
+            10_000.0,
+            &ibkr_roundtrip_cost,
+        );
         assert!(equity[1] < 10_000.0);
     }
 
@@ -574,7 +580,10 @@ mod tests {
             returns.push((u - 0.5) * 0.02);
         }
         let (stat, pval) = adf_test(&returns);
-        assert!(stat < -2.0, "ADF stat should be negative for stationary data: {stat}");
+        assert!(
+            stat < -2.0,
+            "ADF stat should be negative for stationary data: {stat}"
+        );
         assert!(pval < 0.5, "p-value should be small: {pval}");
     }
 
