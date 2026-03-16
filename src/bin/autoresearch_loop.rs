@@ -145,6 +145,67 @@ fn safe_float(value: &Value) -> Option<f64> {
     }
 }
 
+fn arg_value<'a>(args: &'a [String], flag: &'a str) -> Option<&'a str> {
+    let mut iter = args.iter();
+    while let Some(v) = iter.next() {
+        if v == flag {
+            return iter.next().map(String::as_str);
+        }
+    }
+    None
+}
+
+fn arg_u32(args: &[String], flag: &str) -> Option<u32> {
+    arg_value(args, flag).and_then(|value: &str| value.parse::<u32>().ok())
+}
+
+fn arg_f64(args: &[String], flag: &str) -> Option<f64> {
+    arg_value(args, flag).and_then(|value: &str| value.parse::<f64>().ok())
+}
+
+fn fmt_pct(v: f64) -> String {
+    format!("{:.1}%", v.abs() * 100.0)
+}
+
+fn fmt_num(v: f64) -> String {
+    format!("{:.3}", v)
+}
+
+fn rule_description(rule: &str, args: &[String], asset: &str) -> String {
+    match rule {
+        RULE_TREND_MOMENTUM => {
+            let fast = arg_u32(args, "--fast-window").unwrap_or(12);
+            let slow = arg_u32(args, "--slow-window").unwrap_or(40);
+            format!(
+                "Trend momentum on {asset}: buys when the {fast}-day moving average is above the {slow}-day average and price is above the short MA, aiming to ride persistent up-trends while exiting on MA crosses."
+            )
+        }
+        RULE_TREND_PULLBACK => {
+            let fast = arg_u32(args, "--fast-window").unwrap_or(12);
+            let slow = arg_u32(args, "--slow-window").unwrap_or(40);
+            format!(
+                "Trend pullback on {asset}: buys when price drops below the {fast}-day MA but stays above the {slow}-day MA, capturing controlled dip re-entries inside a larger uptrend."
+            )
+        }
+        RULE_RSI_REVERSION => {
+            let rsi_window = arg_u32(args, "--rsi-window").unwrap_or(14);
+            let oversold = arg_f64(args, "--rsi-oversold").unwrap_or(35.0);
+            format!(
+                "RSI reversion on {asset}: enters positions when RSI({rsi_window}) falls below {oversold:.0}, targeting mean-reversion from oversold conditions."
+            )
+        }
+        RULE_VOL_REGIME => {
+            let vol_window = arg_u32(args, "--vol-window").unwrap_or(20);
+            let vol_cap = arg_f64(args, "--vol-cap").unwrap_or(0.45);
+            format!(
+                "Volatility regime on {asset}: holds through calmer market states, only trading when realized {vol_window}-day volatility stays within the lowest {:.0}% regime (vol_cap).",
+                (vol_cap * 100.0).round()
+            )
+        }
+        _ => format!("Paper-research candidate on {asset} with adaptive research-rule logic."),
+    }
+}
+
 fn has_arg(args: &[String], flag: &str) -> bool {
     args.iter().any(|v| v == flag)
 }
@@ -793,34 +854,63 @@ fn format_detail_summary(details: &Value) -> String {
     )
 }
 
-fn profitability_blurb(train: &Value, test: &Value, strategy: &str) -> String {
+fn profitability_blurb(train: &Value, test: &Value, strategy: &str, rule: &str, args: &[String], asset: &str) -> String {
     let train_cagr = safe_float(train.get("cagr").unwrap_or(&Value::Null)).unwrap_or(0.0);
     let test_cagr = safe_float(test.get("cagr").unwrap_or(&Value::Null)).unwrap_or(0.0);
     let train_sharpe = safe_float(train.get("sharpe").unwrap_or(&Value::Null)).unwrap_or(0.0);
     let test_sharpe = safe_float(test.get("sharpe").unwrap_or(&Value::Null)).unwrap_or(0.0);
-    let train_dd = safe_float(test.get("max_drawdown").unwrap_or(&Value::Null)).unwrap_or(0.0).abs();
+    let train_dd = safe_float(train.get("max_drawdown").unwrap_or(&Value::Null)).unwrap_or(0.0).abs();
     let test_dd = safe_float(test.get("max_drawdown").unwrap_or(&Value::Null)).unwrap_or(0.0).abs();
+    let signal = rule_description(rule, args, asset);
+    let mechanics = format!(
+        "Why it works: {} This strategy is run through `{}` in `doob`.",
+        signal,
+        strategy
+    );
 
     if train_cagr > 0.05 && test_cagr > 0.02 && train_sharpe > 0.2 && test_sharpe > 0.1 {
         format!(
-            "{} shows consistent equity growth in train/test, with positive Sharpe on both windows and controlled drawdowns ({:.2}% / {:.2}%).",
-            strategy,
-            train_dd,
-            test_dd
+            "{} Train: CAGR {}, Sharpe {}, max drawdown {}. Test: CAGR {}, Sharpe {}, max drawdown {}. Strongly consistent equity growth across both windows.",
+            mechanics,
+            fmt_pct(train_cagr),
+            fmt_num(train_sharpe),
+            fmt_pct(train_dd),
+            fmt_pct(test_cagr),
+            fmt_num(test_sharpe),
+            fmt_pct(test_dd),
         )
     } else if train_sharpe > 0.0 && test_sharpe > 0.0 {
         format!(
-            "{} has modest but stable risk-adjusted edge (train {:.3}, test {:.3}) while drawdowns are acceptable ({:.2}% / {:.2}%).",
-            strategy,
-            train_sharpe,
-            test_sharpe,
-            train_dd,
-            test_dd
+            "{} Train: CAGR {}, Sharpe {} (drawdown {}). Test: CAGR {}, Sharpe {} (drawdown {}). Risk-adjusted edge is present in both windows but less stable than ideal.",
+            mechanics,
+            fmt_pct(train_cagr),
+            fmt_num(train_sharpe),
+            fmt_pct(train_dd),
+            fmt_pct(test_cagr),
+            fmt_num(test_sharpe),
+            fmt_pct(test_dd),
+        )
+    } else if test_cagr > 0.0 && test_sharpe > 0.0 {
+        format!(
+            "{} Train: CAGR {}, Sharpe {} with {} max drawdown. Test: CAGR {}, Sharpe {} with {} max drawdown. The signal appears to adapt better in forward periods; monitor regime dependence.",
+            mechanics,
+            fmt_pct(train_cagr),
+            fmt_num(train_sharpe),
+            fmt_pct(train_dd),
+            fmt_pct(test_cagr),
+            fmt_num(test_sharpe),
+            fmt_pct(test_dd),
         )
     } else {
         format!(
-            "{} is sensitive to regime behavior: positive direction in some windows but drawdown/risk profile should be validated before deployment.",
-            strategy
+            "{} Train: CAGR {}, Sharpe {} ({} max drawdown). Test: CAGR {}, Sharpe {} ({} max drawdown). This candidate is not yet clearly robust and should be treated as exploratory.",
+            strategy,
+            fmt_pct(train_cagr),
+            fmt_num(train_sharpe),
+            fmt_pct(train_dd),
+            fmt_pct(test_cagr),
+            fmt_num(test_sharpe),
+            fmt_pct(test_dd)
         )
     }
 }
@@ -1010,7 +1100,14 @@ fn save_interactive_report(path: &Path, rows: &[CandidateReport]) -> io::Result<
             test_score: row.test_score,
             train_details: row.train_details.clone(),
             test_details: row.test_details.clone(),
-            why: profitability_blurb(&row.train_details, &row.test_details, &row.strategy),
+            why: profitability_blurb(
+                &row.train_details,
+                &row.test_details,
+                &row.strategy,
+                &row.rule,
+                &row.args,
+                &row.focus_asset,
+            ),
             is_seeded: row.is_seeded,
         })
         .collect();

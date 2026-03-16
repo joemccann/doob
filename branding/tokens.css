@@ -1,0 +1,99 @@
+/*
+ * doob Design Tokens
+ * Derived from radial.org brand language
+ * --------------------------------------------------
+ * Usage: <link rel="stylesheet" href="tokens.css">
+ *        or copy :root block into your <style> tag
+ */
+
+/* Google Fonts import — DM Mono (monospace / data font) */
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+
+:root {
+  /* ── Base ─────────────────────────────────────── */
+  --doob-bg:             #ffffff;
+  --doob-bg-alt:         #f5f5f5;
+  --doob-bg-surface:     #c7cdc8;
+  --doob-text:           #1e1e1e;
+  --doob-text-muted:     #4a5760;
+
+  /* ── Brand Colors ─────────────────────────────── */
+  --doob-teal:           #3e5b63;
+  --doob-teal-deep:      #2e454c;
+  --doob-lime:           #c6e758;
+  --doob-lime-hover:     #d4f06a;
+  --doob-sky:            #5fc4e3;
+  --doob-slate:          #4a5760;
+  --doob-sage:           #c7cdc8;
+
+  /* ── Dark Mode (report panels) ────────────────── */
+  --doob-dark-bg:        #1e1e1e;
+  --doob-dark-surface:   #2a3a42;
+  --doob-dark-panel:     #3e5b63;
+  --doob-dark-text:      #f5f5f5;
+  --doob-dark-muted:     #c7cdc8;
+
+  /* ── Semantic ─────────────────────────────────── */
+  --doob-positive:       #c6e758;
+  --doob-positive-text:  #3a5200;
+  --doob-warning:        #f5a623;
+  --doob-warning-text:   #7a4a00;
+  --doob-negative:       #e85d5d;
+  --doob-negative-text:  #7a1a1a;
+  --doob-info:           #5fc4e3;
+  --doob-info-text:      #1a5a6a;
+
+  /* ── Typography ───────────────────────────────── */
+  --doob-font-display:   "Helvetica Now Display", -apple-system, BlinkMacSystemFont,
+                          "Avenir Next", Avenir, "Segoe UI", "Helvetica Neue",
+                          Helvetica, Cantarell, Ubuntu, Roboto, Noto, Arial, sans-serif;
+  --doob-font-mono:      "DM Mono", Menlo, Consolas, Monaco, "Liberation Mono",
+                          "Lucida Console", monospace;
+
+  /* ── Type Scale ───────────────────────────────── */
+  --doob-text-xs:        0.6875rem;   /* 11px — pills, badges */
+  --doob-text-sm:        0.8125rem;   /* 13px — table cells, captions */
+  --doob-text-base:      1rem;        /* 16px — body */
+  --doob-text-lg:        1.25rem;     /* 20px — lead text */
+  --doob-text-xl:        1.75rem;     /* 28px — section headers */
+  --doob-text-2xl:       2.625rem;    /* 42px — page subtitle */
+  --doob-text-3xl:       5.375rem;    /* 86px — hero headline */
+
+  --doob-leading-tight:  1.0;
+  --doob-leading-snug:   1.2;
+  --doob-leading-normal: 1.5;
+  --doob-tracking-tight: -0.02em;
+  --doob-tracking-normal: 0;
+  --doob-tracking-wide:  0.08em;
+
+  /* ── Spacing ──────────────────────────────────── */
+  --doob-space-1:        4px;
+  --doob-space-2:        8px;
+  --doob-space-3:        12px;
+  --doob-space-4:        16px;
+  --doob-space-5:        20px;
+  --doob-space-6:        24px;
+  --doob-space-7:        32px;
+  --doob-space-8:        40px;
+  --doob-space-9:        48px;
+  --doob-space-10:       64px;
+  --doob-space-11:       80px;
+  --doob-space-12:       100px;
+
+  /* ── Layout ───────────────────────────────────── */
+  --doob-max-width:      1540px;
+  --doob-gutter:         clamp(20px, calc(12px + 1.8vw), 40px);
+  --doob-radius-sm:      6px;
+  --doob-radius-md:      10px;
+  --doob-radius-lg:      16px;
+  --doob-radius-xl:      24px;
+
+  /* ── Shadows ──────────────────────────────────── */
+  --doob-shadow-sm:      0 1px 2px rgba(30,30,30,0.06);
+  --doob-shadow-md:      0 4px 12px rgba(30,30,30,0.08);
+  --doob-shadow-lg:      0 8px 32px rgba(30,30,30,0.12);
+
+  /* ── Transitions ──────────────────────────────── */
+  --doob-ease:           cubic-bezier(0.25, 0.1, 0.25, 1);
+  --doob-duration:       200ms;
+}

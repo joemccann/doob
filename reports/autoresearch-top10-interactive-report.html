@@ -1,0 +1,702 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doob Autoresearch Loop - Top 10 Research Strategies</title>
+  <style>
+    :root {
+      --bg: #071023;
+      --panel: #0f1f3a;
+      --muted: #9db2cf;
+      --text: #ecf4ff;
+      --accent: #60a5fa;
+      --ok: #4ade80;
+      --warn: #f59e0b;
+      --bad: #f87171;
+    }
+    body { margin: 0; font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at 30% 0%, #182f54 0%, var(--bg) 45%, #020915 100%); color: var(--text); }
+    .container { width: min(1420px, 96vw); margin: 14px auto; }
+    .panel { background: linear-gradient(180deg, #102548, #0f1c39); border: 1px solid #21406e; border-radius: 10px; padding: 12px; }
+    h1 { margin: 0 0 10px 0; letter-spacing: 0.4px; }
+    .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .card { background: #0f2a51; border: 1px solid #28578f; border-radius: 10px; padding: 10px; }
+    .kpi { font-size: 1.8rem; font-weight: 700; }
+    .muted { color: var(--muted); }
+    .controls { margin: 12px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+    .controls input, .controls select {
+      padding: 8px;
+      border: 1px solid #2f5482;
+      border-radius: 8px;
+      background: #0e2346;
+      color: var(--text);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid #233c63; text-align: left; vertical-align: top; font-size: 13px; }
+    th { background: #17325a; color: #d6e5ff; position: sticky; top: 0; }
+    tr:hover td { background: #18345d; }
+    .pill { display:inline-block; border:1px solid #365b8e; border-radius:999px; padding:2px 8px; margin-right: 6px; font-size: 11px; }
+    .seed { color: var(--ok); }
+    .det { color: var(--warn); }
+    .row-details { border: 1px solid #27508a; border-radius: 8px; background: #0f2450; padding: 8px; margin-top: 6px; }
+    .row-details p { margin: 4px 0; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Doob Autoresearch Loop — Paper-Research Top 10</h1>
+  <div class="muted">Net-new strategy discovery from Exa/arXiv paper hypotheses, executed as doob-native `paper-research` candidates.</div>
+  <div class="summary">
+    <div class="card"><div class="muted">Rows generated</div><div class="kpi">10</div></div>
+    <div class="card"><div class="muted">Top rows shown</div><div class="kpi">10</div></div>
+    <div class="card"><div class="muted">Seeded in top10</div><div class="kpi">10</div></div>
+  </div>
+  <div class="panel">
+    <div class="controls">
+      <input id="search" placeholder="Search strategy, rule, source, asset, rationale">
+      <select id="cat"><option value="All">All Categories</option><option value="Research">Research</option></select>
+      <select id="src"><option value="All">All Sources</option></select>
+      <select id="seeded">
+        <option value="All">All</option>
+        <option value="Seeded">Seeded</option>
+        <option value="Fallback">Fallback</option>
+      </select>
+    </div>
+    <div style="overflow:auto; max-height: 68vh;">
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Candidate</th>
+            <th>Rule</th>
+            <th>Category</th>
+            <th>Score</th>
+            <th>Train</th>
+            <th>Test</th>
+            <th>Source</th>
+            <th>Why profitable?</th>
+          </tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+    <div id="details"></div>
+  </div>
+</div>
+<script>
+const rows = [
+  {
+    "rank": 1,
+    "candidate_id": "seed-105-rsi_reversion-v0",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/html/2512.02037v1",
+    "rule": "rsi_reversion",
+    "focus_asset": "TQQQ",
+    "args": [
+      "--asset",
+      "TQQQ",
+      "--rule",
+      "rsi_reversion",
+      "--fast-window",
+      "16",
+      "--slow-window",
+      "18",
+      "--rsi-window",
+      "8",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "78",
+      "--vol-window",
+      "20",
+      "--vol-cap",
+      "0.40",
+      "--hypothesis-id",
+      "seed-105-0"
+    ],
+    "combined_score": 3.436931622379667,
+    "train_score": 4.132901672326282,
+    "test_score": 2.144415815335953,
+    "train_details": {
+      "cagr": 0.33428236244084664,
+      "final_equity": 4464920.842,
+      "max_drawdown": 0.31155163972198135,
+      "name": "PaperResearch [TQQQ|rsi_reversion]",
+      "sharpe": 0.8544599310973253,
+      "var_95": -0.0005976276880789997
+    },
+    "test_details": {
+      "cagr": 0.18164146080626997,
+      "final_equity": 1231110.5839999998,
+      "max_drawdown": 0.31366541062945086,
+      "name": "PaperResearch [TQQQ|rsi_reversion]",
+      "sharpe": 0.4978995417931882,
+      "var_95": 0.0
+    },
+    "why": "Why it works: RSI reversion on TQQQ: enters positions when RSI(8) falls below 30, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 33.4%, Sharpe 0.854, max drawdown 31.2%. Test: CAGR 18.2%, Sharpe 0.498, max drawdown 31.4%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true
+  },
+  {
+    "rank": 2,
+    "candidate_id": "seed-028-rsi_reversion-v2",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/html/2503.11499v1",
+    "rule": "rsi_reversion",
+    "focus_asset": "TQQQ",
+    "args": [
+      "--asset",
+      "TQQQ",
+      "--rule",
+      "rsi_reversion",
+      "--fast-window",
+      "6",
+      "--slow-window",
+      "16",
+      "--rsi-window",
+      "12",
+      "--rsi-oversold",
+      "28",
+      "--rsi-overbought",
+      "72",
+      "--vol-window",
+      "20",
+      "--vol-cap",
+      "0.40",
+      "--hypothesis-id",
+      "seed-28-2"
+    ],
+    "combined_score": 2.792776259744826,
+    "train_score": 2.6756455998962467,
+    "test_score": 3.010304628035045,
+    "train_details": {
+      "cagr": 0.19138791504960695,
+      "final_equity": 2480739.916000002,
+      "max_drawdown": 0.29441433198474304,
+      "name": "PaperResearch [TQQQ|rsi_reversion]",
+      "sharpe": 0.6464993914590819,
+      "var_95": 0.0
+    },
+    "test_details": {
+      "cagr": 0.23588482349599915,
+      "final_equity": 1301904.197,
+      "max_drawdown": 0.1994670560232211,
+      "name": "PaperResearch [TQQQ|rsi_reversion]",
+      "sharpe": 0.6247498551638533,
+      "var_95": 0.0
+    },
+    "why": "Why it works: RSI reversion on TQQQ: enters positions when RSI(12) falls below 28, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 19.1%, Sharpe 0.646, max drawdown 29.4%. Test: CAGR 23.6%, Sharpe 0.625, max drawdown 19.9%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true
+  },
+  {
+    "rank": 3,
+    "candidate_id": "seed-091-rsi_reversion-v2",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/pdf/2505.08180",
+    "rule": "rsi_reversion",
+    "focus_asset": "SPXL",
+    "args": [
+      "--asset",
+      "SPXL",
+      "--rule",
+      "rsi_reversion",
+      "--fast-window",
+      "12",
+      "--slow-window",
+      "30",
+      "--rsi-window",
+      "12",
+      "--rsi-oversold",
+      "28",
+      "--rsi-overbought",
+      "72",
+      "--vol-window",
+      "20",
+      "--vol-cap",
+      "0.40",
+      "--hypothesis-id",
+      "seed-91-2"
+    ],
+    "combined_score": 2.4227808194953666,
+    "train_score": 2.146024295661172,
+    "test_score": 2.9367572209017276,
+    "train_details": {
+      "cagr": 0.16084215896493048,
+      "final_equity": 2167993.305000001,
+      "max_drawdown": 0.28730028399999996,
+      "name": "PaperResearch [SPXL|rsi_reversion]",
+      "sharpe": 0.5277305798238631,
+      "var_95": 0.0
+    },
+    "test_details": {
+      "cagr": 0.2040166385278004,
+      "final_equity": 1260217.9859999998,
+      "max_drawdown": 0.15720339920229656,
+      "name": "PaperResearch [SPXL|rsi_reversion]",
+      "sharpe": 0.6442473828727135,
+      "var_95": 0.0
+    },
+    "why": "Why it works: RSI reversion on SPXL: enters positions when RSI(12) falls below 28, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 16.1%, Sharpe 0.528, max drawdown 28.7%. Test: CAGR 20.4%, Sharpe 0.644, max drawdown 15.7%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true
+  },
+  {
+    "rank": 4,
+    "candidate_id": "seed-013-rsi_reversion-v0",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/html/2512.23596v1",
+    "rule": "rsi_reversion",
+    "focus_asset": "SPXL",
+    "args": [
+      "--asset",
+      "SPXL",
+      "--rule",
+      "rsi_reversion",
+      "--fast-window",
+      "12",
+      "--slow-window",
+      "30",
+      "--rsi-window",
+      "24",
+      "--rsi-oversold",
+      "26",
+      "--rsi-overbought",
+      "74",
+      "--vol-window",
+      "20",
+      "--vol-cap",
+      "0.40",
+      "--hypothesis-id",
+      "seed-13-0"
+    ],
+    "combined_score": 2.3621003274658543,
+    "train_score": 1.7436085092471498,
+    "test_score": 3.51072798987202,
+    "train_details": {
+      "cagr": 0.0975962631073548,
+      "final_equity": 1621158.5889999997,
+      "max_drawdown": 0.0,
+      "name": "PaperResearch [SPXL|rsi_reversion]",
+      "sharpe": 0.386010310201007,
+      "var_95": 0.0
+    },
+    "test_details": {
+      "cagr": 0.21569771826734072,
+      "final_equity": 1275466.708,
+      "max_drawdown": 0.0,
+      "name": "PaperResearch [SPXL|rsi_reversion]",
+      "sharpe": 0.7388472267559919,
+      "var_95": 0.0
+    },
+    "why": "Why it works: RSI reversion on SPXL: enters positions when RSI(24) falls below 26, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 9.8%, Sharpe 0.386, max drawdown 0.0%. Test: CAGR 21.6%, Sharpe 0.739, max drawdown 0.0%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true
+  },
+  {
+    "rank": 5,
+    "candidate_id": "seed-012-rsi_reversion-v1",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://ar5iv.labs.arxiv.org/html/2105.13727",
+    "rule": "rsi_reversion",
+    "focus_asset": "SPXL",
+    "args": [
+      "--asset",
+      "SPXL",
+      "--rule",
+      "rsi_reversion",
+      "--fast-window",
+      "12",
+      "--slow-window",
+      "30",
+      "--rsi-window",
+      "24",
+      "--rsi-oversold",
+      "28",
+      "--rsi-overbought",
+      "74",
+      "--vol-window",
+      "20",
+      "--vol-cap",
+      "0.40",
+      "--hypothesis-id",
+      "seed-12-1"
+    ],
+    "combined_score": 2.1597711405485396,
+    "train_score": 0.9650498047770877,
+    "test_score": 4.378539335552665,
+    "train_details": {
+      "cagr": 0.07810939875078238,
+      "final_equity": 1477277.881999999,
+      "max_drawdown": 0.21246667649866108,
+      "name": "PaperResearch [SPXL|rsi_reversion]",
+      "sharpe": 0.26461558645683964,
+      "var_95": 0.0
+    },
+    "test_details": {
+      "cagr": 0.2733930902846864,
+      "final_equity": 1351307.207,
+      "max_drawdown": 0.0,
+      "name": "PaperResearch [SPXL|rsi_reversion]",
+      "sharpe": 0.9127269312815156,
+      "var_95": 0.0
+    },
+    "why": "Why it works: RSI reversion on SPXL: enters positions when RSI(24) falls below 28, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 7.8%, Sharpe 0.265, max drawdown 21.2%. Test: CAGR 27.3%, Sharpe 0.913, max drawdown 0.0%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true
+  },
+  {
+    "rank": 6,
+    "candidate_id": "seed-006-volatility_regime-v0",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/html/2404.00424v3",
+    "rule": "volatility_regime",
+    "focus_asset": "SPXL",
+    "args": [
+      "--asset",
+      "SPXL",
+      "--rule",
+      "volatility_regime",
+      "--fast-window",
+      "20",
+      "--slow-window",
+      "160",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "40",
+      "--vol-cap",
+      "0.70",
+      "--hypothesis-id",
+      "seed-6-0"
+    ],
+    "combined_score": 2.120075904024193,
+    "train_score": 3.6304436864504064,
+    "test_score": -0.6848928347673466,
+    "train_details": {
+      "cagr": 0.278438323109633,
+      "final_equity": 3576670.6000000015,
+      "max_drawdown": 0.34848531364732305,
+      "name": "PaperResearch [SPXL|volatility_regime]",
+      "sharpe": 0.8158977289662869,
+      "var_95": -0.03332751258978176
+    },
+    "test_details": {
+      "cagr": -0.030773558126589107,
+      "final_equity": 961810.7759999996,
+      "max_drawdown": 0.28581188499999965,
+      "name": "PaperResearch [SPXL|volatility_regime]",
+      "sharpe": -0.03337161566927083,
+      "var_95": -0.039956855772339595
+    },
+    "why": "paper-research Train: CAGR 27.8%, Sharpe 0.816 (34.8% max drawdown). Test: CAGR 3.1%, Sharpe -0.033 (28.6% max drawdown). This candidate is not yet clearly robust and should be treated as exploratory.",
+    "is_seeded": true
+  },
+  {
+    "rank": 7,
+    "candidate_id": "seed-100-trend_pullback-v0",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/html/2403.12180v1",
+    "rule": "trend_pullback",
+    "focus_asset": "SPXL",
+    "args": [
+      "--asset",
+      "SPXL",
+      "--rule",
+      "trend_pullback",
+      "--fast-window",
+      "8",
+      "--slow-window",
+      "70",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "20",
+      "--vol-cap",
+      "0.40",
+      "--hypothesis-id",
+      "seed-100-0"
+    ],
+    "combined_score": 2.0829446431987364,
+    "train_score": 1.4027040823941725,
+    "test_score": 3.346248541835783,
+    "train_details": {
+      "cagr": 0.09889099909540212,
+      "final_equity": 1631104.7600000005,
+      "max_drawdown": 0.1859210946259999,
+      "name": "PaperResearch [SPXL|trend_pullback]",
+      "sharpe": 0.3565492067660532,
+      "var_95": -0.01587507230749152
+    },
+    "test_details": {
+      "cagr": 0.1847952837471365,
+      "final_equity": 1235205.1899999997,
+      "max_drawdown": 0.09036100551554928,
+      "name": "PaperResearch [SPXL|trend_pullback]",
+      "sharpe": 0.7879940823582443,
+      "var_95": -0.011160149054842096
+    },
+    "why": "Why it works: Trend pullback on SPXL: buys when price drops below the 8-day MA but stays above the 70-day MA, capturing controlled dip re-entries inside a larger uptrend. This strategy is run through `paper-research` in `doob`. Train: CAGR 9.9%, Sharpe 0.357, max drawdown 18.6%. Test: CAGR 18.5%, Sharpe 0.788, max drawdown 9.0%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true
+  },
+  {
+    "rank": 8,
+    "candidate_id": "seed-021-volatility_regime-v2",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/html/2402.05272v3",
+    "rule": "volatility_regime",
+    "focus_asset": "TQQQ",
+    "args": [
+      "--asset",
+      "TQQQ",
+      "--rule",
+      "volatility_regime",
+      "--fast-window",
+      "12",
+      "--slow-window",
+      "220",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "10",
+      "--vol-cap",
+      "0.45",
+      "--hypothesis-id",
+      "seed-21-2"
+    ],
+    "combined_score": 1.9804133507460242,
+    "train_score": 3.0838635304473105,
+    "test_score": -0.06885126869922137,
+    "train_details": {
+      "cagr": 0.22131351582163572,
+      "final_equity": 2821493.4990000003,
+      "max_drawdown": 0.3586254415822486,
+      "name": "PaperResearch [TQQQ|volatility_regime]",
+      "sharpe": 0.7526860179108814,
+      "var_95": -0.021468161922151105
+    },
+    "test_details": {
+      "cagr": 0.0072473641290786706,
+      "final_equity": 1009036.226000002,
+      "max_drawdown": 0.2614735022938674,
+      "name": "PaperResearch [TQQQ|volatility_regime]",
+      "sharpe": 0.0845758165792403,
+      "var_95": -0.03830537259649119
+    },
+    "why": "Why it works: Volatility regime on TQQQ: holds through calmer market states, only trading when realized 10-day volatility stays within the lowest 45% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 22.1%, Sharpe 0.753 (drawdown 35.9%). Test: CAGR 0.7%, Sharpe 0.085 (drawdown 26.1%). Risk-adjusted edge is present in both windows but less stable than ideal.",
+    "is_seeded": true
+  },
+  {
+    "rank": 9,
+    "candidate_id": "seed-023-volatility_regime-v0",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/abs/2309.15383",
+    "rule": "volatility_regime",
+    "focus_asset": "TQQQ",
+    "args": [
+      "--asset",
+      "TQQQ",
+      "--rule",
+      "volatility_regime",
+      "--fast-window",
+      "12",
+      "--slow-window",
+      "120",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "10",
+      "--vol-cap",
+      "0.45",
+      "--hypothesis-id",
+      "seed-23-0"
+    ],
+    "combined_score": 1.9804133507460242,
+    "train_score": 3.0838635304473105,
+    "test_score": -0.06885126869922137,
+    "train_details": {
+      "cagr": 0.22131351582163572,
+      "final_equity": 2821493.4990000003,
+      "max_drawdown": 0.3586254415822486,
+      "name": "PaperResearch [TQQQ|volatility_regime]",
+      "sharpe": 0.7526860179108814,
+      "var_95": -0.021468161922151105
+    },
+    "test_details": {
+      "cagr": 0.0072473641290786706,
+      "final_equity": 1009036.226000002,
+      "max_drawdown": 0.2614735022938674,
+      "name": "PaperResearch [TQQQ|volatility_regime]",
+      "sharpe": 0.0845758165792403,
+      "var_95": -0.03830537259649119
+    },
+    "why": "Why it works: Volatility regime on TQQQ: holds through calmer market states, only trading when realized 10-day volatility stays within the lowest 45% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 22.1%, Sharpe 0.753 (drawdown 35.9%). Test: CAGR 0.7%, Sharpe 0.085 (drawdown 26.1%). Risk-adjusted edge is present in both windows but less stable than ideal.",
+    "is_seeded": true
+  },
+  {
+    "rank": 10,
+    "candidate_id": "seed-104-volatility_regime-v1",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/pdf/2412.02660",
+    "rule": "volatility_regime",
+    "focus_asset": "QQQ",
+    "args": [
+      "--asset",
+      "QQQ",
+      "--rule",
+      "volatility_regime",
+      "--fast-window",
+      "16",
+      "--slow-window",
+      "220",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "18",
+      "--vol-cap",
+      "0.60",
+      "--hypothesis-id",
+      "seed-104-1"
+    ],
+    "combined_score": 1.9413511689753764,
+    "train_score": 2.520993980400087,
+    "test_score": 0.8648716620437708,
+    "train_details": {
+      "cagr": 0.11352991450698768,
+      "final_equity": 1747028.5849999934,
+      "max_drawdown": 0.11409799600009651,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "sharpe": 0.6665172292527652,
+      "var_95": -0.010719035945548924
+    },
+    "test_details": {
+      "cagr": 0.060814790456358736,
+      "final_equity": 1076315.9459999965,
+      "max_drawdown": 0.09437289076375167,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "sharpe": 0.21070165545829023,
+      "var_95": -0.015342695708546426
+    },
+    "why": "Why it works: Volatility regime on QQQ: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 60% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 11.4%, Sharpe 0.667, max drawdown 11.4%. Test: CAGR 6.1%, Sharpe 0.211, max drawdown 9.4%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true
+  }
+];
+const body = document.getElementById('body');
+const details = document.getElementById('details');
+const search = document.getElementById('search');
+const cat = document.getElementById('cat');
+const src = document.getElementById('src');
+const seeded = document.getElementById('seeded');
+
+function fmt(v) {
+  return (typeof v === 'number' && Number.isFinite(v))
+    ? v.toLocaleString(undefined, { maximumFractionDigits: 3, minimumFractionDigits: 3 })
+    : 'N/A';
+}
+function fmtPct(v) {
+  return (typeof v === 'number' && Number.isFinite(v))
+    ? (v * 100).toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + '%'
+    : 'N/A';
+}
+
+function pickMetric(row, key) {
+  const t = row.train_details || {};
+  const s = row.test_details || {};
+  const values = [t[key], s[key]];
+  return values;
+}
+
+const allSources = ['All', ...new Set(rows.map(r => r.source))];
+src.innerHTML = allSources.map(v => `<option value="${v}">${v}</option>`).join('');
+
+function render() {
+  const query = search.value.trim().toLowerCase();
+  const catV = cat.value;
+  const srcV = src.value;
+  const seededV = seeded.value;
+
+  let filtered = rows.filter(r => {
+    if (catV !== 'All' && r.category !== catV) return false;
+    if (srcV !== 'All' && r.source !== srcV) return false;
+    if (seededV === 'Seeded' && !r.is_seeded) return false;
+    if (seededV === 'Fallback' && r.is_seeded) return false;
+    if (!query) return true;
+    const hay = `${r.candidate_id} ${r.strategy} ${r.rule} ${r.source} ${r.focus_asset}`.toLowerCase();
+    return hay.includes(query);
+  });
+
+  filtered.sort((a, b) => (b.combined_score - a.combined_score));
+  const top10 = filtered.slice(0, 10);
+  body.innerHTML = top10.map((r, idx) => {
+    const type = r.is_seeded ? '<span class=\"pill seed\">seeded</span>' : '<span class=\"pill det\">fallback</span>';
+    const train = fmt(r.train_score);
+    const ttest = fmt(r.test_score);
+    const [trCagr, teCagr] = [pickMetric(r, 'cagr')[0], pickMetric(r, 'cagr')[1]];
+    const [trSharpe, teSharpe] = [pickMetric(r, 'sharpe')[0], pickMetric(r, 'sharpe')[1]];
+    const [trDD, teDD] = [pickMetric(r, 'max_drawdown')[0], pickMetric(r, 'max_drawdown')[1]];
+    return `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><b>${r.candidate_id}</b> ${type}<div class="muted">${r.focus_asset}</div><code>${r.args.join(' ')}</code></td>
+        <td>${r.rule}</td>
+        <td><span class="pill">${r.category}</span></td>
+        <td>${fmt(r.combined_score)}</td>
+        <td>${trCagr !== 'N/A' ? fmtPct(trCagr) : 'N/A'} / S:${fmt(trSharpe)}</td>
+        <td>${teCagr !== 'N/A' ? fmtPct(teCagr) : 'N/A'} / S:${fmt(teSharpe)}</td>
+        <td>${r.source}</td>
+        <td>${r.why}</td>
+      </tr>
+      <tr><td colspan="9">
+        <div class="row-details">
+          <p><span class="muted">Drawdowns:</span> train ${fmtPct(trDD || 0)} / test ${fmtPct(teDD || 0)}</p>
+          <p><strong>Why:</strong> ${r.why}</p>
+        </div>
+      </td></tr>
+    `;
+  }).join('');
+
+  details.innerHTML = top10.map((r, idx) => `
+    <details>
+      <summary><b>${idx + 1}. ${r.candidate_id}</b> — ${r.strategy} (${r.rule})</summary>
+      <p><span class="muted">Source:</span> ${r.source} | Asset: ${r.focus_asset}</p>
+      <p><span class="muted">Args:</span> <code>${r.args.join(' ')}</code></p>
+      <p><strong>Why profitable:</strong> ${r.why}</p>
+    </details>
+  `).join('');
+}
+
+search.addEventListener('input', render);
+cat.addEventListener('change', render);
+src.addEventListener('change', render);
+seeded.addEventListener('change', render);
+
+render();
+</script>
+</body>
+</html>

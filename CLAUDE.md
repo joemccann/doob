@@ -207,6 +207,57 @@ All price data reads from local parquet. Typical benchmarks on Apple Silicon:
 | 10-year backtest (2,516 sessions, 101 tickers) | ~0.32s |
 | 10-year dual-MA (2,516 sessions, 101 tickers) | ~0.55s |
 
+## Brand & Report Styling (Mandatory)
+
+All generated HTML reports **must** use the doob design system derived from radial.org. This is non-negotiable.
+
+### Design System Location
+
+```
+branding/
+├── tokens.css              # CSS custom properties (design tokens)
+├── brand-guidelines.html   # Visual reference — open in browser to preview
+└── report-template.html    # Drop-in template for autoresearch HTML reports
+```
+
+### Rules for HTML Report Generation
+
+1. **Use `branding/report-template.html` as the base** for any autoresearch HTML report.
+2. **Inline the tokens from `branding/tokens.css`** (the `:root` block) into the report `<style>` tag — reports must be self-contained single-file HTML.
+3. **Required design tokens** — always reference these CSS variables, never hardcode colors:
+   - `--doob-teal` (#3e5b63) — headers, footer, primary panels
+   - `--doob-lime` (#c6e758) — accent, positive signals, CTAs
+   - `--doob-sky` (#5fc4e3) — info highlights, links
+   - `--doob-slate` (#4a5760) — muted text, labels
+   - `--doob-sage` (#c7cdc8) — borders, neutral backgrounds
+   - `--doob-positive-text` / `--doob-negative-text` — financial gain/loss coloring
+4. **Fonts**: primary = `var(--doob-font-display)` (Helvetica Now Display with system fallback stack); data/mono = `var(--doob-font-mono)` (DM Mono via Google Fonts).
+5. **Typography conventions**:
+   - Section labels: `font-family: var(--doob-font-mono)`, `text-transform: uppercase`, `letter-spacing: 0.08em`, `font-size: 11px`
+   - All numerical data (CAGR, Sharpe, drawdown, equity): `font-family: var(--doob-font-mono)`
+   - Positive values: `color: var(--doob-positive-text)`; negative values: `color: var(--doob-negative-text)`
+6. **Layout**: teal hero header with `border-radius: 0 0 24px 24px`, KPI summary bar, filterable/sortable data table, teal footer with `border-radius: 24px 24px 0 0`.
+7. **No dark-blue themes** — the old `#071023` / `#0f1f3a` dark-blue report style is deprecated. All new reports use the light theme with teal accents.
+8. **Components**: use pills (`.pill-teal`, `.pill-sky`, `.pill-lime`) for tags/badges, expandable row details for per-strategy deep-dive, and the KPI card pattern for summary metrics.
+9. **Load DM Mono** from Google Fonts: `<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />`
+
+### Quick Reference: Color Palette
+
+| Token | Hex | Use |
+|-------|-----|-----|
+| `--doob-teal` | #3e5b63 | Primary brand, hero bg, footer |
+| `--doob-teal-deep` | #2e454c | Darker teal variant |
+| `--doob-lime` | #c6e758 | Accent, positive, CTA arrows |
+| `--doob-sky` | #5fc4e3 | Info, highlights, links |
+| `--doob-slate` | #4a5760 | Muted text, secondary |
+| `--doob-sage` | #c7cdc8 | Borders, neutral surface |
+| `--doob-bg` | #ffffff | Page background |
+| `--doob-bg-alt` | #f5f5f5 | Alt surface, table headers |
+| `--doob-text` | #1e1e1e | Primary text |
+| `--doob-positive-text` | #3a5200 | Gains, positive CAGR |
+| `--doob-negative-text` | #7a1a1a | Losses, drawdown |
+| `--doob-warning-text` | #7a4a00 | Warnings, mixed signals |
+
 ## How to Add a New Strategy
 
 1. Create `src/strategies/my_strategy.rs` with a `run(args, fmt)` function
