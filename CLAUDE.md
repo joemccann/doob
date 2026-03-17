@@ -12,6 +12,10 @@ Rust binary for quantitative strategy research. Reads from the shared `~/market-
   - default output now includes strategy category, candidate assets, horizon, and rationale summary in the results table.
   - **production mode is paper-research only**: arXiv/Exa-hypothesis-driven loops are executed as `paper-research` strategies.
   - `cargo run --release --bin autoresearch_loop -- --doob-bin target/release/doob --seed-web --train-start 2020-01-01 --train-end 2024-12-31 --test-start 2025-01-01 --test-end 2026-03-11 --train-sessions 1008 --test-sessions 252`
+- **Iterative refinement** is the default (`--max-rounds 10`). After round 0 exploration, the loop refines top winners by perturbing parameters within the existing discrete grids and swapping assets. Convergence stops the loop when no meaningful improvement is found (`--patience 3`, `--min-improvement 0.02`). Use `--no-loop` for legacy single-pass behavior.
+  - `--refine-top 5` — number of winners to refine per round
+  - `--refine-variants 20` — max variants generated per winner
+- **Evaluation cache** (`reports/autoresearch-eval-cache.jsonl`) persists results across runs, keyed by parameter signature + date windows. Deterministic grid candidates and repeated seeded params are served instantly from cache. Use `--no-cache` to force re-evaluation.
 - Results are appended to `reports/autoresearch-ledger.jsonl` and `reports/autoresearch-exa-ideas.json`.
 - Interactive report output: `reports/autoresearch-top10-interactive-report.html`.
 - Exa seeding uses `EXA_API_KEY` from environment; keep python script usage out of the autoresearch path.

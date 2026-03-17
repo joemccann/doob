@@ -32,6 +32,23 @@ It complements `CLAUDE.md` with mandatory constraints for automated work.
   - Optional binary override:
     - `--doob-bin target/release/doob`
 
+### Iterative refinement (default)
+
+Looping is the default (`--max-rounds 10`). After round 0, the loop refines top winners by perturbing parameters within discrete grids and swapping assets. Stops on convergence (`--patience 3`, `--min-improvement 0.02`) or frontier exhaustion.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--max-rounds` | 10 | Maximum refinement rounds |
+| `--patience` | 3 | Stale rounds before stopping |
+| `--min-improvement` | 0.02 | Minimum relative improvement to reset patience |
+| `--refine-top` | 5 | Winners to refine per round |
+| `--refine-variants` | 20 | Max variants per winner |
+| `--no-loop` | false | Disable refinement (single-pass legacy) |
+
+### Evaluation cache
+
+`reports/autoresearch-eval-cache.jsonl` persists results across runs keyed by parameter signature + date windows. Deterministic grid and repeated seeded candidates are served instantly. Use `--no-cache` to force re-evaluation (e.g., after strategy code changes).
+
 ## Data and candidate constraints
 
 - Backtests use local warehouse parquet data only.
@@ -41,9 +58,10 @@ It complements `CLAUDE.md` with mandatory constraints for automated work.
 
 ## Output artifacts
 
-- `reports/autoresearch-ledger.jsonl`
-- `reports/autoresearch-exa-ideas.json` (when `--seed-web` is set)
-- `reports/autoresearch-top10-interactive-report.html`
+- `reports/autoresearch-ledger.jsonl` — append-only log of top-ranked results per run
+- `reports/autoresearch-exa-ideas.json` — raw Exa/arXiv seeds (when `--seed-web` is set)
+- `reports/autoresearch-top10-interactive-report.html` — branded interactive report
+- `reports/autoresearch-eval-cache.jsonl` — persistent evaluation cache (cross-run)
 - Prefer reading these after each production loop before promoting candidates.
 
 ## Required behavior for the loop
