@@ -8,6 +8,7 @@ use anyhow::{Result, bail};
 use chrono::NaiveDate;
 
 use num_format::ToFormattedString;
+use serde::Serialize;
 
 use std::collections::HashMap;
 
@@ -62,6 +63,12 @@ impl ResearchRule {
 
 #[derive(Debug, clap::Args)]
 pub struct PaperResearchArgs {
+    #[arg(
+        long,
+        help = "Inclusive start date for scoring windows (YYYY-MM-DD). Overrides trailing-session start selection."
+    )]
+    pub start_date: Option<String>,
+
     #[arg(long, default_value = DEFAULT_END_DATE, help = "Inclusive end date for scoring windows (YYYY-MM-DD)")]
     pub end_date: String,
 
@@ -118,11 +125,67 @@ pub struct PaperResearchArgs {
     #[arg(long, help = "Optional hypothesis id")]
     pub hypothesis_id: Option<String>,
 
+    #[arg(
+        long,
+        help = "Include per-trade and per-bar equity audit data in JSON output"
+    )]
+    pub include_audit: bool,
+
     #[arg(long, default_value_t = 12, help = "Concurrent fetch workers")]
     pub max_workers: usize,
 
     #[arg(long, default_value_t = 2015, help = "Annual table start year")]
     pub start_year_table: i32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct AuditTrade {
+    entry_date: String,
+    exit_date: String,
+    entry_price: f64,
+    exit_price: f64,
+    shares: i64,
+    fee: f64,
+    gross_pnl: f64,
+    net_pnl: f64,
+    equity_before: f64,
+    equity_after: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct AuditEquityPoint {
+    date: String,
+    equity: f64,
+    step: String,
+    signal: bool,
+    entry_date: Option<String>,
+    exit_date: Option<String>,
+    entry_price: Option<f64>,
+    exit_price: Option<f64>,
+    shares: Option<i64>,
+    fee: Option<f64>,
+    gross_pnl: Option<f64>,
+    net_pnl: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct ExecutionAudit {
+    strategy: String,
+    asset: String,
+    rule: String,
+    requested_period_start: Option<String>,
+    requested_period_end: String,
+    actual_period_start: String,
+    actual_period_end: String,
+    capital: f64,
+    fee_model: String,
+    bar_count: usize,
+    signal_count: usize,
+    executed_trade_count: usize,
+    beginning_equity: f64,
+    ending_equity: f64,
+    equity_trace: Vec<AuditEquityPoint>,
+    trades: Vec<AuditTrade>,
 }
 
 fn moving_average(values: &[f64], end: usize, window: usize) -> Option<f64> {
@@ -360,6 +423,187 @@ fn simulate_strategy(closes: &[f64], mask: &[bool], capital: f64) -> Vec<f64> {
     equity
 }
 
+fn indicator_buffer_days(max_lookback: usize) -> i64 {
+    max_lookback
+        .saturating_mul(6)
+        .saturating_add(30)
+        .try_into()
+        .unwrap_or(i64::MAX)
+}
+
+fn evaluation_start_index(
+    dates: &[NaiveDate],
+    requested_start_date: Option<NaiveDate>,
+    sessions: usize,
+) -> Result<usize> {
+    if dates.is_empty() {
+        bail!("no dates available for evaluation");
+    }
+
+    if let Some(start_date) = requested_start_date {
+        return dates
+            .iter()
+            .position(|date| *date >= start_date)
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "no trading bars available on or after requested start date {start_date}"
+                )
+            });
+    }
+
+    let start_idx = dates.len().saturating_sub(sessions);
+    if start_idx == dates.len() {
+        bail!(
+            "insufficient rows for requested sessions {} (available {})",
+            sessions,
+            dates.len()
+        );
+    }
+    Ok(start_idx)
+}
+
+fn build_execution_audit(
+    asset: &str,
+    rule: ResearchRule,
+    dates: &[NaiveDate],
+    closes: &[f64],
+    mask: &[bool],
+    capital: f64,
+    requested_start_date: Option<NaiveDate>,
+    requested_end_date: NaiveDate,
+) -> ExecutionAudit {
+    assert_eq!(
+        dates.len(),
+        closes.len(),
+        "dates/closes length mismatch in audit build"
+    );
+    assert_eq!(
+        closes.len(),
+        mask.len(),
+        "closes/mask length mismatch in audit build"
+    );
+
+    let mut current = capital;
+    let mut trades = Vec::new();
+    let mut equity_trace = Vec::with_capacity(dates.len().max(1));
+
+    if let Some(first_date) = dates.first() {
+        equity_trace.push(AuditEquityPoint {
+            date: first_date.to_string(),
+            equity: capital,
+            step: "start".to_string(),
+            signal: false,
+            entry_date: None,
+            exit_date: None,
+            entry_price: None,
+            exit_price: None,
+            shares: None,
+            fee: None,
+            gross_pnl: None,
+            net_pnl: None,
+        });
+    }
+
+    for idx in 0..closes.len().saturating_sub(1) {
+        let signal = mask[idx];
+        let exit_date = dates[idx + 1].to_string();
+
+        if signal {
+            let shares = (current / closes[idx]) as i64;
+            if shares > 0 {
+                let fee = ibkr_roundtrip_cost(current, closes[idx]);
+                let gross_pnl = shares as f64 * (closes[idx + 1] - closes[idx]);
+                let net_pnl = gross_pnl - fee;
+                let equity_before = current;
+                current += net_pnl;
+
+                trades.push(AuditTrade {
+                    entry_date: dates[idx].to_string(),
+                    exit_date: exit_date.clone(),
+                    entry_price: closes[idx],
+                    exit_price: closes[idx + 1],
+                    shares,
+                    fee,
+                    gross_pnl,
+                    net_pnl,
+                    equity_before,
+                    equity_after: current,
+                });
+
+                equity_trace.push(AuditEquityPoint {
+                    date: exit_date,
+                    equity: current,
+                    step: "executed_trade".to_string(),
+                    signal: true,
+                    entry_date: Some(dates[idx].to_string()),
+                    exit_date: Some(dates[idx + 1].to_string()),
+                    entry_price: Some(closes[idx]),
+                    exit_price: Some(closes[idx + 1]),
+                    shares: Some(shares),
+                    fee: Some(fee),
+                    gross_pnl: Some(gross_pnl),
+                    net_pnl: Some(net_pnl),
+                });
+                continue;
+            }
+
+            equity_trace.push(AuditEquityPoint {
+                date: exit_date,
+                equity: current,
+                step: "signal_no_shares".to_string(),
+                signal: true,
+                entry_date: Some(dates[idx].to_string()),
+                exit_date: Some(dates[idx + 1].to_string()),
+                entry_price: Some(closes[idx]),
+                exit_price: Some(closes[idx + 1]),
+                shares: Some(0),
+                fee: Some(0.0),
+                gross_pnl: Some(0.0),
+                net_pnl: Some(0.0),
+            });
+            continue;
+        }
+
+        equity_trace.push(AuditEquityPoint {
+            date: exit_date,
+            equity: current,
+            step: "flat".to_string(),
+            signal: false,
+            entry_date: None,
+            exit_date: None,
+            entry_price: None,
+            exit_price: None,
+            shares: None,
+            fee: None,
+            gross_pnl: None,
+            net_pnl: None,
+        });
+    }
+
+    ExecutionAudit {
+        strategy: "paper-research".to_string(),
+        asset: asset.to_string(),
+        rule: rule.as_str().to_string(),
+        requested_period_start: requested_start_date.map(|date| date.to_string()),
+        requested_period_end: requested_end_date.to_string(),
+        actual_period_start: dates.first().map(ToString::to_string).unwrap_or_default(),
+        actual_period_end: dates.last().map(ToString::to_string).unwrap_or_default(),
+        capital,
+        fee_model: "IBKR Tiered".to_string(),
+        bar_count: dates.len(),
+        signal_count: mask
+            .iter()
+            .take(closes.len().saturating_sub(1))
+            .filter(|&&v| v)
+            .count(),
+        executed_trade_count: trades.len(),
+        beginning_equity: capital,
+        ending_equity: current,
+        equity_trace,
+        trades,
+    }
+}
+
 /// Run a paper-derived research strategy.
 pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
     let json_mode = fmt == OutputFormat::Json;
@@ -397,25 +641,48 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
         println!("Loading {asset} from bronze parquet...");
     }
     let mut bars = load_ticker_ohlcv(&asset, None, None)?;
+    let requested_start_date = args
+        .start_date
+        .as_deref()
+        .map(|value| {
+            value
+                .parse::<NaiveDate>()
+                .map_err(|e| anyhow::anyhow!("invalid --start-date: {e}"))
+        })
+        .transpose()?;
     let end_date = args
         .end_date
         .parse::<NaiveDate>()
         .map_err(|e| anyhow::anyhow!("invalid --end-date: {e}"))?;
+    if let Some(start_date) = requested_start_date {
+        if start_date > end_date {
+            bail!("--start-date must be on or before --end-date");
+        }
+    }
     let max_lookback = args
         .slow_window
         .max(args.vol_window)
         .max(args.rsi_window.max(2));
-    let buffer = args
-        .sessions
-        .saturating_mul(6)
-        .max(max_lookback.saturating_mul(3))
-        .saturating_add(30) as i64;
-    let start_date = end_date - chrono::Duration::days(buffer);
+    let load_start_date = if let Some(start_date) = requested_start_date {
+        start_date - chrono::Duration::days(indicator_buffer_days(max_lookback))
+    } else {
+        let buffer = args
+            .sessions
+            .saturating_mul(6)
+            .max(max_lookback.saturating_mul(3))
+            .saturating_add(30) as i64;
+        end_date - chrono::Duration::days(buffer)
+    };
 
-    bars.retain(|r| r.trade_date >= start_date && r.trade_date <= end_date);
-    if bars.len() < args.sessions.max(40) {
+    bars.retain(|r| r.trade_date >= load_start_date && r.trade_date <= end_date);
+    let min_required_rows = if requested_start_date.is_some() {
+        max_lookback.max(2)
+    } else {
+        args.sessions.max(40)
+    };
+    if bars.len() < min_required_rows {
         bail!(
-            "insufficient data from {start_date} to {end_date} for {asset}; available {} rows",
+            "insufficient data from {load_start_date} to {end_date} for {asset}; available {} rows",
             bars.len()
         );
     }
@@ -453,17 +720,16 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
         args.vol_cap,
         vix_aligned.as_deref(),
     );
-    let start_idx = closes.len().saturating_sub(args.sessions);
-    if start_idx == closes.len() {
-        bail!(
-            "insufficient rows for requested sessions {} (available {})",
-            args.sessions,
-            closes.len()
-        );
-    }
+    let start_idx = evaluation_start_index(&dates, requested_start_date, args.sessions)?;
     let eval_dates = &dates[start_idx..];
     let eval_closes = &closes[start_idx..];
     let eval_mask = &masks[start_idx..];
+    if eval_closes.len() < 2 {
+        bail!(
+            "not enough observations in evaluation window for {asset}; need at least 2 bars, got {}",
+            eval_closes.len()
+        );
+    }
 
     let mut strategies = Vec::new();
     strategies.push(StrategyResult {
@@ -489,6 +755,20 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
             .iter()
             .map(|s| compute_strategy_metrics(&s.name, &s.equity, years))
             .collect();
+        let audit = if args.include_audit {
+            Some(serde_json::to_value(build_execution_audit(
+                &asset,
+                rule,
+                eval_dates,
+                eval_closes,
+                eval_mask,
+                DEFAULT_CAPITAL,
+                requested_start_date,
+                end_date,
+            ))?)
+        } else {
+            None
+        };
         let output = JsonOutput {
             strategy: "paper-research".to_string(),
             ticker: asset.clone(),
@@ -503,6 +783,7 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
                 eval_dates,
                 args.start_year_table,
             ),
+            audit,
         };
         println!("{}", serde_json::to_string(&output)?);
     } else if fmt == OutputFormat::Md {
@@ -668,6 +949,59 @@ mod tests {
         assert!(
             active > 0,
             "expected snap-back signals to fire with high realized vol and low VIX"
+        );
+    }
+
+    #[test]
+    fn test_evaluation_start_index_prefers_requested_start_date() {
+        let dates = vec![
+            NaiveDate::from_ymd_opt(2024, 12, 30).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 12, 31).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 1, 2).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 1, 3).unwrap(),
+        ];
+
+        let start_idx = evaluation_start_index(
+            &dates,
+            Some(NaiveDate::from_ymd_opt(2025, 1, 1).unwrap()),
+            252,
+        )
+        .expect("requested start should resolve to first trading bar");
+
+        assert_eq!(start_idx, 2);
+    }
+
+    #[test]
+    fn test_build_execution_audit_reconstructs_equity_path() {
+        let dates = vec![
+            NaiveDate::from_ymd_opt(2025, 1, 2).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 1, 3).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 1, 6).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 1, 7).unwrap(),
+        ];
+        let closes = vec![100.0, 105.0, 103.0, 106.0];
+        let mask = vec![true, false, true, false];
+
+        let equity = simulate_strategy(&closes, &mask, 1_000_000.0);
+        let audit = build_execution_audit(
+            "QQQ",
+            ResearchRule::TrendMomentum,
+            &dates,
+            &closes,
+            &mask,
+            1_000_000.0,
+            Some(NaiveDate::from_ymd_opt(2025, 1, 2).unwrap()),
+            NaiveDate::from_ymd_opt(2025, 1, 7).unwrap(),
+        );
+
+        assert_eq!(audit.executed_trade_count, 2);
+        assert_eq!(audit.trades.len(), 2);
+        assert_eq!(audit.actual_period_start, "2025-01-02");
+        assert_eq!(audit.actual_period_end, "2025-01-07");
+        assert_eq!(audit.equity_trace.len(), dates.len());
+        assert!(
+            (audit.ending_equity - *equity.last().unwrap()).abs() < 1e-9,
+            "audit ending equity should match simulated ending equity"
         );
     }
 }

@@ -370,6 +370,7 @@ pub fn run(args: &OvernightDriftArgs, fmt: OutputFormat) -> Result<()> {
             fee_model: "IBKR Tiered".to_string(),
             results,
             annual_returns: build_json_annual_returns(&strategies, &dates, args.start_year_table),
+            audit: None,
         };
         println!("{}", serde_json::to_string(&output)?);
     } else if fmt == OutputFormat::Md {

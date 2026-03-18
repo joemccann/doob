@@ -402,9 +402,10 @@
       <h1 class="report-title">Autoresearch Loop &mdash; Paper-Research Top 10</h1>
       <div class="report-subtitle">Net-new strategy discovery from Exa/arXiv paper hypotheses</div>
       <div class="report-meta">
-        <span>Generated: <strong>2026-03-17</strong></span>
+        <span>Generated: <strong>2026-03-18</strong></span>
         <span>Candidates: <strong>10</strong></span>
         <span>Seeded in top: <strong>10</strong></span>
+        <span>Framework: <strong>RAF-2800</strong></span>
       </div>
     </div>
   </div>
@@ -484,131 +485,21 @@
 const rows = [
   {
     "rank": 1,
-    "candidate_id": "seed-093-rsi_reversion-v2",
+    "candidate_id": "seed-001-vol_spread-v0",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/pdf/2512.12420",
-    "rule": "rsi_reversion",
-    "focus_asset": "TQQQ",
+    "source": "https://arxiv.org/html/2603.10857v1",
+    "rule": "vol_spread",
+    "focus_asset": "QQQ",
     "args": [
       "--asset",
-      "TQQQ",
+      "QQQ",
       "--rule",
-      "rsi_reversion",
-      "--fast-window",
-      "16",
-      "--slow-window",
-      "18",
-      "--rsi-window",
-      "24",
-      "--rsi-oversold",
-      "32",
-      "--rsi-overbought",
-      "76",
-      "--vol-window",
-      "20",
-      "--vol-cap",
-      "0.40",
-      "--hypothesis-id",
-      "seed-93-2"
-    ],
-    "combined_score": 3.679995324037205,
-    "train_score": 2.914616610518366,
-    "test_score": 5.1014129348579065,
-    "train_details": {
-      "cagr": 0.2016455861297195,
-      "final_equity": 2593570.565,
-      "max_drawdown": 0.27426687534934235,
-      "name": "PaperResearch [TQQQ|rsi_reversion]",
-      "sharpe": 0.6962389064097094,
-      "var_95": 0.0
-    },
-    "test_details": {
-      "cagr": 0.37622820683127256,
-      "final_equity": 1488571.726,
-      "max_drawdown": 0.05782835495669962,
-      "name": "PaperResearch [TQQQ|rsi_reversion]",
-      "sharpe": 0.9750011302698832,
-      "var_95": 0.0
-    },
-    "why": "Why it works: RSI reversion on TQQQ: enters positions when RSI(24) falls below 32, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 20.2%, Sharpe 0.696, max drawdown 27.4%. Test: CAGR 37.6%, Sharpe 0.975, max drawdown 5.8%. Strongly consistent equity growth across both windows.",
-    "is_seeded": true,
-    "rationale": "Rooted in the research paper \"deep hedging with reinforcement learning: a practical framework for option risk management\", this strategy applies the paper's findings on mean-reverting behavior to TQQQ using the Relative Strength Index. The academic work examines how extreme price moves in financial markets tend to partially reverse — a phenomenon driven by the microstructure of order flow, liquidity provider behavior, and the well-documented disposition effect among retail investors. The candidate triggers entries when RSI(24) drops below 32, targeting the reflexive bounce that typically follows exhaustive selling pressure. In leveraged instruments like TQQQ, these oversold conditions are amplified by the daily rebalancing mechanism, often producing sharper and more predictable snap-back rallies than in unleveraged equivalents.",
-    "strategy_description": "RSI reversion on TQQQ: enters positions when RSI(24) falls below 32, targeting mean-reversion from oversold conditions.",
-    "investment_rationale": "Mean-reversion via RSI on TQQQ exploits the tendency for oversold conditions to precede short-term bounces. When RSI drops to extreme lows, selling pressure is typically exhausted and a reflexive recovery follows. This strategy is particularly effective in liquid, large-cap instruments where panic selling creates predictable snap-back opportunities. It provides diversification from trend-following approaches by profiting from the opposite market dynamic."
-  },
-  {
-    "rank": 2,
-    "candidate_id": "seed-005-rsi_reversion-v0",
-    "strategy": "paper-research",
-    "category": "Research",
-    "source": "https://arxiv.org/html/2510.19126v1",
-    "rule": "rsi_reversion",
-    "focus_asset": "TQQQ",
-    "args": [
-      "--asset",
-      "TQQQ",
-      "--rule",
-      "rsi_reversion",
-      "--fast-window",
-      "16",
-      "--slow-window",
-      "18",
-      "--rsi-window",
-      "20",
-      "--rsi-oversold",
-      "28",
-      "--rsi-overbought",
-      "76",
-      "--vol-window",
-      "20",
-      "--vol-cap",
-      "0.40",
-      "--hypothesis-id",
-      "seed-5-0"
-    ],
-    "combined_score": 2.614588031009516,
-    "train_score": 2.9429103731188517,
-    "test_score": 2.0048465385207503,
-    "train_details": {
-      "cagr": 0.16288021228360394,
-      "final_equity": 2187813.8710000007,
-      "max_drawdown": 0.10463177936194504,
-      "name": "PaperResearch [TQQQ|rsi_reversion]",
-      "sharpe": 0.7040378635079837,
-      "var_95": 0.0
-    },
-    "test_details": {
-      "cagr": 0.08679990246178071,
-      "final_equity": 1109257.425,
-      "max_drawdown": 0.050807740094179606,
-      "name": "PaperResearch [TQQQ|rsi_reversion]",
-      "sharpe": 0.5183926532939725,
-      "var_95": 0.0
-    },
-    "why": "Why it works: RSI reversion on TQQQ: enters positions when RSI(20) falls below 28, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 16.3%, Sharpe 0.704, max drawdown 10.5%. Test: CAGR 8.7%, Sharpe 0.518, max drawdown 5.1%. Strongly consistent equity growth across both windows.",
-    "is_seeded": true,
-    "rationale": "Rooted in the research paper \"an efficient calibration framework for volatility derivatives under ...\", this strategy applies the paper's findings on mean-reverting behavior to TQQQ using the Relative Strength Index. The academic work examines how extreme price moves in financial markets tend to partially reverse — a phenomenon driven by the microstructure of order flow, liquidity provider behavior, and the well-documented disposition effect among retail investors. The candidate triggers entries when RSI(20) drops below 28, targeting the reflexive bounce that typically follows exhaustive selling pressure. In leveraged instruments like TQQQ, these oversold conditions are amplified by the daily rebalancing mechanism, often producing sharper and more predictable snap-back rallies than in unleveraged equivalents.",
-    "strategy_description": "RSI reversion on TQQQ: enters positions when RSI(20) falls below 28, targeting mean-reversion from oversold conditions.",
-    "investment_rationale": "Mean-reversion via RSI on TQQQ exploits the tendency for oversold conditions to precede short-term bounces. When RSI drops to extreme lows, selling pressure is typically exhausted and a reflexive recovery follows. This strategy is particularly effective in liquid, large-cap instruments where panic selling creates predictable snap-back opportunities. It provides diversification from trend-following approaches by profiting from the opposite market dynamic."
-  },
-  {
-    "rank": 3,
-    "candidate_id": "seed-041-volatility_regime-v2",
-    "strategy": "paper-research",
-    "category": "Research",
-    "source": "https://arxiv.org/html/2406.11520v2",
-    "rule": "volatility_regime",
-    "focus_asset": "TQQQ",
-    "args": [
-      "--asset",
-      "TQQQ",
-      "--rule",
-      "volatility_regime",
+      "vol_spread",
       "--fast-window",
       "12",
       "--slow-window",
-      "25",
+      "50",
       "--rsi-window",
       "14",
       "--rsi-oversold",
@@ -616,219 +507,70 @@ const rows = [
       "--rsi-overbought",
       "70",
       "--vol-window",
-      "40",
+      "18",
       "--vol-cap",
-      "0.45",
+      "0.10",
       "--hypothesis-id",
-      "seed-41-2"
+      "seed-1-0"
     ],
-    "combined_score": 2.318555114609213,
-    "train_score": 2.2334568644192734,
-    "test_score": 2.476594722104815,
+    "combined_score": 3.694868075655579,
+    "train_score": 3.2143331821372607,
+    "test_score": 4.587290020761028,
     "train_details": {
-      "cagr": 0.1694838371124312,
-      "final_equity": 2253043.0250000013,
-      "max_drawdown": 0.34399018815830695,
-      "name": "PaperResearch [TQQQ|volatility_regime]",
-      "sharpe": 0.5660467017221054,
-      "var_95": -0.02437956297521327
+      "beginning_equity": 1000000.0,
+      "cagr": 0.14915539524964827,
+      "final_equity": 2057115.7509999964,
+      "max_drawdown": 0.15413293377039125,
+      "name": "PaperResearch [QQQ|vol_spread]",
+      "sharpe": 0.8450623059726396,
+      "var_95": -0.010261926629430792
     },
     "test_details": {
-      "cagr": 0.17978968242539417,
-      "final_equity": 1228707.6719999986,
-      "max_drawdown": 0.20490059212103376,
-      "name": "PaperResearch [TQQQ|volatility_regime]",
-      "sharpe": 0.5615724855072991,
-      "var_95": -0.035823519682316014
+      "beginning_equity": 1000000.0,
+      "cagr": 0.22187040380504897,
+      "final_equity": 1283539.2319999954,
+      "max_drawdown": 0.08371089047313741,
+      "name": "PaperResearch [QQQ|vol_spread]",
+      "sharpe": 1.124420948197709,
+      "var_95": -0.011927762162239522
     },
-    "why": "Why it works: Volatility regime on TQQQ: holds through calmer market states, only trading when realized 40-day volatility stays within the lowest 45% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 16.9%, Sharpe 0.566, max drawdown 34.4%. Test: CAGR 18.0%, Sharpe 0.562, max drawdown 20.5%. Strongly consistent equity growth across both windows.",
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-001-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 401,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-001-vol_spread-v0-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 134,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 18-day realized volatility by more than 10%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 14.9%, Sharpe 0.845, max drawdown 15.4%. Test: CAGR 22.2%, Sharpe 1.124, max drawdown 8.4%. Strongly consistent equity growth across both windows.",
     "is_seeded": true,
-    "rationale": "Based on the research paper \"operator deep smoothing for implied volatility - arxiv\", this strategy implements the paper's findings on volatility clustering and regime dependence in financial markets. The academic work investigates how returns exhibit fundamentally different statistical properties across low- and high-volatility environments — a pattern first formalized by Engle's ARCH models and subsequently extended by regime-switching frameworks (Hamilton, 1989). The candidate applies a 40-day realized volatility filter to TQQQ, restricting exposure to periods when volatility remains below the 45th percentile (vol_cap = 0.45). This approach sacrifices participation during turbulent markets in exchange for substantially improved risk-adjusted returns, exploiting the empirical finding that the volatility risk premium is richest during calm regimes.",
-    "strategy_description": "Volatility regime on TQQQ: holds through calmer market states, only trading when realized 40-day volatility stays within the lowest 45% regime (vol_cap).",
-    "investment_rationale": "Volatility-regime filtering on TQQQ restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers."
+    "rationale": "Seeded from the paper \"SPX–VIX Risk Computations Via Perturbed Optimal ...\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on QQQ. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.10 controls the minimum spread magnitude required to trigger entry.",
+    "strategy_description": "VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 18-day realized volatility by more than 10%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
+    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 18-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 18-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "The Variance Risk Premium (VRP) on QQQ exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 18) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
   },
   {
-    "rank": 4,
-    "candidate_id": "seed-075-rsi_reversion-v1",
+    "rank": 2,
+    "candidate_id": "seed-121-vol_spread-v0",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://export.arxiv.org/pdf/2208.12614v2.pdf",
-    "rule": "rsi_reversion",
-    "focus_asset": "SPY",
-    "args": [
-      "--asset",
-      "SPY",
-      "--rule",
-      "rsi_reversion",
-      "--fast-window",
-      "20",
-      "--slow-window",
-      "22",
-      "--rsi-window",
-      "16",
-      "--rsi-oversold",
-      "28",
-      "--rsi-overbought",
-      "74",
-      "--vol-window",
-      "20",
-      "--vol-cap",
-      "0.40",
-      "--hypothesis-id",
-      "seed-75-1"
-    ],
-    "combined_score": 2.2625196427564336,
-    "train_score": 2.51343774135584,
-    "test_score": 1.7965288882146784,
-    "train_details": {
-      "cagr": 0.08405241164351152,
-      "final_equity": 1520018.3020000006,
-      "max_drawdown": 0.04555948216109685,
-      "name": "PaperResearch [SPY|rsi_reversion]",
-      "sharpe": 0.6909688488401021,
-      "var_95": 0.0
-    },
-    "test_details": {
-      "cagr": 0.08165681644962097,
-      "final_equity": 1102721.9849999996,
-      "max_drawdown": 0.016401817000000155,
-      "name": "PaperResearch [SPY|rsi_reversion]",
-      "sharpe": 0.44318351110565096,
-      "var_95": 0.0
-    },
-    "why": "Why it works: RSI reversion on SPY: enters positions when RSI(16) falls below 28, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 8.4%, Sharpe 0.691, max drawdown 4.6%. Test: CAGR 8.2%, Sharpe 0.443, max drawdown 1.6%. Strongly consistent equity growth across both windows.",
-    "is_seeded": true,
-    "rationale": "Rooted in the research paper \"regime-based implied stochastic volatility model for crypto option pricing\", this strategy applies the paper's findings on mean-reverting behavior to SPY using the Relative Strength Index. The academic work examines how extreme price moves in financial markets tend to partially reverse — a phenomenon driven by the microstructure of order flow, liquidity provider behavior, and the well-documented disposition effect among retail investors. The candidate triggers entries when RSI(16) drops below 28, targeting the reflexive bounce that typically follows exhaustive selling pressure. In leveraged instruments like SPY, these oversold conditions are amplified by the daily rebalancing mechanism, often producing sharper and more predictable snap-back rallies than in unleveraged equivalents.",
-    "strategy_description": "RSI reversion on SPY: enters positions when RSI(16) falls below 28, targeting mean-reversion from oversold conditions.",
-    "investment_rationale": "Mean-reversion via RSI on SPY exploits the tendency for oversold conditions to precede short-term bounces. When RSI drops to extreme lows, selling pressure is typically exhausted and a reflexive recovery follows. This strategy is particularly effective in liquid, large-cap instruments where panic selling creates predictable snap-back opportunities. It provides diversification from trend-following approaches by profiting from the opposite market dynamic."
-  },
-  {
-    "rank": 5,
-    "candidate_id": "seed-052-rsi_reversion-v0",
-    "strategy": "paper-research",
-    "category": "Research",
-    "source": "https://arxiv.org/pdf/2507.05552",
-    "rule": "rsi_reversion",
+    "source": "https://arxiv.org/abs/2111.03477",
+    "rule": "vol_spread",
     "focus_asset": "QQQ",
     "args": [
       "--asset",
       "QQQ",
       "--rule",
-      "rsi_reversion",
+      "vol_spread",
       "--fast-window",
-      "10",
+      "12",
       "--slow-window",
-      "24",
-      "--rsi-window",
-      "16",
-      "--rsi-oversold",
-      "32",
-      "--rsi-overbought",
-      "80",
-      "--vol-window",
-      "20",
-      "--vol-cap",
-      "0.40",
-      "--hypothesis-id",
-      "seed-52-0"
-    ],
-    "combined_score": 2.140267961362995,
-    "train_score": 2.0588595032704835,
-    "test_score": 2.291455097820517,
-    "train_details": {
-      "cagr": 0.09351543781299744,
-      "final_equity": 1590129.521,
-      "max_drawdown": 0.0917517759539989,
-      "name": "PaperResearch [QQQ|rsi_reversion]",
-      "sharpe": 0.5420731209093657,
-      "var_95": 0.0
-    },
-    "test_details": {
-      "cagr": 0.10699557203576472,
-      "final_equity": 1134993.8369999996,
-      "max_drawdown": 0.04778302329796076,
-      "name": "PaperResearch [QQQ|rsi_reversion]",
-      "sharpe": 0.5721259660743578,
-      "var_95": 0.0
-    },
-    "why": "Why it works: RSI reversion on QQQ: enters positions when RSI(16) falls below 32, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 9.4%, Sharpe 0.542, max drawdown 9.2%. Test: CAGR 10.7%, Sharpe 0.572, max drawdown 4.8%. Strongly consistent equity growth across both windows.",
-    "is_seeded": true,
-    "rationale": "Rooted in the research paper \"[pdf] equity markets volatility, regime dependence and economic ... - arxiv\", this strategy applies the paper's findings on mean-reverting behavior to QQQ using the Relative Strength Index. The academic work examines how extreme price moves in financial markets tend to partially reverse — a phenomenon driven by the microstructure of order flow, liquidity provider behavior, and the well-documented disposition effect among retail investors. The candidate triggers entries when RSI(16) drops below 32, targeting the reflexive bounce that typically follows exhaustive selling pressure. In leveraged instruments like QQQ, these oversold conditions are amplified by the daily rebalancing mechanism, often producing sharper and more predictable snap-back rallies than in unleveraged equivalents.",
-    "strategy_description": "RSI reversion on QQQ: enters positions when RSI(16) falls below 32, targeting mean-reversion from oversold conditions.",
-    "investment_rationale": "Mean-reversion via RSI on QQQ exploits the tendency for oversold conditions to precede short-term bounces. When RSI drops to extreme lows, selling pressure is typically exhausted and a reflexive recovery follows. This strategy is particularly effective in liquid, large-cap instruments where panic selling creates predictable snap-back opportunities. It provides diversification from trend-following approaches by profiting from the opposite market dynamic."
-  },
-  {
-    "rank": 6,
-    "candidate_id": "seed-066-rsi_reversion-v1",
-    "strategy": "paper-research",
-    "category": "Research",
-    "source": "https://arxiv.org/html/2402.05272v3",
-    "rule": "rsi_reversion",
-    "focus_asset": "QQQ",
-    "args": [
-      "--asset",
-      "QQQ",
-      "--rule",
-      "rsi_reversion",
-      "--fast-window",
-      "24",
-      "--slow-window",
-      "26",
-      "--rsi-window",
-      "14",
-      "--rsi-oversold",
-      "28",
-      "--rsi-overbought",
-      "74",
-      "--vol-window",
-      "20",
-      "--vol-cap",
-      "0.40",
-      "--hypothesis-id",
-      "seed-66-1"
-    ],
-    "combined_score": 2.020482890133386,
-    "train_score": 1.9846936255658225,
-    "test_score": 2.0869486671874333,
-    "train_details": {
-      "cagr": 0.0811279012206092,
-      "final_equity": 1498863.0939999998,
-      "max_drawdown": 0.1026442948613494,
-      "name": "PaperResearch [QQQ|rsi_reversion]",
-      "sharpe": 0.5472094103493522,
-      "var_95": 0.0
-    },
-    "test_details": {
-      "cagr": 0.0996370536234974,
-      "final_equity": 1125603.0120000006,
-      "max_drawdown": 0.04778205916033725,
-      "name": "PaperResearch [QQQ|rsi_reversion]",
-      "sharpe": 0.5186737427569738,
-      "var_95": 0.0
-    },
-    "why": "Why it works: RSI reversion on QQQ: enters positions when RSI(14) falls below 28, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 8.1%, Sharpe 0.547, max drawdown 10.3%. Test: CAGR 10.0%, Sharpe 0.519, max drawdown 4.8%. Strongly consistent equity growth across both windows.",
-    "is_seeded": true,
-    "rationale": "Rooted in the research paper \"downside risk reduction using regime-switching signals: a statistical jump model approach1footnote 11footnote 1 this article was previously titled “regime-aware asset allocation: a statistical jump model approach”. the authors are grateful for the thoughtful comments from the editor and the anonymous reviewer, which have significantly improved the article.\", this strategy applies the paper's findings on mean-reverting behavior to QQQ using the Relative Strength Index. The academic work examines how extreme price moves in financial markets tend to partially reverse — a phenomenon driven by the microstructure of order flow, liquidity provider behavior, and the well-documented disposition effect among retail investors. The candidate triggers entries when RSI(14) drops below 28, targeting the reflexive bounce that typically follows exhaustive selling pressure. In leveraged instruments like QQQ, these oversold conditions are amplified by the daily rebalancing mechanism, often producing sharper and more predictable snap-back rallies than in unleveraged equivalents.",
-    "strategy_description": "RSI reversion on QQQ: enters positions when RSI(14) falls below 28, targeting mean-reversion from oversold conditions.",
-    "investment_rationale": "Mean-reversion via RSI on QQQ exploits the tendency for oversold conditions to precede short-term bounces. When RSI drops to extreme lows, selling pressure is typically exhausted and a reflexive recovery follows. This strategy is particularly effective in liquid, large-cap instruments where panic selling creates predictable snap-back opportunities. It provides diversification from trend-following approaches by profiting from the opposite market dynamic."
-  },
-  {
-    "rank": 7,
-    "candidate_id": "seed-005-volatility_regime-v0",
-    "strategy": "paper-research",
-    "category": "Research",
-    "source": "https://arxiv.org/html/2510.19126v1",
-    "rule": "volatility_regime",
-    "focus_asset": "QQQ",
-    "args": [
-      "--asset",
-      "QQQ",
-      "--rule",
-      "volatility_regime",
-      "--fast-window",
-      "16",
-      "--slow-window",
-      "120",
+      "50",
       "--rsi-window",
       "14",
       "--rsi-oversold",
@@ -836,43 +578,59 @@ const rows = [
       "--rsi-overbought",
       "70",
       "--vol-window",
-      "30",
+      "24",
       "--vol-cap",
-      "0.60",
+      "0.10",
       "--hypothesis-id",
-      "seed-5-0"
+      "seed-121-0"
     ],
-    "combined_score": 1.9877373830966292,
-    "train_score": 2.718460815801369,
-    "test_score": 0.6306795795021121,
+    "combined_score": 3.416023349245542,
+    "train_score": 3.1682016519923812,
+    "test_score": 3.876263644144267,
     "train_details": {
-      "cagr": 0.11923997304957168,
-      "final_equity": 1794009.5190000015,
-      "max_drawdown": 0.12152033545910806,
-      "name": "PaperResearch [QQQ|volatility_regime]",
-      "sharpe": 0.7243831490488968,
-      "var_95": -0.011013295230418597
+      "beginning_equity": 1000000.0,
+      "cagr": 0.15332622418822806,
+      "final_equity": 2096147.8930000004,
+      "max_drawdown": 0.1430188821016719,
+      "name": "PaperResearch [QQQ|vol_spread]",
+      "sharpe": 0.8161569139351178,
+      "var_95": -0.00800451919376693
     },
     "test_details": {
-      "cagr": 0.052731087470921256,
-      "final_equity": 1066108.3340000012,
-      "max_drawdown": 0.1093132756768321,
-      "name": "PaperResearch [QQQ|volatility_regime]",
-      "sharpe": 0.15577721354138316,
-      "var_95": -0.015343423489359896
+      "beginning_equity": 1000000.0,
+      "cagr": 0.18915962896535787,
+      "final_equity": 1240875.834,
+      "max_drawdown": 0.06749540672355019,
+      "name": "PaperResearch [QQQ|vol_spread]",
+      "sharpe": 0.9452664799216968,
+      "var_95": -0.010713216248830228
     },
-    "why": "Why it works: Volatility regime on QQQ: holds through calmer market states, only trading when realized 30-day volatility stays within the lowest 60% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 11.9%, Sharpe 0.724, max drawdown 12.2%. Test: CAGR 5.3%, Sharpe 0.156, max drawdown 10.9%. Strongly consistent equity growth across both windows.",
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-121-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 367,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-121-vol_spread-v0-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 139,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 10%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 15.3%, Sharpe 0.816, max drawdown 14.3%. Test: CAGR 18.9%, Sharpe 0.945, max drawdown 6.7%. Strongly consistent equity growth across both windows.",
     "is_seeded": true,
-    "rationale": "Based on the research paper \"an efficient calibration framework for volatility derivatives under ...\", this strategy implements the paper's findings on volatility clustering and regime dependence in financial markets. The academic work investigates how returns exhibit fundamentally different statistical properties across low- and high-volatility environments — a pattern first formalized by Engle's ARCH models and subsequently extended by regime-switching frameworks (Hamilton, 1989). The candidate applies a 30-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 60th percentile (vol_cap = 0.60). This approach sacrifices participation during turbulent markets in exchange for substantially improved risk-adjusted returns, exploiting the empirical finding that the volatility risk premium is richest during calm regimes.",
-    "strategy_description": "Volatility regime on QQQ: holds through calmer market states, only trading when realized 30-day volatility stays within the lowest 60% regime (vol_cap).",
-    "investment_rationale": "Volatility-regime filtering on QQQ restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers."
+    "rationale": "Seeded from the paper \"Data-driven Hedging of Stock Index Options via Deep Learning\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on QQQ. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.10 controls the minimum spread magnitude required to trigger entry.",
+    "strategy_description": "VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 10%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
+    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 24-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 24-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "The Variance Risk Premium (VRP) on QQQ exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 24) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
   },
   {
-    "rank": 8,
-    "candidate_id": "seed-035-volatility_regime-v1",
+    "rank": 3,
+    "candidate_id": "seed-037-volatility_regime-v0",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/pdf/2307.05719",
+    "source": "https://arxiv.org/html/2510.03236v1",
     "rule": "volatility_regime",
     "focus_asset": "SPXL",
     "args": [
@@ -881,7 +639,7 @@ const rows = [
       "--rule",
       "volatility_regime",
       "--fast-window",
-      "20",
+      "24",
       "--slow-window",
       "35",
       "--rsi-window",
@@ -891,54 +649,283 @@ const rows = [
       "--rsi-overbought",
       "70",
       "--vol-window",
-      "14",
+      "18",
       "--vol-cap",
-      "0.70",
+      "0.80",
       "--hypothesis-id",
-      "seed-35-1"
+      "seed-37-0"
     ],
-    "combined_score": 1.7173217452492557,
-    "train_score": 1.0028215162181544,
-    "test_score": 3.0442507420213016,
+    "combined_score": 2.7621948527321756,
+    "train_score": 4.244606112246697,
+    "test_score": 0.009145370776635076,
     "train_details": {
-      "cagr": 0.10718239543706388,
-      "final_equity": 1695973.692999999,
-      "max_drawdown": 0.5055873300171502,
+      "beginning_equity": 1000000.0,
+      "cagr": 0.35180931097949464,
+      "final_equity": 4777701.561999991,
+      "max_drawdown": 0.3798969520988893,
       "name": "PaperResearch [SPXL|volatility_regime]",
-      "sharpe": 0.35584980187326043,
-      "var_95": -0.03564375331462981
+      "sharpe": 0.888535326436058,
+      "var_95": -0.040142553735625565
     },
     "test_details": {
-      "cagr": 0.22209514133674269,
-      "final_equity": 1283833.3289999997,
-      "max_drawdown": 0.19251421093758145,
+      "beginning_equity": 1000000.0,
+      "cagr": 0.01618904222356754,
+      "final_equity": 1020206.9980000012,
+      "max_drawdown": 0.2890192899999996,
       "name": "PaperResearch [SPXL|volatility_regime]",
-      "sharpe": 0.6603999297711532,
-      "var_95": -0.03547711657286799
+      "sharpe": 0.1055460411450764,
+      "var_95": -0.03995790913798074
     },
-    "why": "Why it works: Volatility regime on SPXL: holds through calmer market states, only trading when realized 14-day volatility stays within the lowest 70% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 10.7%, Sharpe 0.356, max drawdown 50.6%. Test: CAGR 22.2%, Sharpe 0.660, max drawdown 19.3%. Strongly consistent equity growth across both windows.",
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-037-volatility_regime-v0-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 990,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-037-volatility_regime-v0-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 227,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: Volatility regime on SPXL: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 80% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 35.2%, Sharpe 0.889 (drawdown 38.0%). Test: CAGR 1.6%, Sharpe 0.106 (drawdown 28.9%). Risk-adjusted edge is present in both windows but less stable than ideal.",
     "is_seeded": true,
-    "rationale": "Based on the research paper \"[pdf] systemic risk indicator based on implied and realized volatility\", this strategy implements the paper's findings on volatility clustering and regime dependence in financial markets. The academic work investigates how returns exhibit fundamentally different statistical properties across low- and high-volatility environments — a pattern first formalized by Engle's ARCH models and subsequently extended by regime-switching frameworks (Hamilton, 1989). The candidate applies a 14-day realized volatility filter to SPXL, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). This approach sacrifices participation during turbulent markets in exchange for substantially improved risk-adjusted returns, exploiting the empirical finding that the volatility risk premium is richest during calm regimes.",
-    "strategy_description": "Volatility regime on SPXL: holds through calmer market states, only trading when realized 14-day volatility stays within the lowest 70% regime (vol_cap).",
-    "investment_rationale": "Volatility-regime filtering on SPXL restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers."
+    "rationale": "Seeded from the paper \"Improving S&P 500 Volatility Forecasting through Regime-Switching Methods\", this candidate uses the source as a research cue for a volatility-regime filter on SPXL. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 18-day realized volatility filter to SPXL, restricting exposure to periods when volatility remains below the 80th percentile (vol_cap = 0.80). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
+    "strategy_description": "Volatility regime on SPXL: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 80% regime (vol_cap).",
+    "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 18-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (SPXL) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "Volatility-regime filtering on SPXL restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"SPXL\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Feature engineering: 18-day rolling standard deviation of log returns, annualized via sqrt(365.25). Percentile rank computed across all valid volatility observations. Signal: long when current vol <= vol_cap percentile threshold. Single data input: asset close prices."
   },
   {
-    "rank": 9,
-    "candidate_id": "seed-101-trend_pullback-v1",
+    "rank": 4,
+    "candidate_id": "seed-038-vol_spread-v2",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/html/2408.15404v1",
-    "rule": "trend_pullback",
-    "focus_asset": "TQQQ",
+    "source": "https://arxiv.org/abs/2112.05302",
+    "rule": "vol_spread",
+    "focus_asset": "SPY",
     "args": [
       "--asset",
-      "TQQQ",
+      "SPY",
       "--rule",
-      "trend_pullback",
+      "vol_spread",
       "--fast-window",
       "12",
       "--slow-window",
-      "120",
+      "50",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "24",
+      "--vol-cap",
+      "0.25",
+      "--hypothesis-id",
+      "seed-38-2"
+    ],
+    "combined_score": 2.3678857502366357,
+    "train_score": 2.452931331028791,
+    "test_score": 2.209943957336919,
+    "train_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.12005784873601644,
+      "final_equity": 1800821.4840000055,
+      "max_drawdown": 0.14385131512819205,
+      "name": "PaperResearch [SPY|vol_spread]",
+      "sharpe": 0.6446586932640537,
+      "var_95": -0.011998487848590825
+    },
+    "test_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.1138712533486932,
+      "final_equity": 1143782.3479999984,
+      "max_drawdown": 0.10063889482449484,
+      "name": "PaperResearch [SPY|vol_spread]",
+      "sharpe": 0.5558702966663508,
+      "var_95": -0.012185870813250965
+    },
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-038-vol_spread-v2-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 666,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-038-vol_spread-v2-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 195,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: VRP harvest on SPY: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 12.0%, Sharpe 0.645, max drawdown 14.4%. Test: CAGR 11.4%, Sharpe 0.556, max drawdown 10.1%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true,
+    "rationale": "Seeded from the paper \"Realized GARCH, CBOE VIX, and the Volatility Risk Premium\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on SPY. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.25 controls the minimum spread magnitude required to trigger entry.",
+    "strategy_description": "VRP harvest on SPY: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
+    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 24-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 24-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (SPY) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "The Variance Risk Premium (VRP) on SPY exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"SPY\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 24) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
+  },
+  {
+    "rank": 5,
+    "candidate_id": "seed-135-volatility_regime-v1",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/pdf/2512.12250",
+    "rule": "volatility_regime",
+    "focus_asset": "QQQ",
+    "args": [
+      "--asset",
+      "QQQ",
+      "--rule",
+      "volatility_regime",
+      "--fast-window",
+      "20",
+      "--slow-window",
+      "50",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "18",
+      "--vol-cap",
+      "0.70",
+      "--hypothesis-id",
+      "seed-135-1"
+    ],
+    "combined_score": 2.339488800934742,
+    "train_score": 3.510643614373283,
+    "test_score": 0.16448700454887935,
+    "train_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.15752119047273516,
+      "final_equity": 2136006.797999997,
+      "max_drawdown": 0.11131363535225806,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "sharpe": 0.9071185203433444,
+      "var_95": -0.01332080289800311
+    },
+    "test_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.035972274933752324,
+      "final_equity": 1045007.743000003,
+      "max_drawdown": 0.1410663257362042,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "sharpe": 0.048715403659017095,
+      "var_95": -0.018595582262397704
+    },
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-135-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 835,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-135-volatility_regime-v1-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 204,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: Volatility regime on QQQ: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 70% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 15.8%, Sharpe 0.907 (drawdown 11.1%). Test: CAGR 3.6%, Sharpe 0.049 (drawdown 14.1%). Risk-adjusted edge is present in both windows but less stable than ideal.",
+    "is_seeded": true,
+    "rationale": "Seeded from the paper \"Stochastic Volatility Modelling with LSTM Networks: A Hybrid Approach for S&P 500 Index Volatility Forecasting\", this candidate uses the source as a research cue for a volatility-regime filter on QQQ. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 18-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
+    "strategy_description": "Volatility regime on QQQ: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 70% regime (vol_cap).",
+    "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 18-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "Volatility-regime filtering on QQQ restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Feature engineering: 18-day rolling standard deviation of log returns, annualized via sqrt(365.25). Percentile rank computed across all valid volatility observations. Signal: long when current vol <= vol_cap percentile threshold. Single data input: asset close prices."
+  },
+  {
+    "rank": 6,
+    "candidate_id": "seed-006-vol_spread-v0",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/abs/2102.02119",
+    "rule": "vol_spread",
+    "focus_asset": "QQQ",
+    "args": [
+      "--asset",
+      "QQQ",
+      "--rule",
+      "vol_spread",
+      "--fast-window",
+      "12",
+      "--slow-window",
+      "50",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "35",
+      "--vol-cap",
+      "0.40",
+      "--hypothesis-id",
+      "seed-6-0"
+    ],
+    "combined_score": 2.253214389784162,
+    "train_score": 1.2189867251445134,
+    "test_score": 4.1739229098292245,
+    "train_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.06403892746562767,
+      "final_equity": 1379944.8270000005,
+      "max_drawdown": 0.10345166316982142,
+      "name": "PaperResearch [QQQ|vol_spread]",
+      "sharpe": 0.3265284962628324,
+      "var_95": 0.0
+    },
+    "test_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.17843316005184695,
+      "final_equity": 1226948.0039999995,
+      "max_drawdown": 0.03590779649678285,
+      "name": "PaperResearch [QQQ|vol_spread]",
+      "sharpe": 1.0511982882045463,
+      "var_95": -0.0004945716205401028
+    },
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-006-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 130,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-006-vol_spread-v0-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 44,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 35-day realized volatility by more than 40%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 6.4%, Sharpe 0.327, max drawdown 10.3%. Test: CAGR 17.8%, Sharpe 1.051, max drawdown 3.6%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true,
+    "rationale": "Seeded from the paper \"The VIX index under scrutiny of machine learning techniques and neural networks\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on QQQ. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.40 controls the minimum spread magnitude required to trigger entry.",
+    "strategy_description": "VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 35-day realized volatility by more than 40%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
+    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 35-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 35-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "The Variance Risk Premium (VRP) on QQQ exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 35) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
+  },
+  {
+    "rank": 7,
+    "candidate_id": "seed-145-volatility_regime-v1",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/abs/2409.15320",
+    "rule": "volatility_regime",
+    "focus_asset": "QQQ",
+    "args": [
+      "--asset",
+      "QQQ",
+      "--rule",
+      "volatility_regime",
+      "--fast-window",
+      "20",
+      "--slow-window",
+      "70",
       "--rsi-window",
       "14",
       "--rsi-oversold",
@@ -948,89 +935,263 @@ const rows = [
       "--vol-window",
       "20",
       "--vol-cap",
-      "0.40",
+      "0.70",
       "--hypothesis-id",
-      "seed-101-1"
+      "seed-145-1"
     ],
-    "combined_score": 1.712229344225246,
-    "train_score": -0.078708343597095,
-    "test_score": 5.038256478752451,
+    "combined_score": 2.192768968568866,
+    "train_score": 3.414189476126157,
+    "test_score": -0.07558340260896046,
     "train_details": {
-      "cagr": 0.03566621465320963,
-      "final_equity": 1199399.4009999998,
-      "max_drawdown": 0.5216542655024908,
-      "name": "PaperResearch [TQQQ|trend_pullback]",
-      "sharpe": 0.14587011339571146,
-      "var_95": -0.024563358221305683
+      "beginning_equity": 1000000.0,
+      "cagr": 0.15269610551986923,
+      "final_equity": 2090212.9819999964,
+      "max_drawdown": 0.12399682062111668,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "sharpe": 0.8905361306255016,
+      "var_95": -0.013116906834699814
     },
     "test_details": {
-      "cagr": 0.3376057648083217,
-      "final_equity": 1436712.091000001,
-      "max_drawdown": 0.18186327793468685,
-      "name": "PaperResearch [TQQQ|trend_pullback]",
-      "sharpe": 1.0890768263370272,
-      "var_95": -0.020849160557218763
+      "beginning_equity": 1000000.0,
+      "cagr": 0.02661318348943187,
+      "final_equity": 1033260.3140000036,
+      "max_drawdown": 0.1447601320304935,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "sharpe": -0.010866106234286918,
+      "var_95": -0.018599020857437996
     },
-    "why": "Why it works: Trend pullback on TQQQ: buys when price drops below the 12-day MA but stays above the 120-day MA, capturing controlled dip re-entries inside a larger uptrend. This strategy is run through `paper-research` in `doob`. Train: CAGR 3.6%, Sharpe 0.146 (drawdown 52.2%). Test: CAGR 33.8%, Sharpe 1.089 (drawdown 18.2%). Risk-adjusted edge is present in both windows but less stable than ideal.",
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-145-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 858,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-145-volatility_regime-v1-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 195,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "paper-research Train: CAGR 15.3%, Sharpe 0.891 (12.4% max drawdown). Test: CAGR 2.7%, Sharpe -0.011 (14.5% max drawdown). This candidate is not yet clearly robust and should be treated as exploratory.",
     "is_seeded": true,
-    "rationale": "Derived from the research paper \"evaluating credit vix (cds iv) prediction methods with incremental batch learning [preprint]\", this strategy applies the paper's insights on price dynamics to identify controlled dip-buying opportunities in TQQQ. The academic work explores how temporary price dislocations within an established trend create asymmetric risk/reward entries — a pattern linked to institutional rebalancing flows and short-term liquidity withdrawal. The candidate uses a 12-day / 120-day moving-average framework to detect moments when price retreats below the short-term average while the longer-term trend remains intact, entering positions at a statistical discount to the prevailing trend. This technique is a staple of systematic equity strategies and has roots in the academic literature on contrarian profits within momentum regimes.",
-    "strategy_description": "Trend pullback on TQQQ: buys when price drops below the 12-day MA but stays above the 120-day MA, capturing controlled dip re-entries inside a larger uptrend.",
-    "investment_rationale": "Pullback entries on TQQQ target temporary dips within an established uptrend — buying the short-term weakness while the longer-term trend remains intact. This is a core institutional technique: it offers better risk/reward than chasing breakouts because the entry price is lower and the stop is tighter. The strategy assumes that the dominant trend will resume after a brief correction, a pattern well-documented in equity markets."
+    "rationale": "Seeded from the paper \"Global Stock Market Volatility Forecasting Incorporating Dynamic Graphs and All Trading Days\", this candidate uses the source as a research cue for a volatility-regime filter on QQQ. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 20-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
+    "strategy_description": "Volatility regime on QQQ: holds through calmer market states, only trading when realized 20-day volatility stays within the lowest 70% regime (vol_cap).",
+    "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 20-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "Volatility-regime filtering on QQQ restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Feature engineering: 20-day rolling standard deviation of log returns, annualized via sqrt(365.25). Percentile rank computed across all valid volatility observations. Signal: long when current vol <= vol_cap percentile threshold. Single data input: asset close prices."
   },
   {
-    "rank": 10,
-    "candidate_id": "seed-064-rsi_reversion-v1",
+    "rank": 8,
+    "candidate_id": "seed-084-volatility_regime-v2",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/pdf/2509.14385",
-    "rule": "rsi_reversion",
-    "focus_asset": "TQQQ",
+    "source": "https://arxiv.org/html/2402.05272v3",
+    "rule": "volatility_regime",
+    "focus_asset": "QQQ",
     "args": [
       "--asset",
-      "TQQQ",
+      "QQQ",
       "--rule",
-      "rsi_reversion",
+      "volatility_regime",
       "--fast-window",
-      "16",
+      "20",
       "--slow-window",
-      "18",
+      "220",
       "--rsi-window",
-      "10",
+      "14",
       "--rsi-oversold",
-      "24",
+      "30",
       "--rsi-overbought",
       "70",
       "--vol-window",
-      "20",
+      "30",
       "--vol-cap",
-      "0.40",
+      "0.70",
       "--hypothesis-id",
-      "seed-64-1"
+      "seed-84-2"
     ],
-    "combined_score": 1.6487660120379053,
-    "train_score": 0.9560133228815458,
-    "test_score": 2.9353067204711443,
+    "combined_score": 1.9332057975044177,
+    "train_score": 2.4711386518208265,
+    "test_score": 0.9341876394882298,
     "train_details": {
-      "cagr": 0.07680450770964309,
-      "final_equity": 1468024.6839999992,
-      "max_drawdown": 0.22946676026355817,
-      "name": "PaperResearch [TQQQ|rsi_reversion]",
-      "sharpe": 0.27214658033088956,
-      "var_95": 0.0
+      "beginning_equity": 1000000.0,
+      "cagr": 0.122303587083602,
+      "final_equity": 1819633.351,
+      "max_drawdown": 0.19576970695770596,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "sharpe": 0.6704649063533342,
+      "var_95": -0.0133214374442468
     },
     "test_details": {
-      "cagr": 0.2172302523916347,
-      "final_equity": 1277469.99,
-      "max_drawdown": 0.13299843455692562,
-      "name": "PaperResearch [TQQQ|rsi_reversion]",
-      "sharpe": 0.6060410048336774,
-      "var_95": 0.0
+      "beginning_equity": 1000000.0,
+      "cagr": 0.066816061151586,
+      "final_equity": 1083906.3679999951,
+      "max_drawdown": 0.13224869930699776,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "sharpe": 0.23947981720283693,
+      "var_95": -0.018594759235964924
     },
-    "why": "Why it works: RSI reversion on TQQQ: enters positions when RSI(10) falls below 24, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 7.7%, Sharpe 0.272, max drawdown 22.9%. Test: CAGR 21.7%, Sharpe 0.606, max drawdown 13.3%. Strongly consistent equity growth across both windows.",
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 754,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 249,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: Volatility regime on QQQ: holds through calmer market states, only trading when realized 30-day volatility stays within the lowest 70% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 12.2%, Sharpe 0.670, max drawdown 19.6%. Test: CAGR 6.7%, Sharpe 0.239, max drawdown 13.2%. Strongly consistent equity growth across both windows.",
     "is_seeded": true,
-    "rationale": "Rooted in the research paper \"[pdf] adaptive and regime-aware rl for portfolio optimization - arxiv.org\", this strategy applies the paper's findings on mean-reverting behavior to TQQQ using the Relative Strength Index. The academic work examines how extreme price moves in financial markets tend to partially reverse — a phenomenon driven by the microstructure of order flow, liquidity provider behavior, and the well-documented disposition effect among retail investors. The candidate triggers entries when RSI(10) drops below 24, targeting the reflexive bounce that typically follows exhaustive selling pressure. In leveraged instruments like TQQQ, these oversold conditions are amplified by the daily rebalancing mechanism, often producing sharper and more predictable snap-back rallies than in unleveraged equivalents.",
-    "strategy_description": "RSI reversion on TQQQ: enters positions when RSI(10) falls below 24, targeting mean-reversion from oversold conditions.",
-    "investment_rationale": "Mean-reversion via RSI on TQQQ exploits the tendency for oversold conditions to precede short-term bounces. When RSI drops to extreme lows, selling pressure is typically exhausted and a reflexive recovery follows. This strategy is particularly effective in liquid, large-cap instruments where panic selling creates predictable snap-back opportunities. It provides diversification from trend-following approaches by profiting from the opposite market dynamic."
+    "rationale": "Seeded from the paper \"Downside Risk Reduction Using Regime-Switching Signals: A Statistical Jump Model Approach1footnote 11footnote 1 This article was previously titled “Regime-Aware Asset Allocation: a Statistical Jump Model Approach”. The authors are grateful for the thoughtful comments from the editor and the anonymous reviewer, which have significantly improved the article.\", this candidate uses the source as a research cue for a volatility-regime filter on QQQ. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 30-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
+    "strategy_description": "Volatility regime on QQQ: holds through calmer market states, only trading when realized 30-day volatility stays within the lowest 70% regime (vol_cap).",
+    "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 30-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "Volatility-regime filtering on QQQ restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Feature engineering: 30-day rolling standard deviation of log returns, annualized via sqrt(365.25). Percentile rank computed across all valid volatility observations. Signal: long when current vol <= vol_cap percentile threshold. Single data input: asset close prices."
+  },
+  {
+    "rank": 9,
+    "candidate_id": "seed-004-vol_spread-v1",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/abs/1907.00293",
+    "rule": "vol_spread",
+    "focus_asset": "SPY",
+    "args": [
+      "--asset",
+      "SPY",
+      "--rule",
+      "vol_spread",
+      "--fast-window",
+      "12",
+      "--slow-window",
+      "50",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "30",
+      "--vol-cap",
+      "0.30",
+      "--hypothesis-id",
+      "seed-4-1"
+    ],
+    "combined_score": 1.8195546781681553,
+    "train_score": 1.0364137387711427,
+    "test_score": 3.273959279905464,
+    "train_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.06884451339664865,
+      "final_equity": 1412586.865999997,
+      "max_drawdown": 0.14435624419318382,
+      "name": "PaperResearch [SPY|vol_spread]",
+      "sharpe": 0.27514846675390275,
+      "var_95": -0.011591168216164365
+    },
+    "test_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.1546687658733512,
+      "final_equity": 1196202.1719999986,
+      "max_drawdown": 0.08115202836806679,
+      "name": "PaperResearch [SPY|vol_spread]",
+      "sharpe": 0.8198531747935501,
+      "var_95": -0.011861491340489534
+    },
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-004-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 572,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-004-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 185,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: VRP harvest on SPY: goes long when VIX-implied volatility exceeds 30-day realized volatility by more than 30%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 6.9%, Sharpe 0.275, max drawdown 14.4%. Test: CAGR 15.5%, Sharpe 0.820, max drawdown 8.1%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true,
+    "rationale": "Seeded from the paper \"Tracking VIX with VIX Futures: Portfolio Construction and Performance\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on SPY. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.30 controls the minimum spread magnitude required to trigger entry.",
+    "strategy_description": "VRP harvest on SPY: goes long when VIX-implied volatility exceeds 30-day realized volatility by more than 30%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
+    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 30-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 30-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (SPY) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "The Variance Risk Premium (VRP) on SPY exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"SPY\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 30) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
+  },
+  {
+    "rank": 10,
+    "candidate_id": "seed-015-vol_spread-v1",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/abs/2012.08353",
+    "rule": "vol_spread",
+    "focus_asset": "QQQ",
+    "args": [
+      "--asset",
+      "QQQ",
+      "--rule",
+      "vol_spread",
+      "--fast-window",
+      "12",
+      "--slow-window",
+      "50",
+      "--rsi-window",
+      "14",
+      "--rsi-oversold",
+      "30",
+      "--rsi-overbought",
+      "70",
+      "--vol-window",
+      "40",
+      "--vol-cap",
+      "0.25",
+      "--hypothesis-id",
+      "seed-15-1"
+    ],
+    "combined_score": 1.690913133440711,
+    "train_score": 1.0043615972658664,
+    "test_score": 2.9659374149082796,
+    "train_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.06603716087382439,
+      "final_equity": 1393443.074999999,
+      "max_drawdown": 0.1369486763373273,
+      "name": "PaperResearch [QQQ|vol_spread]",
+      "sharpe": 0.2666222596317261,
+      "var_95": -0.0017371912964677116
+    },
+    "test_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.14057214021329667,
+      "final_equity": 1178037.4149999996,
+      "max_drawdown": 0.06580261609823969,
+      "name": "PaperResearch [QQQ|vol_spread]",
+      "sharpe": 0.738209412055345,
+      "var_95": -0.006671750933208782
+    },
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-015-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 184,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-015-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 90,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 40-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 6.6%, Sharpe 0.267, max drawdown 13.7%. Test: CAGR 14.1%, Sharpe 0.738, max drawdown 6.6%. Strongly consistent equity growth across both windows.",
+    "is_seeded": true,
+    "rationale": "Seeded from the paper \"A general framework for a joint calibration of VIX and VXX options\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on QQQ. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.25 controls the minimum spread magnitude required to trigger entry.",
+    "strategy_description": "VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 40-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
+    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 40-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 40-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "The Variance Risk Premium (VRP) on QQQ exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 40) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
   }
 ];
 const tbody = document.getElementById('body');
@@ -1057,6 +1218,20 @@ if (rows.length) {
 function fmt(v, pct) {
   if (v == null || v === undefined) return '\u2014';
   return pct ? (v * 100).toFixed(1) + '%' : v.toFixed(3);
+}
+function fmtMoney(v) {
+  if (v == null || v === undefined) return '\u2014';
+  return '$' + Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+function fmtWindow(meta, details) {
+  const start = meta?.actual_period_start || details?.period_start;
+  const end = meta?.actual_period_end || details?.period_end;
+  if (!start && !end) return '\u2014';
+  return `${start || '\u2014'} \u2192 ${end || '\u2014'}`;
+}
+function fmtAuditLink(meta) {
+  if (!meta?.artifact_path) return '\u2014';
+  return `<a class="source-link" href="${meta.artifact_path}" target="_blank" rel="noopener">Open JSON</a>`;
 }
 function cagrClass(v) {
   if (v == null) return '';
@@ -1094,36 +1269,52 @@ function renderRows(data) {
       <div class="row-details">
         <div class="detail-grid">
           <div>
-            <h4 style="display:flex;align-items:center;">Train Window<span class="info-bubble">i<span class="info-tip">The in-sample period (2020\u20132024) used to fit and calibrate the strategy. Strong train metrics confirm the signal exists historically, but high train scores alone can indicate overfitting. Always compare with the test window.</span></span></h4>
+            <h4 style="display:flex;align-items:center;">Train Window<span class="info-bubble">i<span class="info-tip">The in-sample period used to fit and calibrate the strategy. Strong train metrics confirm the signal exists historically, but high train scores alone can indicate overfitting. Compare against the test window and the linked audit trail.</span></span></h4>
             <div class="detail-row"><span class="label">CAGR</span><span class="value ${cagrClass(r.train_details?.cagr)}">${fmt(r.train_details?.cagr, true)}</span></div>
             <div class="detail-row"><span class="label">Sharpe</span><span class="value">${fmt(r.train_details?.sharpe, false)}</span></div>
             <div class="detail-row"><span class="label">Max Drawdown</span><span class="value neg">${fmt(r.train_details?.max_drawdown, true)}</span></div>
-            <div class="detail-row"><span class="label">Final Equity</span><span class="value">$${(r.train_details?.final_equity || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}</span></div>
+            <div class="detail-row"><span class="label">Actual Period</span><span class="value">${fmtWindow(r.train_audit, r.train_details)}</span></div>
+            <div class="detail-row"><span class="label">Beginning Equity</span><span class="value">${fmtMoney(r.train_details?.beginning_equity)}</span></div>
+            <div class="detail-row"><span class="label">Final Equity</span><span class="value">${fmtMoney(r.train_details?.final_equity)}</span></div>
+            <div class="detail-row"><span class="label">Executed Trades</span><span class="value">${r.train_audit?.trade_count ?? '\u2014'}</span></div>
+            <div class="detail-row"><span class="label">Audit Trail</span><span class="value">${fmtAuditLink(r.train_audit)}</span></div>
             <div class="detail-row"><span class="label">VaR 95</span><span class="value">${fmt(r.train_details?.var_95, true)}</span></div>
           </div>
           <div>
-            <h4 style="display:flex;align-items:center;">Test Window<span class="info-bubble">i<span class="info-tip">The out-of-sample period (2025\u2013present) the strategy has never seen during calibration. Test performance is the most reliable indicator of real-world viability. Strategies that perform well in both windows are more likely to be robust rather than overfit.</span></span></h4>
+            <h4 style="display:flex;align-items:center;">Test Window<span class="info-bubble">i<span class="info-tip">The out-of-sample period the strategy has never seen during calibration. Test performance is the most reliable indicator of real-world viability. Use the linked audit trail to inspect the concrete trades and equity path.</span></span></h4>
             <div class="detail-row"><span class="label">CAGR</span><span class="value ${cagrClass(r.test_details?.cagr)}">${fmt(r.test_details?.cagr, true)}</span></div>
             <div class="detail-row"><span class="label">Sharpe</span><span class="value">${fmt(r.test_details?.sharpe, false)}</span></div>
             <div class="detail-row"><span class="label">Max Drawdown</span><span class="value neg">${fmt(r.test_details?.max_drawdown, true)}</span></div>
-            <div class="detail-row"><span class="label">Final Equity</span><span class="value">$${(r.test_details?.final_equity || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}</span></div>
+            <div class="detail-row"><span class="label">Actual Period</span><span class="value">${fmtWindow(r.test_audit, r.test_details)}</span></div>
+            <div class="detail-row"><span class="label">Beginning Equity</span><span class="value">${fmtMoney(r.test_details?.beginning_equity)}</span></div>
+            <div class="detail-row"><span class="label">Final Equity</span><span class="value">${fmtMoney(r.test_details?.final_equity)}</span></div>
+            <div class="detail-row"><span class="label">Executed Trades</span><span class="value">${r.test_audit?.trade_count ?? '\u2014'}</span></div>
+            <div class="detail-row"><span class="label">Audit Trail</span><span class="value">${fmtAuditLink(r.test_audit)}</span></div>
             <div class="detail-row"><span class="label">VaR 95</span><span class="value">${fmt(r.test_details?.var_95, true)}</span></div>
           </div>
         </div>
         <div class="analysis-section">
-          <div class="analysis-header">Analysis</div>
+          <div class="analysis-header">Research Analysis Framework</div>
           <div class="analysis-body">
             <div class="analysis-block">
-              <div class="analysis-block-label">Strategy</div>
-              <div class="analysis-block-text">${r.strategy_description || ''}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">Research Basis</div>
+              <div class="analysis-block-label">1. Mental Model Synthesis</div>
               <div class="analysis-block-text">${r.rationale || ''}${isUrl ? ` <a href="${r.source}" target="_blank" rel="noopener">View source \u2192</a>` : ''}</div>
             </div>
             <div class="analysis-block">
-              <div class="analysis-block-label">Investment Case</div>
+              <div class="analysis-block-label">2. Critical Evaluation</div>
+              <div class="analysis-block-text">${r.critical_evaluation || ''}</div>
+            </div>
+            <div class="analysis-block">
+              <div class="analysis-block-label">3. Trading Strategy</div>
+              <div class="analysis-block-text">${r.strategy_description || ''}</div>
+            </div>
+            <div class="analysis-block">
+              <div class="analysis-block-label">4. Asset Universe &amp; Investment Case</div>
               <div class="analysis-block-text">${r.investment_rationale || ''}</div>
+            </div>
+            <div class="analysis-block">
+              <div class="analysis-block-label">5. Backtest Architecture</div>
+              <div class="analysis-block-text">${r.backtest_architecture || ''}</div>
             </div>
             <div class="analysis-block">
               <div class="analysis-block-label">Performance Summary</div>

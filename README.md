@@ -81,6 +81,9 @@ Output artifacts:
 
 - `reports/autoresearch-top10-interactive-report.html` (interactive top 10 browser report)
 - `reports/autoresearch-ledger.jsonl` (full candidate ledger)
+- `reports/autoresearch-audits/` (train/test proof JSON for persisted top 10 candidates)
+- `reports/autoresearch-strategy-registry.json` (promoted strategy catalog keyed by stable parameter signature)
+- `reports/autoresearch-eval-cache.jsonl` (cross-run evaluation cache)
 - `reports/autoresearch-exa-ideas.json` (web-seed scrape and normalization)
 
 Output is now table-formatted and includes:
@@ -88,6 +91,8 @@ Output is now table-formatted and includes:
 - candidate ID + strategy + strategy category
 - focused assets, horizon, source, and rationale
 - train/test scores and summary stats
+- actual evaluated windows, executed-trade counts, and audit-trail links for persisted winners
+- registry promotion history for strong candidates that recur across runs
 - machine-copyable command args for the best candidate
 
 To provide the Exa key used for web seeding:

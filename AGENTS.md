@@ -78,6 +78,11 @@ When the refinement loop terminates (patience, frontier exhaustion, or max round
 
 `reports/autoresearch-eval-cache.jsonl` persists results across runs keyed by parameter signature + date windows. Deterministic grid and repeated seeded candidates are served instantly. Use `--no-cache` to force re-evaluation (e.g., after strategy code changes).
 
+### Audit trail and registry
+
+- Persisted top-10 winners must have train/test audit artifacts under `reports/autoresearch-audits/` with exact evaluated periods, trade ledgers, and equity traces.
+- Promoted winners must also be upserted into `reports/autoresearch-strategy-registry.json`, keyed by stable parameter signature, so future implementation work can start from audited candidates rather than only JSONL history.
+
 ## Data and candidate constraints
 
 - Backtests use local warehouse parquet data only.
@@ -90,6 +95,8 @@ When the refinement loop terminates (patience, frontier exhaustion, or max round
 - `reports/autoresearch-ledger.jsonl` — append-only log of top-ranked results per run
 - `reports/autoresearch-exa-ideas.json` — raw Exa/arXiv seeds (when `--seed-web` is set)
 - `reports/autoresearch-top10-interactive-report.html` — branded interactive report
+- `reports/autoresearch-audits/` — auditable train/test proof JSONs for persisted top-10 candidates
+- `reports/autoresearch-strategy-registry.json` — promoted strategy registry for future real-world implementation work
 - `reports/autoresearch-eval-cache.jsonl` — persistent evaluation cache (cross-run)
 - Prefer reading these after each production loop before promoting candidates.
 

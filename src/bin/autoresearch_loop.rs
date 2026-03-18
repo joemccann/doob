@@ -111,6 +111,14 @@ struct ScoredRun {
     details: Value,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+struct AuditWindowMeta {
+    artifact_path: String,
+    trade_count: usize,
+    actual_period_start: String,
+    actual_period_end: String,
+}
+
 #[derive(Clone, Serialize)]
 struct CandidateReport {
     candidate_id: String,
@@ -126,7 +134,51 @@ struct CandidateReport {
     combined_score: f64,
     train_details: Value,
     test_details: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    train_audit: Option<AuditWindowMeta>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    test_audit: Option<AuditWindowMeta>,
     is_seeded: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct StrategyRegistrySnapshot {
+    observed_at: String,
+    candidate_id: String,
+    source: String,
+    rationale: String,
+    round: Option<u32>,
+    combined_score: f64,
+    train_score: f64,
+    test_score: f64,
+    train_details: Value,
+    test_details: Value,
+    train_audit: Option<AuditWindowMeta>,
+    test_audit: Option<AuditWindowMeta>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct StrategyRegistryEntry {
+    signature: String,
+    registry_status: String,
+    strategy: String,
+    rule: String,
+    focus_asset: String,
+    args: Vec<String>,
+    is_seeded: bool,
+    candidate_ids: Vec<String>,
+    sources: Vec<String>,
+    first_top10_at: String,
+    last_top10_at: String,
+    times_in_top10: u64,
+    latest: StrategyRegistrySnapshot,
+    best: StrategyRegistrySnapshot,
+}
+
+#[derive(Default, Serialize, Deserialize)]
+struct StrategyRegistry {
+    updated_at: String,
+    entries: Vec<StrategyRegistryEntry>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -362,6 +414,9 @@ struct CachedEval {
 }
 
 const EVAL_CACHE_PATH: &str = "reports/autoresearch-eval-cache.jsonl";
+const STRATEGY_REGISTRY_PATH: &str = "reports/autoresearch-strategy-registry.json";
+const DEFAULT_PAPER_RESEARCH_BEGINNING_EQUITY: f64 = 1_000_000.0;
+const SEED_CLASSIFICATION_FALLBACK_CHARS: usize = 1600;
 
 fn eval_cache_key(
     signature: &str,
@@ -390,7 +445,9 @@ fn load_eval_cache(path: &Path) -> HashMap<String, CachedEval> {
         if line.is_empty() {
             continue;
         }
-        if let Ok(entry) = serde_json::from_str::<CachedEval>(line) {
+        if let Ok(mut entry) = serde_json::from_str::<CachedEval>(line) {
+            entry.train_details = backfill_beginning_equity(&entry.train_details);
+            entry.test_details = backfill_beginning_equity(&entry.test_details);
             cache.insert(entry.eval_key.clone(), entry);
         }
     }
@@ -453,6 +510,8 @@ fn cached_evaluate_candidate(
             combined_score: hit.combined_score,
             train_details: hit.train_details.clone(),
             test_details: hit.test_details.clone(),
+            train_audit: None,
+            test_audit: None,
             is_seeded: candidate.is_seeded,
         });
     }
@@ -504,6 +563,27 @@ fn safe_float(value: &Value) -> Option<f64> {
         Value::String(s) => s.parse::<f64>().ok().filter(|v| v.is_finite()),
         _ => None,
     }
+}
+
+fn backfill_beginning_equity(details: &Value) -> Value {
+    let mut upgraded = details.clone();
+    if let Some(object) = upgraded.as_object_mut() {
+        let beginning_equity = object
+            .get("beginning_equity")
+            .and_then(safe_float)
+            .unwrap_or(0.0);
+        let final_equity = object
+            .get("final_equity")
+            .and_then(safe_float)
+            .unwrap_or(0.0);
+        if beginning_equity <= 0.0 && final_equity > 0.0 {
+            object.insert(
+                "beginning_equity".to_string(),
+                json!(DEFAULT_PAPER_RESEARCH_BEGINNING_EQUITY),
+            );
+        }
+    }
+    upgraded
 }
 
 fn arg_value<'a>(args: &'a [String], flag: &'a str) -> Option<&'a str> {
@@ -808,56 +888,47 @@ fn research_basis(
 
     match rule {
         RULE_TREND_MOMENTUM => format!(
-            "Inspired by the research paper \"{paper_title}\", this strategy translates academic findings on \
-            directional price persistence into a tradeable signal on {asset}. The paper investigates how \
-            trend-following and momentum dynamics manifest in equity markets — a phenomenon extensively \
-            documented since Jegadeesh and Titman (1993). This candidate operationalizes those insights \
+            "Seeded from the paper \"{paper_title}\", this candidate treats the source as a research lead rather \
+            than a literal blueprint. The implemented hypothesis tests directional price persistence on {asset} \
+            with a concrete doob rule, not a direct replication of the paper's methodology. It operationalizes \
             using a dual moving-average crossover ({fast}-day fast / {slow}-day slow), entering long \
             positions only when both the short-term trend and the broader price direction confirm upward \
-            momentum. The approach is grounded in the behavioral finance explanation that investors \
-            underreact to new information, causing prices to drift in the direction of recent moves \
-            before fully adjusting."
+            momentum. The source link shows the paper that inspired this hypothesis; the rule described \
+            here is the exact strategy variant currently under test."
         ),
         RULE_TREND_PULLBACK => format!(
-            "Derived from the research paper \"{paper_title}\", this strategy applies the paper's insights \
-            on price dynamics to identify controlled dip-buying opportunities in {asset}. The academic \
-            work explores how temporary price dislocations within an established trend create \
-            asymmetric risk/reward entries — a pattern linked to institutional rebalancing flows and \
-            short-term liquidity withdrawal. The candidate uses a {fast}-day / {slow}-day moving-average \
+            "Seeded from the paper \"{paper_title}\", this candidate uses the source as a prompt for a \
+            pullback-within-trend hypothesis on {asset}, not as a direct implementation of the paper. \
+            The tested rule uses a {fast}-day / {slow}-day moving-average \
             framework to detect moments when price retreats below the short-term average while the \
             longer-term trend remains intact, entering positions at a statistical discount to the \
-            prevailing trend. This technique is a staple of systematic equity strategies and has roots \
-            in the academic literature on contrarian profits within momentum regimes."
+            prevailing trend. The source link captures the research seed; the rule described here is the \
+            actual doob translation being evaluated."
         ),
         RULE_RSI_REVERSION => format!(
-            "Rooted in the research paper \"{paper_title}\", this strategy applies the paper's findings on \
-            mean-reverting behavior to {asset} using the Relative Strength Index. The academic work \
-            examines how extreme price moves in financial markets tend to partially reverse — a \
-            phenomenon driven by the microstructure of order flow, liquidity provider behavior, and \
-            the well-documented disposition effect among retail investors. The candidate triggers entries \
+            "Seeded from the paper \"{paper_title}\", this candidate maps the source into an RSI \
+            mean-reversion hypothesis on {asset}. It is not a direct replication of the paper's model \
+            or claims; the paper serves as the research lead, while the rule below is the concrete \
+            strategy under test. The candidate triggers entries \
             when RSI({rsi_window}) drops below {rsi_oversold}, targeting the reflexive bounce that \
             typically follows exhaustive selling pressure. In leveraged instruments like {asset}, these \
-            oversold conditions are amplified by the daily rebalancing mechanism, often producing \
-            sharper and more predictable snap-back rallies than in unleveraged equivalents."
+            oversold conditions can be amplified by daily rebalancing effects, which is why the report \
+            highlights the implemented signal separately from the source paper."
         ),
         RULE_VOL_REGIME => format!(
-            "Based on the research paper \"{paper_title}\", this strategy implements the paper's findings \
-            on volatility clustering and regime dependence in financial markets. The academic work \
-            investigates how returns exhibit fundamentally different statistical properties across \
-            low- and high-volatility environments — a pattern first formalized by Engle's ARCH models \
-            and subsequently extended by regime-switching frameworks (Hamilton, 1989). The candidate \
+            "Seeded from the paper \"{paper_title}\", this candidate uses the source as a research cue for \
+            a volatility-regime filter on {asset}. The report is describing the exact rule under test, not \
+            claiming that the paper itself used this exact specification. The candidate \
             applies a {vol_window}-day realized volatility filter to {asset}, restricting exposure \
             to periods when volatility remains below the {:.0}th percentile (vol_cap = {vol_cap:.2}). \
-            This approach sacrifices participation during turbulent markets in exchange for substantially \
-            improved risk-adjusted returns, exploiting the empirical finding that the volatility risk \
-            premium is richest during calm regimes.",
+            The source link captures the paper that inspired the hypothesis, while the narrative here \
+            explains the concrete doob implementation.",
             vol_cap * 100.0
         ),
         RULE_VOL_SPREAD => format!(
-            "Inspired by the research paper \"{paper_title}\", this strategy exploits the spread between \
-            VIX-implied and {vol_window}-day realized volatility on {asset}. The academic literature — \
-            from Carr & Wu (2009) on the variance risk premium to recent GARCH-LSTM hybrid forecasting \
-            models — documents a persistent, tradeable gap between implied and realized volatility. \
+            "Seeded from the paper \"{paper_title}\", this candidate turns the source into an \
+            implied-vs-realized volatility spread hypothesis on {asset}. The paper is the inspiration \
+            source, while the rule below is the specific doob translation being backtested. \
             When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions \
             to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities \
             when realized volatility overshoots implied, signaling an imminent return to calmer conditions. \
@@ -890,19 +961,235 @@ fn format_command_line(cmd: &Path, args: &[String]) -> String {
 }
 
 fn normalize_text(value: &str) -> String {
-    value
-        .to_ascii_lowercase()
+    let collapsed = value
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() {
+                ch.to_ascii_lowercase()
+            } else {
+                ' '
+            }
+        })
+        .collect::<String>()
         .split_whitespace()
         .collect::<Vec<_>>()
-        .join(" ")
+        .join(" ");
+    format!(" {collapsed} ")
+}
+
+fn collapse_whitespace(value: &str) -> String {
+    value.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn looks_like_subject_bucket(title: &str) -> bool {
+    title.contains(" > ")
+}
+
+fn looks_like_generic_seed_title(title: &str) -> bool {
+    let normalized = collapse_whitespace(title).to_ascii_lowercase();
+    looks_like_subject_bucket(title)
+        || (normalized.starts_with("submitted paper ")
+            && normalized["submitted paper ".len()..]
+                .chars()
+                .all(|ch| ch.is_ascii_digit()))
+}
+
+fn looks_like_arxiv_identifier(value: &str) -> bool {
+    let token = value
+        .trim()
+        .strip_prefix("arXiv:")
+        .unwrap_or(value.trim())
+        .split_whitespace()
+        .next()
+        .unwrap_or("");
+
+    if token.is_empty() {
+        return false;
+    }
+
+    let core = token
+        .rsplit_once('v')
+        .filter(|(_, suffix)| suffix.chars().all(|c| c.is_ascii_digit()))
+        .map(|(prefix, _)| prefix)
+        .unwrap_or(token);
+
+    if let Some((lhs, rhs)) = core.split_once('.') {
+        return lhs.len() == 4
+            && lhs.chars().all(|c| c.is_ascii_digit())
+            && (4..=5).contains(&rhs.len())
+            && rhs.chars().all(|c| c.is_ascii_digit());
+    }
+
+    if let Some((lhs, rhs)) = core.split_once('/') {
+        return !lhs.is_empty()
+            && lhs
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.')
+            && rhs.len() >= 7
+            && rhs.chars().all(|c| c.is_ascii_digit());
+    }
+
+    false
+}
+
+fn extract_title_from_seed_text(text: &str) -> Option<String> {
+    for line in text.lines() {
+        let line = line.trim();
+        if let Some(rest) = line.strip_prefix("# Title:") {
+            let title = collapse_whitespace(rest);
+            if !title.is_empty() && !looks_like_generic_seed_title(&title) {
+                return Some(title);
+            }
+        }
+        if let Some(rest) = line.strip_prefix("Title:") {
+            let title = collapse_whitespace(rest);
+            if !title.is_empty() && !looks_like_generic_seed_title(&title) {
+                return Some(title);
+            }
+        }
+    }
+
+    for line in text.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            if let Some((id, title)) = line.split_once("] ") {
+                let id = id.trim_start_matches('[').trim();
+                if !looks_like_arxiv_identifier(id) {
+                    continue;
+                }
+                let title = collapse_whitespace(title);
+                if !title.is_empty() && !looks_like_generic_seed_title(&title) {
+                    return Some(title);
+                }
+            }
+        }
+    }
+
+    let lines: Vec<String> = text
+        .lines()
+        .map(|line| collapse_whitespace(line.trim()))
+        .collect();
+    for (idx, title) in lines.iter().enumerate() {
+        if title.is_empty()
+            || title.len() < 12
+            || title.starts_with('#')
+            || title.starts_with("http")
+            || title.starts_with("arXiv:")
+            || title.starts_with("Authors:")
+            || title.eq_ignore_ascii_case("abstract")
+            || title.contains('@')
+            || looks_like_generic_seed_title(title)
+        {
+            continue;
+        }
+
+        if let Some(next_line) = lines.get(idx + 1) {
+            let continuation = !next_line.is_empty()
+                && next_line.len() <= 40
+                && !next_line.starts_with('#')
+                && !next_line.starts_with("Authors:")
+                && !next_line.eq_ignore_ascii_case("abstract")
+                && !next_line.contains('@')
+                && next_line
+                    .chars()
+                    .all(|ch| ch.is_ascii_alphabetic() || ch.is_ascii_whitespace() || ch == '-');
+            if continuation {
+                let combined = collapse_whitespace(&format!("{title} {next_line}"));
+                let alpha_count = combined.chars().filter(|c| c.is_ascii_alphabetic()).count();
+                if alpha_count >= 6 {
+                    return Some(combined);
+                }
+            }
+        }
+
+        let alpha_count = title.chars().filter(|c| c.is_ascii_alphabetic()).count();
+        if alpha_count >= 6 {
+            return Some(title.clone());
+        }
+    }
+
+    None
+}
+
+fn seed_paper_title(seed: &ExaSeed) -> String {
+    let title = collapse_whitespace(&seed.title);
+    if !title.is_empty() && !looks_like_generic_seed_title(&title) {
+        return title;
+    }
+
+    if let Some(parsed) = extract_title_from_seed_text(&seed.text) {
+        return parsed;
+    }
+
+    if !title.is_empty() {
+        return title;
+    }
+
+    "Untitled arXiv seed".to_string()
+}
+
+fn extract_abstract_from_seed_text(text: &str) -> Option<String> {
+    let normalized = text.replace("\r\n", "\n");
+    let abstract_start = normalized
+        .find("> Abstract:")
+        .map(|idx| idx + "> Abstract:".len())
+        .or_else(|| {
+            normalized
+                .find("Abstract:")
+                .map(|idx| idx + "Abstract:".len())
+        })?;
+
+    let mut abstract_text = normalized[abstract_start..].trim();
+    for marker in [
+        "\n## ",
+        "\n# ",
+        "\n| Subjects:",
+        "\nSubmission history",
+        "\n## Submission history",
+        "\nFull-text links:",
+        "\nCurrent browse context:",
+        "\n### ",
+        "\nReferences & Citations",
+        "\nBibliographic",
+        "\nCode, Data, Media",
+        "\nRelated Papers",
+    ] {
+        if let Some(idx) = abstract_text.find(marker) {
+            abstract_text = &abstract_text[..idx];
+        }
+    }
+
+    let abstract_text = collapse_whitespace(abstract_text.trim_start_matches('>').trim());
+    if abstract_text.is_empty() {
+        return None;
+    }
+
+    Some(abstract_text)
+}
+
+fn seed_classification_blob(seed: &ExaSeed) -> String {
+    let title = seed_paper_title(seed);
+    let abstract_or_prefix = extract_abstract_from_seed_text(&seed.text).unwrap_or_else(|| {
+        collapse_whitespace(&seed.text)
+            .chars()
+            .take(SEED_CLASSIFICATION_FALLBACK_CHARS)
+            .collect::<String>()
+    });
+    normalize_text(&format!("{title} {abstract_or_prefix}"))
 }
 
 fn contains_any(haystack: &str, needles: &[&str]) -> bool {
-    needles.iter().any(|n| haystack.contains(n))
+    needles
+        .iter()
+        .any(|needle| contains_phrase(haystack, needle))
+}
+
+fn contains_phrase(haystack: &str, needle: &str) -> bool {
+    haystack.contains(&normalize_text(needle))
 }
 
 fn extract_seed_tags(seed: &ExaSeed) -> HashSet<&'static str> {
-    let blob = normalize_text(&format!("{} {}", seed.title, seed.text));
+    let blob = seed_classification_blob(seed);
     let mut tags = HashSet::new();
 
     if contains_any(
@@ -910,10 +1197,12 @@ fn extract_seed_tags(seed: &ExaSeed) -> HashSet<&'static str> {
         &[
             "momentum",
             "trend",
+            "trend following",
+            "trend-following",
             "breakout",
-            "sma",
             "moving average",
-            "reversal",
+            "moving-average",
+            "relative strength",
         ],
     ) {
         tags.insert("momentum");
@@ -921,13 +1210,24 @@ fn extract_seed_tags(seed: &ExaSeed) -> HashSet<&'static str> {
     if contains_any(
         &blob,
         &[
-            "volatility",
-            "regime",
-            "risk",
-            "drawdown",
-            "variance",
-            "vix",
-            "stress",
+            "pullback",
+            "buy the dip",
+            "dip buying",
+            "dip-buying",
+            "retracement",
+        ],
+    ) {
+        tags.insert("pullback");
+    }
+    if contains_any(
+        &blob,
+        &[
+            "volatility regime",
+            "regime switching",
+            "markov switching",
+            "volatility clustering",
+            "garch",
+            " arch ",
         ],
     ) {
         tags.insert("regime");
@@ -941,23 +1241,10 @@ fn extract_seed_tags(seed: &ExaSeed) -> HashSet<&'static str> {
             "rsi",
             "oscillator",
             "mean-reverting",
+            "overbought",
         ],
     ) {
         tags.insert("reversion");
-    }
-    if contains_any(
-        &blob,
-        &[
-            "intraday",
-            "open",
-            "close",
-            "minute",
-            "session",
-            "high frequency",
-            "hourly",
-        ],
-    ) {
-        tags.insert("intraday");
     }
     if contains_any(
         &blob,
@@ -974,13 +1261,277 @@ fn extract_seed_tags(seed: &ExaSeed) -> HashSet<&'static str> {
     ) {
         tags.insert("vol_spread");
     }
-
-    if tags.is_empty() {
-        tags.insert("momentum");
-        tags.insert("reversion");
-        tags.insert("regime");
-    }
     tags
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum SeedRuleFamily {
+    ExistingRule(&'static str),
+    NeedsNewRule(&'static str),
+    NoMatch,
+}
+
+fn keyword_score(blob: &str, phrases: &[(&str, i32)]) -> i32 {
+    phrases
+        .iter()
+        .filter(|(phrase, _)| contains_phrase(blob, phrase))
+        .map(|(_, weight)| *weight)
+        .sum()
+}
+
+fn classify_seed_rule_family(seed: &ExaSeed) -> SeedRuleFamily {
+    let blob = seed_classification_blob(seed);
+    let tags = extract_seed_tags(seed);
+
+    let supported_scores = [
+        (
+            RULE_TREND_MOMENTUM,
+            keyword_score(
+                &blob,
+                &[
+                    ("momentum", 5),
+                    ("trend following", 5),
+                    ("trend-following", 5),
+                    ("time series momentum", 6),
+                    ("moving average", 4),
+                    ("moving-average", 4),
+                    ("breakout", 4),
+                    ("relative strength", 3),
+                ],
+            ),
+        ),
+        (
+            RULE_TREND_PULLBACK,
+            keyword_score(
+                &blob,
+                &[
+                    ("pullback", 6),
+                    ("buy the dip", 6),
+                    ("dip buying", 6),
+                    ("dip-buying", 6),
+                    ("retracement", 3),
+                ],
+            ),
+        ),
+        (
+            RULE_RSI_REVERSION,
+            keyword_score(
+                &blob,
+                &[
+                    ("rsi", 7),
+                    ("mean reversion", 6),
+                    ("mean-reversion", 6),
+                    ("oversold", 5),
+                    ("overbought", 5),
+                    ("oscillator", 3),
+                    ("contrarian", 2),
+                ],
+            ),
+        ),
+        (
+            RULE_VOL_REGIME,
+            keyword_score(
+                &blob,
+                &[
+                    ("volatility regime", 7),
+                    ("regime switching", 7),
+                    ("markov switching", 6),
+                    ("volatility clustering", 6),
+                    ("volatility forecasting", 6),
+                    ("forecasting vix", 7),
+                    ("vix forecasting", 7),
+                    ("volatility index", 4),
+                    ("leverage effect", 3),
+                    ("garch", 4),
+                    (" arch ", 4),
+                    ("low volatility regime", 4),
+                    ("high volatility regime", 4),
+                ],
+            ),
+        ),
+        (
+            RULE_VOL_SPREAD,
+            keyword_score(
+                &blob,
+                &[
+                    ("variance risk premium", 7),
+                    ("vrp", 7),
+                    ("implied vs realized", 6),
+                    ("volatility spread", 5),
+                    ("implied volatility", 3),
+                    ("realized volatility", 3),
+                    ("vix futures", 5),
+                    ("vix options", 5),
+                    ("vix", 3),
+                    ("term structure", 3),
+                    ("contango", 4),
+                    ("backwardation", 4),
+                ],
+            ),
+        ),
+    ];
+
+    let best_supported = supported_scores
+        .into_iter()
+        .max_by_key(|(_, score)| *score)
+        .unwrap_or((RULE_TREND_MOMENTUM, 0));
+    let best_non_rsi_supported = supported_scores
+        .into_iter()
+        .filter(|(rule, _)| *rule != RULE_RSI_REVERSION)
+        .max_by_key(|(_, score)| *score)
+        .unwrap_or((RULE_TREND_MOMENTUM, 0));
+
+    let unsupported_scores = [
+        (
+            "options_hedging",
+            keyword_score(
+                &blob,
+                &[
+                    ("deep hedging", 9),
+                    ("hedging", 4),
+                    ("delta hedging", 6),
+                    ("gamma hedging", 6),
+                    ("option portfolio", 6),
+                    ("no-trade region", 5),
+                    ("no trade region", 5),
+                    ("transaction costs", 2),
+                ],
+            ),
+        ),
+        (
+            "reinforcement_learning",
+            keyword_score(
+                &blob,
+                &[
+                    ("reinforcement learning", 8),
+                    ("deep reinforcement learning", 8),
+                    ("actor-critic", 6),
+                    ("policy gradient", 5),
+                    ("q-learning", 5),
+                ],
+            ),
+        ),
+        (
+            "portfolio_construction",
+            keyword_score(
+                &blob,
+                &[
+                    ("portfolio management", 6),
+                    ("portfolio optimization", 6),
+                    ("portfolio overlay", 5),
+                    ("risk parity", 6),
+                    ("asset allocation", 5),
+                ],
+            ),
+        ),
+        (
+            "option_pricing",
+            keyword_score(
+                &blob,
+                &[
+                    ("option pricing", 9),
+                    ("pricing kernel", 8),
+                    ("volatility risk aversion", 8),
+                    ("risk-neutral", 6),
+                    ("heston", 6),
+                    ("volatility surface", 6),
+                    ("option prices", 4),
+                    ("pricing errors", 4),
+                    ("calibration", 4),
+                ],
+            ),
+        ),
+        (
+            "execution_microstructure",
+            keyword_score(
+                &blob,
+                &[
+                    ("order book", 6),
+                    ("market making", 6),
+                    ("execution", 5),
+                    ("market microstructure", 5),
+                    ("liquidity provider", 4),
+                ],
+            ),
+        ),
+        (
+            "intraday_alpha",
+            keyword_score(
+                &blob,
+                &[
+                    ("intraday", 6),
+                    ("open-to-close", 5),
+                    ("close-to-open", 5),
+                    ("high frequency", 6),
+                    ("hourly", 4),
+                    ("minute", 4),
+                ],
+            ),
+        ),
+    ];
+
+    let best_unsupported = unsupported_scores
+        .into_iter()
+        .max_by_key(|(_, score)| *score)
+        .unwrap_or(("none", 0));
+
+    let best_supported_score = best_supported.1
+        + if tags.contains("momentum") && best_supported.0 == RULE_TREND_MOMENTUM {
+            2
+        } else if tags.contains("pullback") && best_supported.0 == RULE_TREND_PULLBACK {
+            2
+        } else if tags.contains("reversion") && best_supported.0 == RULE_RSI_REVERSION {
+            2
+        } else if tags.contains("regime") && best_supported.0 == RULE_VOL_REGIME {
+            2
+        } else if tags.contains("vol_spread") && best_supported.0 == RULE_VOL_SPREAD {
+            2
+        } else {
+            0
+        };
+    let explicit_rsi_signal = contains_any(&blob, &["rsi", "oversold", "overbought", "oscillator"]);
+    let volatility_context = contains_any(
+        &blob,
+        &[
+            "vix",
+            "volatility index",
+            "volatility forecasting",
+            "forecasting vix",
+            "vix forecasting",
+            "implied volatility",
+            "realized volatility",
+            "volatility risk premium",
+            "volatility spread",
+        ],
+    );
+
+    if best_supported.0 == RULE_RSI_REVERSION
+        && !explicit_rsi_signal
+        && volatility_context
+        && best_non_rsi_supported.1 >= 3
+    {
+        return SeedRuleFamily::ExistingRule(best_non_rsi_supported.0);
+    }
+
+    if best_supported_score == 0 {
+        if best_unsupported.1 > 0 {
+            return SeedRuleFamily::NeedsNewRule(best_unsupported.0);
+        }
+        return SeedRuleFamily::NoMatch;
+    }
+
+    if best_unsupported.1 > 0 && best_supported_score <= best_unsupported.1 {
+        return SeedRuleFamily::NeedsNewRule(best_unsupported.0);
+    }
+
+    if best_supported_score < 5 {
+        if best_unsupported.1 > 0 {
+            return SeedRuleFamily::NeedsNewRule(best_unsupported.0);
+        }
+        return SeedRuleFamily::NoMatch;
+    }
+
+    SeedRuleFamily::ExistingRule(best_supported.0)
 }
 
 fn signature_for_candidate(candidate: &Candidate) -> String {
@@ -1089,15 +1640,23 @@ fn fetch_exa_ideas(queries: &[&str], limit: usize) -> Vec<ExaSeed> {
         });
 
         for row in parsed.results {
-            if row.title.trim().is_empty() || row.url.trim().is_empty() {
+            if row.url.trim().is_empty() {
                 continue;
             }
-            let key = format!("{}||{}", row.title.to_lowercase(), row.url.to_lowercase());
+            let title = seed_paper_title(&row);
+            if title.trim().is_empty() {
+                continue;
+            }
+            let key = format!("{}||{}", title.to_lowercase(), row.url.to_lowercase());
             if seen.contains(&key) {
                 continue;
             }
             seen.insert(key);
-            ideas.push(row);
+            ideas.push(ExaSeed {
+                title,
+                url: row.url,
+                text: row.text,
+            });
         }
     }
 
@@ -1155,7 +1714,7 @@ fn seed_candidate(
         rationale: format!(
             "ArXiv-seeded hypothesis ({}): {}",
             seed_idx,
-            normalize_text(&seed.title).trim()
+            seed_paper_title(seed)
         ),
         source: if seed.url.is_empty() {
             "seed".to_string()
@@ -1170,45 +1729,13 @@ fn seed_candidate(
 }
 
 fn build_seed_candidates(seed: &ExaSeed, idx: usize, assets: &[&str]) -> Vec<Candidate> {
-    let tags = extract_seed_tags(seed);
     let mut out = Vec::new();
 
-    let include_momentum = tags.contains("momentum") || tags.contains("intraday");
-    let include_reversion = tags.contains("reversion");
-    let include_regime = tags.contains("regime");
-    let include_vol_spread = tags.contains("vol_spread");
-
-    let momentum_rules = if include_momentum {
-        vec![RULE_TREND_MOMENTUM, RULE_TREND_PULLBACK]
-    } else {
-        vec![]
-    };
-    let reversion_rules = if include_reversion {
-        vec![RULE_RSI_REVERSION]
-    } else {
-        vec![]
-    };
-    let regime_rules = if include_regime {
-        vec![RULE_VOL_REGIME]
-    } else {
-        vec![]
-    };
-    let vol_spread_rules = if include_vol_spread {
-        vec![RULE_VOL_SPREAD]
-    } else {
-        vec![]
-    };
-    let all_rules: Vec<&str> = momentum_rules
-        .into_iter()
-        .chain(reversion_rules)
-        .chain(regime_rules)
-        .chain(vol_spread_rules)
-        .collect();
-
-    let selected_rules = if all_rules.is_empty() {
-        vec![RULE_TREND_MOMENTUM, RULE_RSI_REVERSION, RULE_VOL_REGIME]
-    } else {
-        all_rules
+    let selected_rules = match classify_seed_rule_family(seed) {
+        SeedRuleFamily::ExistingRule(rule) => vec![rule],
+        SeedRuleFamily::NeedsNewRule(_) | SeedRuleFamily::NoMatch => {
+            return out;
+        }
     };
 
     for (offset, rule) in selected_rules.iter().enumerate() {
@@ -1562,6 +2089,10 @@ fn score_paper_research(payload: &Value) -> Option<ScoredRun> {
     let sharpe = row.get("sharpe").and_then(safe_float)?;
     let dd = row.get("max_drawdown").and_then(safe_float)?;
     let var95 = row.get("var_95").and_then(safe_float).unwrap_or(0.0);
+    let beginning_equity = row
+        .get("beginning_equity")
+        .and_then(safe_float)
+        .unwrap_or(DEFAULT_PAPER_RESEARCH_BEGINNING_EQUITY);
     let final_equity = row.get("final_equity").and_then(safe_float).unwrap_or(0.0);
 
     let score = 6.0 * cagr + 3.0 * sharpe - 1.4 * dd.abs() - 0.5 * var95.max(0.0);
@@ -1569,11 +2100,15 @@ fn score_paper_research(payload: &Value) -> Option<ScoredRun> {
         score,
         details: json!({
             "name": row.get("name"),
+            "beginning_equity": beginning_equity,
             "final_equity": final_equity,
             "cagr": cagr,
             "sharpe": sharpe,
             "max_drawdown": dd,
             "var_95": var95,
+            "period_start": payload.get("period_start").cloned().unwrap_or(Value::Null),
+            "period_end": payload.get("period_end").cloned().unwrap_or(Value::Null),
+            "capital": payload.get("capital").cloned().unwrap_or(json!(DEFAULT_PAPER_RESEARCH_BEGINNING_EQUITY)),
         }),
     })
 }
@@ -1590,25 +2125,35 @@ fn strategy_category(strategy: &str) -> &'static str {
     }
 }
 
-fn run_candidate(
-    candidate: &Candidate,
+fn run_strategy_payload(
+    strategy: &str,
+    strategy_args: &[String],
     doob_bin: &Path,
+    start_date: &str,
     end_date: &str,
     sessions: i64,
     stage: &str,
+    include_audit: bool,
     verbose: bool,
-) -> Option<ScoredRun> {
+) -> Option<Value> {
     let mut args = vec![
         "--output".to_string(),
         "json".to_string(),
         "run".to_string(),
-        candidate.strategy.clone(),
+        strategy.to_string(),
     ];
-    args.extend(candidate.args.iter().cloned());
+    args.extend(strategy_args.iter().cloned());
+    if strategy == RESEARCH_STRATEGY {
+        args.push("--start-date".to_string());
+        args.push(start_date.to_string());
+    }
     args.push("--end-date".to_string());
     args.push(end_date.to_string());
     args.push("--sessions".to_string());
     args.push(sessions.to_string());
+    if include_audit && strategy == RESEARCH_STRATEGY {
+        args.push("--include-audit".to_string());
+    }
 
     if verbose {
         println!("  [{stage}] {}", format_command_line(doob_bin, &args));
@@ -1643,6 +2188,29 @@ fn run_candidate(
         }
     };
 
+    Some(payload)
+}
+
+fn run_candidate(
+    candidate: &Candidate,
+    doob_bin: &Path,
+    start_date: &str,
+    end_date: &str,
+    sessions: i64,
+    stage: &str,
+    verbose: bool,
+) -> Option<ScoredRun> {
+    let payload = run_strategy_payload(
+        &candidate.strategy,
+        &candidate.args,
+        doob_bin,
+        start_date,
+        end_date,
+        sessions,
+        stage,
+        false,
+        verbose,
+    )?;
     score_payload(&payload)
 }
 
@@ -1651,10 +2219,23 @@ fn format_detail_summary(details: &Value) -> String {
     let sharpe = safe_float(details.get("sharpe").unwrap_or(&Value::Null)).unwrap_or(0.0);
     let dd = safe_float(details.get("max_drawdown").unwrap_or(&Value::Null)).unwrap_or(0.0);
     let var95 = safe_float(details.get("var_95").unwrap_or(&Value::Null)).unwrap_or(0.0);
+    let beginning_equity =
+        safe_float(details.get("beginning_equity").unwrap_or(&Value::Null)).unwrap_or(0.0);
     let equity = safe_float(details.get("final_equity").unwrap_or(&Value::Null)).unwrap_or(0.0);
+    let period_start = details
+        .get("period_start")
+        .and_then(Value::as_str)
+        .unwrap_or("?");
+    let period_end = details
+        .get("period_end")
+        .and_then(Value::as_str)
+        .unwrap_or("?");
     format!(
-        "name={} cagr={:.3} sharpe={:.3} dd={:.2}% var95={:.3} final_equity={:.2}",
+        "name={} period={}..{} beginning_equity={:.2} cagr={:.3} sharpe={:.3} dd={:.2}% var95={:.3} final_equity={:.2}",
         details.get("name").and_then(Value::as_str).unwrap_or("?"),
+        period_start,
+        period_end,
+        beginning_equity,
         cagr,
         sharpe,
         dd,
@@ -1776,6 +2357,7 @@ fn evaluate_candidate(
     let train_run = run_candidate(
         candidate,
         doob_bin,
+        train_start,
         train_end,
         train_window_sessions,
         "train",
@@ -1796,6 +2378,7 @@ fn evaluate_candidate(
     let test_run = run_candidate(
         candidate,
         doob_bin,
+        test_start,
         test_end,
         test_window_sessions,
         "test",
@@ -1855,6 +2438,8 @@ fn evaluate_candidate(
         combined_score,
         train_details: train_run.details,
         test_details: test_run.details,
+        train_audit: None,
+        test_audit: None,
         is_seeded: candidate.is_seeded,
     })
 }
@@ -1912,6 +2497,79 @@ fn rank_rows(rows: &[CandidateReport]) -> Vec<CandidateReport> {
     ranked
 }
 
+fn sanitize_filename_component(value: &str) -> String {
+    let sanitized: String = value
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                ch
+            } else {
+                '-'
+            }
+        })
+        .collect();
+    sanitized.trim_matches('-').to_string()
+}
+
+fn read_audit_window_meta(artifact_path: &str, payload: &Value) -> Option<AuditWindowMeta> {
+    let audit = payload.get("audit")?;
+    let trade_count = audit.get("executed_trade_count")?.as_u64()? as usize;
+    let actual_period_start = audit.get("actual_period_start")?.as_str()?.to_string();
+    let actual_period_end = audit.get("actual_period_end")?.as_str()?.to_string();
+    Some(AuditWindowMeta {
+        artifact_path: artifact_path.to_string(),
+        trade_count,
+        actual_period_start,
+        actual_period_end,
+    })
+}
+
+fn persist_report_audit(
+    report: &CandidateReport,
+    doob_bin: &Path,
+    reports_dir: &Path,
+    start_date: &str,
+    end_date: &str,
+    sessions: i64,
+    window_label: &str,
+    verbose: bool,
+) -> io::Result<Option<AuditWindowMeta>> {
+    let audits_dir = reports_dir.join("autoresearch-audits");
+    std::fs::create_dir_all(&audits_dir)?;
+
+    let file_name = format!(
+        "{}-{}-{}-to-{}.json",
+        sanitize_filename_component(&report.candidate_id),
+        window_label,
+        sanitize_filename_component(start_date),
+        sanitize_filename_component(end_date)
+    );
+    let absolute_path = audits_dir.join(file_name);
+    let relative_path = format!(
+        "autoresearch-audits/{}",
+        absolute_path.file_name().unwrap().to_string_lossy()
+    );
+
+    let Some(payload) = run_strategy_payload(
+        &report.strategy,
+        &report.args,
+        doob_bin,
+        start_date,
+        end_date,
+        sessions,
+        &format!("{window_label}-audit"),
+        true,
+        verbose,
+    ) else {
+        return Ok(None);
+    };
+
+    let pretty = serde_json::to_string_pretty(&payload)
+        .unwrap_or_else(|_| serde_json::to_string(&payload).unwrap_or_else(|_| "{}".to_string()));
+    std::fs::write(&absolute_path, pretty)?;
+    Ok(read_audit_window_meta(&relative_path, &payload))
+}
+
 #[derive(Serialize)]
 struct InteractiveRow {
     rank: usize,
@@ -1927,6 +2585,10 @@ struct InteractiveRow {
     test_score: f64,
     train_details: Value,
     test_details: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    train_audit: Option<AuditWindowMeta>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    test_audit: Option<AuditWindowMeta>,
     why: String,
     is_seeded: bool,
     rationale: String,
@@ -1958,6 +2620,8 @@ fn save_interactive_report(path: &Path, rows: &[CandidateReport]) -> io::Result<
             test_score: row.test_score,
             train_details: row.train_details.clone(),
             test_details: row.test_details.clone(),
+            train_audit: row.train_audit.clone(),
+            test_audit: row.test_audit.clone(),
             why: profitability_blurb(
                 &row.train_details,
                 &row.test_details,
@@ -2496,6 +3160,20 @@ function fmt(v, pct) {{
   if (v == null || v === undefined) return '\u2014';
   return pct ? (v * 100).toFixed(1) + '%' : v.toFixed(3);
 }}
+function fmtMoney(v) {{
+  if (v == null || v === undefined) return '\u2014';
+  return '$' + Number(v).toLocaleString('en-US', {{ maximumFractionDigits: 0 }});
+}}
+function fmtWindow(meta, details) {{
+  const start = meta?.actual_period_start || details?.period_start;
+  const end = meta?.actual_period_end || details?.period_end;
+  if (!start && !end) return '\u2014';
+  return `${{start || '\u2014'}} \u2192 ${{end || '\u2014'}}`;
+}}
+function fmtAuditLink(meta) {{
+  if (!meta?.artifact_path) return '\u2014';
+  return `<a class="source-link" href="${{meta.artifact_path}}" target="_blank" rel="noopener">Open JSON</a>`;
+}}
 function cagrClass(v) {{
   if (v == null) return '';
   return v >= 0 ? 'pos' : 'neg';
@@ -2532,19 +3210,27 @@ function renderRows(data) {{
       <div class="row-details">
         <div class="detail-grid">
           <div>
-            <h4 style="display:flex;align-items:center;">Train Window<span class="info-bubble">i<span class="info-tip">The in-sample period (2020\u20132024) used to fit and calibrate the strategy. Strong train metrics confirm the signal exists historically, but high train scores alone can indicate overfitting. Always compare with the test window.</span></span></h4>
+            <h4 style="display:flex;align-items:center;">Train Window<span class="info-bubble">i<span class="info-tip">The in-sample period used to fit and calibrate the strategy. Strong train metrics confirm the signal exists historically, but high train scores alone can indicate overfitting. Compare against the test window and the linked audit trail.</span></span></h4>
             <div class="detail-row"><span class="label">CAGR</span><span class="value ${{cagrClass(r.train_details?.cagr)}}">${{fmt(r.train_details?.cagr, true)}}</span></div>
             <div class="detail-row"><span class="label">Sharpe</span><span class="value">${{fmt(r.train_details?.sharpe, false)}}</span></div>
             <div class="detail-row"><span class="label">Max Drawdown</span><span class="value neg">${{fmt(r.train_details?.max_drawdown, true)}}</span></div>
-            <div class="detail-row"><span class="label">Final Equity</span><span class="value">$${{(r.train_details?.final_equity || 0).toLocaleString('en-US', {{maximumFractionDigits: 0}})}}</span></div>
+            <div class="detail-row"><span class="label">Actual Period</span><span class="value">${{fmtWindow(r.train_audit, r.train_details)}}</span></div>
+            <div class="detail-row"><span class="label">Beginning Equity</span><span class="value">${{fmtMoney(r.train_details?.beginning_equity)}}</span></div>
+            <div class="detail-row"><span class="label">Final Equity</span><span class="value">${{fmtMoney(r.train_details?.final_equity)}}</span></div>
+            <div class="detail-row"><span class="label">Executed Trades</span><span class="value">${{r.train_audit?.trade_count ?? '\u2014'}}</span></div>
+            <div class="detail-row"><span class="label">Audit Trail</span><span class="value">${{fmtAuditLink(r.train_audit)}}</span></div>
             <div class="detail-row"><span class="label">VaR 95</span><span class="value">${{fmt(r.train_details?.var_95, true)}}</span></div>
           </div>
           <div>
-            <h4 style="display:flex;align-items:center;">Test Window<span class="info-bubble">i<span class="info-tip">The out-of-sample period (2025\u2013present) the strategy has never seen during calibration. Test performance is the most reliable indicator of real-world viability. Strategies that perform well in both windows are more likely to be robust rather than overfit.</span></span></h4>
+            <h4 style="display:flex;align-items:center;">Test Window<span class="info-bubble">i<span class="info-tip">The out-of-sample period the strategy has never seen during calibration. Test performance is the most reliable indicator of real-world viability. Use the linked audit trail to inspect the concrete trades and equity path.</span></span></h4>
             <div class="detail-row"><span class="label">CAGR</span><span class="value ${{cagrClass(r.test_details?.cagr)}}">${{fmt(r.test_details?.cagr, true)}}</span></div>
             <div class="detail-row"><span class="label">Sharpe</span><span class="value">${{fmt(r.test_details?.sharpe, false)}}</span></div>
             <div class="detail-row"><span class="label">Max Drawdown</span><span class="value neg">${{fmt(r.test_details?.max_drawdown, true)}}</span></div>
-            <div class="detail-row"><span class="label">Final Equity</span><span class="value">$${{(r.test_details?.final_equity || 0).toLocaleString('en-US', {{maximumFractionDigits: 0}})}}</span></div>
+            <div class="detail-row"><span class="label">Actual Period</span><span class="value">${{fmtWindow(r.test_audit, r.test_details)}}</span></div>
+            <div class="detail-row"><span class="label">Beginning Equity</span><span class="value">${{fmtMoney(r.test_details?.beginning_equity)}}</span></div>
+            <div class="detail-row"><span class="label">Final Equity</span><span class="value">${{fmtMoney(r.test_details?.final_equity)}}</span></div>
+            <div class="detail-row"><span class="label">Executed Trades</span><span class="value">${{r.test_audit?.trade_count ?? '\u2014'}}</span></div>
+            <div class="detail-row"><span class="label">Audit Trail</span><span class="value">${{fmtAuditLink(r.test_audit)}}</span></div>
             <div class="detail-row"><span class="label">VaR 95</span><span class="value">${{fmt(r.test_details?.var_95, true)}}</span></div>
           </div>
         </div>
@@ -2684,6 +3370,8 @@ fn save_ledger(path: &Path, rows: &[RecordedResult]) -> io::Result<()> {
             "is_seeded": row.report.is_seeded,
             "train_details": row.report.train_details,
             "test_details": row.report.test_details,
+            "train_audit": row.report.train_audit.clone(),
+            "test_audit": row.report.test_audit.clone(),
         });
         if let Some(round) = row.round {
             record["round"] = json!(round);
@@ -2695,6 +3383,95 @@ fn save_ledger(path: &Path, rows: &[RecordedResult]) -> io::Result<()> {
         )?;
     }
     Ok(())
+}
+
+fn push_unique(items: &mut Vec<String>, value: &str) {
+    if !items.iter().any(|item| item == value) {
+        items.push(value.to_string());
+    }
+}
+
+fn registry_snapshot(row: &RecordedResult, observed_at: &str) -> StrategyRegistrySnapshot {
+    StrategyRegistrySnapshot {
+        observed_at: observed_at.to_string(),
+        candidate_id: row.report.candidate_id.clone(),
+        source: row.report.source.clone(),
+        rationale: row.report.rationale.clone(),
+        round: row.round,
+        combined_score: row.report.combined_score,
+        train_score: row.report.train_score,
+        test_score: row.report.test_score,
+        train_details: row.report.train_details.clone(),
+        test_details: row.report.test_details.clone(),
+        train_audit: row.report.train_audit.clone(),
+        test_audit: row.report.test_audit.clone(),
+    }
+}
+
+fn load_strategy_registry(path: &Path) -> StrategyRegistry {
+    let Ok(content) = std::fs::read_to_string(path) else {
+        return StrategyRegistry::default();
+    };
+    serde_json::from_str(&content).unwrap_or_default()
+}
+
+fn save_strategy_registry(path: &Path, rows: &[RecordedResult]) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let mut registry = load_strategy_registry(path);
+    let now = Utc::now().to_rfc3339();
+
+    for row in rows {
+        let snapshot = registry_snapshot(row, &now);
+        if let Some(existing) = registry
+            .entries
+            .iter_mut()
+            .find(|entry| entry.signature == row.signature)
+        {
+            existing.last_top10_at = now.clone();
+            existing.times_in_top10 += 1;
+            existing.is_seeded = existing.is_seeded || row.report.is_seeded;
+            existing.latest = snapshot.clone();
+            push_unique(&mut existing.candidate_ids, &row.report.candidate_id);
+            push_unique(&mut existing.sources, &row.report.source);
+            if snapshot.combined_score > existing.best.combined_score {
+                existing.best = snapshot;
+            }
+            continue;
+        }
+
+        registry.entries.push(StrategyRegistryEntry {
+            signature: row.signature.clone(),
+            registry_status: "research_candidate".to_string(),
+            strategy: row.report.strategy.clone(),
+            rule: row.report.rule.clone(),
+            focus_asset: row.report.focus_asset.clone(),
+            args: row.report.args.clone(),
+            is_seeded: row.report.is_seeded,
+            candidate_ids: vec![row.report.candidate_id.clone()],
+            sources: vec![row.report.source.clone()],
+            first_top10_at: now.clone(),
+            last_top10_at: now.clone(),
+            times_in_top10: 1,
+            latest: snapshot.clone(),
+            best: snapshot,
+        });
+    }
+
+    registry.updated_at = now;
+    registry.entries.sort_by(|a, b| {
+        b.best
+            .combined_score
+            .partial_cmp(&a.best.combined_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| b.last_top10_at.cmp(&a.last_top10_at))
+    });
+
+    let text =
+        serde_json::to_string_pretty(&registry).unwrap_or_else(|_| "{\"entries\":[]}".to_string());
+    std::fs::write(path, text)
 }
 
 fn save_seed_ideas(path: &Path, items: &[ExaSeed]) -> io::Result<()> {
@@ -3801,39 +4578,76 @@ fn main() {
         println!("{}", table);
     }
 
-    if let Err(err) = save_interactive_report(
-        Path::new("reports/autoresearch-top10-interactive-report.html"),
-        &ranked.iter().take(10).cloned().collect::<Vec<_>>(),
-    ) {
+    let report_path = Path::new("reports/autoresearch-top10-interactive-report.html");
+    let reports_dir = report_path.parent().unwrap_or_else(|| Path::new("reports"));
+    let train_window_sessions =
+        sessions_for_window(&args.train_start, &args.train_end, train_sessions_est);
+    let test_window_sessions =
+        sessions_for_window(&args.test_start, &args.test_end, test_sessions_est);
+    let mut top_entries: Vec<RecordedResult> = Vec::new();
+    let mut seen_top_sigs = HashSet::new();
+    for top_report in ranked.iter().take(10) {
+        let signature = param_signature_from_args(&top_report.args);
+        if !seen_top_sigs.insert(signature.clone()) {
+            continue;
+        }
+        if let Some(recorded) = loop_state
+            .recorded_results
+            .iter()
+            .find(|recorded| recorded.signature == signature)
+        {
+            top_entries.push(recorded.clone());
+        }
+    }
+
+    for entry in &mut top_entries {
+        match persist_report_audit(
+            &entry.report,
+            &doob_bin,
+            reports_dir,
+            &args.train_start,
+            &args.train_end,
+            train_window_sessions,
+            "train",
+            args.verbose,
+        ) {
+            Ok(audit) => entry.report.train_audit = audit,
+            Err(err) => eprintln!(
+                "Failed to persist train audit for {}: {err}",
+                entry.report.candidate_id
+            ),
+        }
+        match persist_report_audit(
+            &entry.report,
+            &doob_bin,
+            reports_dir,
+            &args.test_start,
+            &args.test_end,
+            test_window_sessions,
+            "test",
+            args.verbose,
+        ) {
+            Ok(audit) => entry.report.test_audit = audit,
+            Err(err) => eprintln!(
+                "Failed to persist test audit for {}: {err}",
+                entry.report.candidate_id
+            ),
+        }
+    }
+
+    let top_reports: Vec<CandidateReport> = top_entries
+        .iter()
+        .map(|entry| entry.report.clone())
+        .collect();
+    if let Err(err) = save_interactive_report(report_path, &top_reports) {
         eprintln!("Failed to write interactive report: {err}");
     }
 
-    // Build ledger entries for top 10 with round metadata
-    let top_10_sigs: HashSet<String> = ranked
-        .iter()
-        .take(10)
-        .map(|r| param_signature_from_args(&r.args))
-        .collect();
-    let mut ledger_entries: Vec<RecordedResult> = Vec::new();
-    let mut ledger_sigs = HashSet::new();
-    for r in &loop_state.recorded_results {
-        if top_10_sigs.contains(&r.signature) && ledger_sigs.insert(r.signature.clone()) {
-            ledger_entries.push(r.clone());
-        }
-    }
-    ledger_entries.sort_by(|a, b| {
-        b.report
-            .combined_score
-            .partial_cmp(&a.report.combined_score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-    ledger_entries.truncate(10);
-
-    if let Err(err) = save_ledger(
-        Path::new("reports/autoresearch-ledger.jsonl"),
-        &ledger_entries,
-    ) {
+    if let Err(err) = save_ledger(Path::new("reports/autoresearch-ledger.jsonl"), &top_entries) {
         eprintln!("Failed to save ledger: {err}");
+    }
+    if let Err(err) = save_strategy_registry(Path::new(STRATEGY_REGISTRY_PATH), &top_entries) {
+        eprintln!("Failed to save strategy registry: {err}");
     }
 
     let _ = Command::new("open")
@@ -4139,6 +4953,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         let loop_state = LoopState::new();
@@ -4199,6 +5015,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         let loop_state = LoopState::new();
@@ -4259,6 +5077,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
 
@@ -4337,6 +5157,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
 
@@ -4393,6 +5215,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         let loop_state = LoopState::new();
@@ -4441,6 +5265,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         let recorded = RecordedResult {
@@ -4479,6 +5305,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         let recorded = RecordedResult {
@@ -4501,6 +5329,203 @@ mod tests {
             "legacy mode should not include round field"
         );
         assert_eq!(parsed["candidate_id"], json!("test-legacy"));
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_ledger_includes_audit_metadata() {
+        let report = CandidateReport {
+            candidate_id: "test-audit".to_string(),
+            strategy: RESEARCH_STRATEGY.to_string(),
+            category: "Research".to_string(),
+            args: vec!["--asset".to_string(), "QQQ".to_string()],
+            rule: RULE_VOL_SPREAD.to_string(),
+            rationale: "test".to_string(),
+            source: "test".to_string(),
+            focus_asset: "QQQ".to_string(),
+            train_score: 1.0,
+            test_score: 0.9,
+            combined_score: 0.97,
+            train_details: json!({"period_start": "2020-01-02", "period_end": "2024-12-31"}),
+            test_details: json!({"period_start": "2025-01-02", "period_end": "2026-03-11"}),
+            train_audit: Some(AuditWindowMeta {
+                artifact_path: "autoresearch-audits/test-audit-train.json".to_string(),
+                trade_count: 123,
+                actual_period_start: "2020-01-02".to_string(),
+                actual_period_end: "2024-12-31".to_string(),
+            }),
+            test_audit: Some(AuditWindowMeta {
+                artifact_path: "autoresearch-audits/test-audit-test.json".to_string(),
+                trade_count: 45,
+                actual_period_start: "2025-01-02".to_string(),
+                actual_period_end: "2026-03-11".to_string(),
+            }),
+            is_seeded: true,
+        };
+        let recorded = RecordedResult {
+            round: Some(3),
+            signature: "test-audit-sig".to_string(),
+            report,
+        };
+
+        let dir = std::env::temp_dir().join("doob_test_ledger_audit");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("test_ledger_audit.jsonl");
+        let _ = std::fs::remove_file(&path);
+
+        save_ledger(&path, &[recorded]).unwrap();
+        let content = std::fs::read_to_string(&path).unwrap();
+        let parsed: Value = serde_json::from_str(content.trim()).unwrap();
+        assert_eq!(
+            parsed["train_audit"]["artifact_path"],
+            json!("autoresearch-audits/test-audit-train.json")
+        );
+        assert_eq!(parsed["test_audit"]["trade_count"], json!(45));
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_read_audit_window_meta_extracts_expected_fields() {
+        let payload = json!({
+            "audit": {
+                "actual_period_start": "2020-01-02",
+                "actual_period_end": "2024-12-31",
+                "executed_trade_count": 88
+            }
+        });
+
+        let meta = read_audit_window_meta("autoresearch-audits/demo.json", &payload)
+            .expect("expected audit metadata");
+        assert_eq!(meta.artifact_path, "autoresearch-audits/demo.json");
+        assert_eq!(meta.trade_count, 88);
+        assert_eq!(meta.actual_period_start, "2020-01-02");
+        assert_eq!(meta.actual_period_end, "2024-12-31");
+    }
+
+    #[test]
+    fn test_save_strategy_registry_creates_entry() {
+        let report = CandidateReport {
+            candidate_id: "seed-001-vol_spread-v0".to_string(),
+            strategy: RESEARCH_STRATEGY.to_string(),
+            category: "Research".to_string(),
+            args: vec!["--asset".to_string(), "QQQ".to_string()],
+            rule: RULE_VOL_SPREAD.to_string(),
+            rationale: "test rationale".to_string(),
+            source: "https://example.com/paper".to_string(),
+            focus_asset: "QQQ".to_string(),
+            train_score: 1.2,
+            test_score: 1.1,
+            combined_score: 1.15,
+            train_details: json!({"final_equity": 1200000.0}),
+            test_details: json!({"final_equity": 1100000.0}),
+            train_audit: Some(AuditWindowMeta {
+                artifact_path: "autoresearch-audits/demo-train.json".to_string(),
+                trade_count: 12,
+                actual_period_start: "2020-01-02".to_string(),
+                actual_period_end: "2024-12-31".to_string(),
+            }),
+            test_audit: Some(AuditWindowMeta {
+                artifact_path: "autoresearch-audits/demo-test.json".to_string(),
+                trade_count: 8,
+                actual_period_start: "2025-01-02".to_string(),
+                actual_period_end: "2026-03-11".to_string(),
+            }),
+            is_seeded: true,
+        };
+        let recorded = RecordedResult {
+            round: Some(0),
+            signature: "sig-001".to_string(),
+            report,
+        };
+
+        let dir = std::env::temp_dir().join("doob_test_registry_create");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("strategy_registry.json");
+        let _ = std::fs::remove_file(&path);
+
+        save_strategy_registry(&path, &[recorded]).unwrap();
+        let registry: StrategyRegistry =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(registry.entries.len(), 1);
+        let entry = &registry.entries[0];
+        assert_eq!(entry.signature, "sig-001");
+        assert_eq!(entry.registry_status, "research_candidate");
+        assert_eq!(entry.times_in_top10, 1);
+        assert_eq!(entry.latest.candidate_id, "seed-001-vol_spread-v0");
+        assert_eq!(
+            entry.latest.train_audit.as_ref().unwrap().artifact_path,
+            "autoresearch-audits/demo-train.json"
+        );
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_save_strategy_registry_upserts_by_signature() {
+        let dir = std::env::temp_dir().join("doob_test_registry_upsert");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("strategy_registry.json");
+        let _ = std::fs::remove_file(&path);
+
+        let make_recorded =
+            |candidate_id: &str, source: &str, combined_score: f64, round: Option<u32>| {
+                RecordedResult {
+                    round,
+                    signature: "shared-sig".to_string(),
+                    report: CandidateReport {
+                        candidate_id: candidate_id.to_string(),
+                        strategy: RESEARCH_STRATEGY.to_string(),
+                        category: "Research".to_string(),
+                        args: vec!["--asset".to_string(), "QQQ".to_string()],
+                        rule: RULE_VOL_SPREAD.to_string(),
+                        rationale: "test rationale".to_string(),
+                        source: source.to_string(),
+                        focus_asset: "QQQ".to_string(),
+                        train_score: combined_score - 0.1,
+                        test_score: combined_score + 0.1,
+                        combined_score,
+                        train_details: json!({"final_equity": 1000000.0 + combined_score}),
+                        test_details: json!({"final_equity": 1000000.0 + combined_score}),
+                        train_audit: None,
+                        test_audit: None,
+                        is_seeded: true,
+                    },
+                }
+            };
+
+        save_strategy_registry(
+            &path,
+            &[make_recorded(
+                "seed-001-vol_spread-v0",
+                "https://example.com/one",
+                1.25,
+                Some(0),
+            )],
+        )
+        .unwrap();
+        save_strategy_registry(
+            &path,
+            &[make_recorded(
+                "seed-099-vol_spread-v2",
+                "https://example.com/two",
+                1.75,
+                Some(2),
+            )],
+        )
+        .unwrap();
+
+        let registry: StrategyRegistry =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(registry.entries.len(), 1);
+        let entry = &registry.entries[0];
+        assert_eq!(entry.times_in_top10, 2);
+        assert_eq!(entry.latest.candidate_id, "seed-099-vol_spread-v2");
+        assert_eq!(entry.best.candidate_id, "seed-099-vol_spread-v2");
+        assert_eq!(entry.best.combined_score, 1.75);
+        assert_eq!(entry.candidate_ids.len(), 2);
+        assert_eq!(entry.sources.len(), 2);
 
         let _ = std::fs::remove_file(&path);
     }
@@ -4578,6 +5603,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         state.recorded_results.push(RecordedResult {
@@ -4628,6 +5655,298 @@ mod tests {
     }
 
     #[test]
+    fn test_short_keywords_require_token_boundaries() {
+        let blob = seed_classification_blob(&ExaSeed {
+            title: "Construction and Hedging of Equity Index Options Portfolios".to_string(),
+            url: "https://arxiv.org/html/2407.13908v1".to_string(),
+            text: "University of Warsaw research group. Keywords: Implied Volatility, Volatility Risk Premium, Volatility Spreads, Dynamic Hedging.".to_string(),
+        });
+
+        assert!(
+            !contains_any(&blob, &["rsi"]),
+            "short keyword should not match inside unrelated words"
+        );
+        assert!(
+            contains_any(&blob, &["volatility spreads"]),
+            "expected real phrase match to keep working"
+        );
+    }
+
+    #[test]
+    fn test_deep_hedging_seed_requires_new_rule_family() {
+        let seed = ExaSeed {
+            title: "Deep Hedging with Options Using the Implied Volatility Surface".to_string(),
+            url: "https://arxiv.org/html/2504.06208v1".to_string(),
+            text: "We propose an enhanced deep hedging framework for index option portfolios, grounded in a realistic market simulator that captures the joint dynamics of S&P 500 returns and the full implied volatility surface. The hedging strategy also considers the variance risk premium embedded in the hedging instruments and explicitly accounts for transaction costs.".to_string(),
+        };
+
+        assert_eq!(
+            classify_seed_rule_family(&seed),
+            SeedRuleFamily::NeedsNewRule("options_hedging")
+        );
+
+        let candidates = build_seed_candidates(&seed, 19, RESEARCH_ASSETS);
+        assert!(
+            candidates.is_empty(),
+            "unsupported deep hedging paper should not be forced into an existing rule"
+        );
+    }
+
+    #[test]
+    fn test_mean_reversion_seed_maps_to_rsi_rule_only() {
+        let seed = ExaSeed {
+            title: "Optimal Mean Reversion Trading".to_string(),
+            url: "https://arxiv.org/abs/1602.05858".to_string(),
+            text: "This paper studies mean reversion trading with oversold and overbought conditions and explicit oscillator thresholds.".to_string(),
+        };
+
+        assert_eq!(
+            classify_seed_rule_family(&seed),
+            SeedRuleFamily::ExistingRule(RULE_RSI_REVERSION)
+        );
+
+        let candidates = build_seed_candidates(&seed, 7, RESEARCH_ASSETS);
+        assert!(!candidates.is_empty(), "expected seeded RSI candidates");
+        assert!(
+            candidates.iter().all(|c| c.rule == RULE_RSI_REVERSION),
+            "mean reversion seed should only map to RSI reversion variants"
+        );
+    }
+
+    #[test]
+    fn test_option_pricing_seed_requires_new_rule_family() {
+        let seed = ExaSeed {
+            title: "Option Pricing with Time-Varying Volatility Risk Aversion".to_string(),
+            url: "https://arxiv.org/abs/2204.06943".to_string(),
+            text: "[2204.06943] Option Pricing with Time-Varying Volatility Risk Aversion\n\n> Abstract: We introduce a pricing kernel with time-varying volatility risk aversion to explain observed time variations in the shape of the pricing kernel. When combined with the Heston-Nandi GARCH model, this framework yields a tractable option pricing model in which the variance risk ratio emerges as a key variable. We demonstrate substantial reductions in pricing errors through an empirical application to the S&P 500 index, the CBOE VIX, and option prices.\n\n## Submission history\nRelated Papers\nMean reversion in order flow".to_string(),
+        };
+
+        assert_eq!(
+            classify_seed_rule_family(&seed),
+            SeedRuleFamily::NeedsNewRule("option_pricing")
+        );
+
+        let candidates = build_seed_candidates(&seed, 30, RESEARCH_ASSETS);
+        assert!(
+            candidates.is_empty(),
+            "option-pricing paper should not be forced into an existing directional rule"
+        );
+    }
+
+    #[test]
+    fn test_options_portfolio_seed_prefers_vol_spread_family() {
+        let seed = ExaSeed {
+            title: "Construction and Hedging of Equity Index Options Portfolios".to_string(),
+            url: "https://arxiv.org/html/2407.13908v1".to_string(),
+            text: "###### Abstract\nThis research presents a comprehensive evaluation of systematic index option-writing strategies, focusing on S&P500 index options. We compare the performance of hedging strategies using the Black-Scholes-Merton model and different sizing methods based on delta and the VIX Index. Based on the concept of volatility risk premium and aiming to exploit options premiums by selling volatility, systematic option writing strategies such as volatility spreads are utilized with various hedging schemes and sizing methodologies.".to_string(),
+        };
+
+        assert_eq!(
+            classify_seed_rule_family(&seed),
+            SeedRuleFamily::ExistingRule(RULE_VOL_SPREAD)
+        );
+
+        let candidates = build_seed_candidates(&seed, 12, RESEARCH_ASSETS);
+        assert!(
+            !candidates.is_empty(),
+            "expected vol-spread seeded candidates"
+        );
+        assert!(
+            candidates
+                .iter()
+                .all(|candidate| candidate.rule == RULE_VOL_SPREAD),
+            "options portfolio seed should map to vol_spread variants only"
+        );
+    }
+
+    #[test]
+    fn test_vix_forecasting_seed_prefers_volatility_regime_over_rsi() {
+        let seed = ExaSeed {
+            title: "Forecasting VIX using interpretable Kolmogorov-Arnold networks".to_string(),
+            url: "https://arxiv.org/abs/2502.00980".to_string(),
+            text: "Abstract: This paper presents the use of Kolmogorov-Arnold Networks for forecasting the CBOE Volatility Index (VIX). The closed-form forecast provides interpretable insights into key characteristics of the VIX, including mean reversion and the leverage effect.".to_string(),
+        };
+
+        assert_eq!(
+            classify_seed_rule_family(&seed),
+            SeedRuleFamily::ExistingRule(RULE_VOL_REGIME)
+        );
+
+        let candidates = build_seed_candidates(&seed, 135, RESEARCH_ASSETS);
+        assert!(
+            !candidates.is_empty(),
+            "expected seeded volatility candidates"
+        );
+        assert!(
+            candidates
+                .iter()
+                .all(|candidate| candidate.rule == RULE_VOL_REGIME),
+            "VIX forecasting paper should not fall back to RSI reversion"
+        );
+    }
+
+    #[test]
+    fn test_seed_candidate_uses_paper_title_from_seed_text_when_exa_title_is_generic() {
+        let seed = ExaSeed {
+            title: "Quantitative Finance > Portfolio Management".to_string(),
+            url: "https://arxiv.org/abs/2512.12420".to_string(),
+            text: "[2512.12420] Deep Hedging with Reinforcement Learning: A Practical Framework for Option Risk Management\n# Title:Deep Hedging with Reinforcement Learning: A Practical Framework for Option Risk Management".to_string(),
+        };
+
+        let candidate = seed_candidate(
+            19,
+            &seed,
+            RULE_RSI_REVERSION,
+            "TQQQ",
+            6,
+            16,
+            Some(16),
+            Some(24),
+            Some(70),
+            None,
+            None,
+            1,
+        );
+
+        assert!(
+            candidate
+                .rationale
+                .contains("Deep Hedging with Reinforcement Learning"),
+            "expected rationale to contain the parsed paper title, got: {}",
+            candidate.rationale
+        );
+        assert!(
+            !candidate
+                .rationale
+                .contains("Quantitative Finance > Portfolio Management"),
+            "generic subject bucket should not be used as the paper title"
+        );
+    }
+
+    #[test]
+    fn test_seed_paper_title_falls_back_to_pdf_title_line_without_citation_noise() {
+        let seed = ExaSeed {
+            title: String::new(),
+            url: "https://arxiv.org/pdf/2010.12245".to_string(),
+            text: "Option Hedging with Risk Averse Reinforcement Learning\nEdoardo Vittori, Michele Trapletti\nABSTRACT\n...\n[5] . (5)\n".to_string(),
+        };
+
+        assert_eq!(
+            seed_paper_title(&seed),
+            "Option Hedging with Risk Averse Reinforcement Learning"
+        );
+    }
+
+    #[test]
+    fn test_seed_paper_title_skips_submitted_paper_placeholder() {
+        let seed = ExaSeed {
+            title: "Submitted paper 1".to_string(),
+            url: "https://arxiv.org/pdf/1701.05016".to_string(),
+            text: "arXiv:1701.05016v1 [q-fin.PM] 18 Jan 2017\nSubmitted paper 1\nMean-Reverting Portfolio Design with Budget\nConstraint\nZiping Zhao, Student Member, IEEE, and Daniel P. Palomar, Fellow, IEEE\nAbstract".to_string(),
+        };
+
+        assert_eq!(
+            seed_paper_title(&seed),
+            "Mean-Reverting Portfolio Design with Budget Constraint"
+        );
+    }
+
+    #[test]
+    fn test_research_basis_for_seeded_candidate_is_explicitly_hypothesis_driven() {
+        let args = vec![
+            "--rsi-window".to_string(),
+            "16".to_string(),
+            "--rsi-oversold".to_string(),
+            "24".to_string(),
+        ];
+        let narrative = research_basis(
+            RULE_RSI_REVERSION,
+            "TQQQ",
+            "ArXiv-seeded hypothesis (19): Deep Hedging with Reinforcement Learning: A Practical Framework for Option Risk Management",
+            "https://arxiv.org/abs/2512.12420",
+            &args,
+        );
+
+        assert!(
+            narrative.contains("research lead"),
+            "seeded narrative should explain that the paper is a research lead: {narrative}"
+        );
+        assert!(
+            narrative.contains("not a direct replication"),
+            "seeded narrative should avoid claiming direct replication: {narrative}"
+        );
+    }
+
+    #[test]
+    fn test_score_paper_research_preserves_beginning_equity() {
+        let payload = json!({
+            "period_start": "2020-01-02",
+            "period_end": "2024-12-31",
+            "capital": 1_000_000.0,
+            "results": [{
+                "name": "PaperResearch [SPY|trend_momentum]",
+                "beginning_equity": 1_000_000.0,
+                "final_equity": 1_250_000.0,
+                "cagr": 0.10,
+                "sharpe": 0.8,
+                "max_drawdown": -0.12,
+                "var_95": -0.01
+            }]
+        });
+
+        let scored = score_paper_research(&payload).expect("expected score");
+        assert_eq!(
+            safe_float(scored.details.get("beginning_equity").unwrap()).unwrap(),
+            1_000_000.0
+        );
+        assert_eq!(
+            safe_float(scored.details.get("final_equity").unwrap()).unwrap(),
+            1_250_000.0
+        );
+        assert_eq!(
+            scored.details.get("period_start").unwrap(),
+            &json!("2020-01-02")
+        );
+        assert_eq!(
+            scored.details.get("period_end").unwrap(),
+            &json!("2024-12-31")
+        );
+    }
+
+    #[test]
+    fn test_load_eval_cache_backfills_missing_beginning_equity() {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("valid time")
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("doob-eval-cache-{unique}.jsonl"));
+        let line = serde_json::to_string(&json!({
+            "eval_key": "demo",
+            "passed": true,
+            "train_score": 1.0,
+            "test_score": 1.0,
+            "combined_score": 2.0,
+            "train_details": {"name": "PaperResearch [QQQ|vol_spread]", "final_equity": 1_250_000.0},
+            "test_details": {"name": "PaperResearch [QQQ|vol_spread]", "beginning_equity": 0.0, "final_equity": 1_100_000.0}
+        }))
+        .expect("serialize cache line");
+        std::fs::write(&path, format!("{line}\n")).expect("write temp cache");
+
+        let cache = load_eval_cache(&path);
+        let _ = std::fs::remove_file(&path);
+        let entry = cache.get("demo").expect("expected cache entry");
+
+        assert_eq!(
+            safe_float(entry.train_details.get("beginning_equity").unwrap()).unwrap(),
+            DEFAULT_PAPER_RESEARCH_BEGINNING_EQUITY
+        );
+        assert_eq!(
+            safe_float(entry.test_details.get("beginning_equity").unwrap()).unwrap(),
+            DEFAULT_PAPER_RESEARCH_BEGINNING_EQUITY
+        );
+    }
+
+    #[test]
     fn test_refine_around_winner_vol_spread() {
         let winner = CandidateReport {
             candidate_id: "test-vspread".to_string(),
@@ -4662,6 +5981,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         let loop_state = LoopState::new();
@@ -4838,6 +6159,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         let loop_state = LoopState::new();
@@ -4907,6 +6230,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         let loop_state = LoopState::new();
@@ -4961,6 +6286,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         let loop_state = LoopState::new();
@@ -5016,6 +6343,8 @@ mod tests {
             combined_score,
             train_details: json!({"sharpe": 1.5, "max_drawdown": -0.10}),
             test_details: json!({"sharpe": test_sharpe, "max_drawdown": test_drawdown}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         }
     }
@@ -5103,6 +6432,8 @@ mod tests {
             combined_score: 0.93,
             train_details: json!({}),
             test_details: json!({}),
+            train_audit: None,
+            test_audit: None,
             is_seeded: false,
         };
         state.record_round(0, 10, 10, vec![report.clone()], false);

@@ -2,6 +2,7 @@
 use chrono::NaiveDate;
 use num_format::{Locale, ToFormattedString};
 use serde::Serialize;
+use serde_json::Value;
 
 use crate::metrics::fees::ibkr_roundtrip_cost;
 use crate::metrics::performance::{
@@ -116,6 +117,7 @@ pub fn format_annual_table(
 #[derive(Debug, Serialize)]
 pub struct JsonStrategyMetrics {
     pub name: String,
+    pub beginning_equity: f64,
     pub final_equity: f64,
     pub cagr: f64,
     pub sharpe: f64,
@@ -146,6 +148,8 @@ pub struct JsonOutput {
     pub fee_model: String,
     pub results: Vec<JsonStrategyMetrics>,
     pub annual_returns: Vec<JsonAnnualReturn>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audit: Option<Value>,
 }
 
 /// Compute metrics for a strategy and return as JsonStrategyMetrics.
@@ -153,6 +157,7 @@ pub fn compute_strategy_metrics(name: &str, equity: &[f64], years: f64) -> JsonS
     let dr = daily_returns(equity);
     JsonStrategyMetrics {
         name: name.to_string(),
+        beginning_equity: *equity.first().unwrap_or(&0.0),
         final_equity: *equity.last().unwrap(),
         cagr: cagr(equity, years),
         sharpe: sharpe_default(&dr),
@@ -348,6 +353,7 @@ mod tests {
         let equity = [1_000_000.0, 1_100_000.0, 1_050_000.0, 1_200_000.0];
         let m = compute_strategy_metrics("Test", &equity, 1.0);
         assert_eq!(m.name, "Test");
+        assert_eq!(m.beginning_equity, 1_000_000.0);
         assert_eq!(m.final_equity, 1_200_000.0);
         assert!(m.cagr > 0.0);
         assert!(m.max_drawdown > 0.0);
@@ -361,6 +367,7 @@ mod tests {
         let m = compute_strategy_metrics("Buy & Hold", &equity, 1.0);
         let json = serde_json::to_string(&m).unwrap();
         assert!(json.contains("\"name\":\"Buy & Hold\""));
+        assert!(json.contains("\"beginning_equity\":1000000.0"));
         assert!(json.contains("\"final_equity\":1200000.0"));
         // adf fields should be omitted (skip_serializing_if = None)
         assert!(!json.contains("adf_stat"));

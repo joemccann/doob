@@ -34,6 +34,8 @@ Rust binary for quantitative strategy research. Reads from the shared `~/market-
   - Score trajectory from first to last round
 - **Evaluation cache** (`reports/autoresearch-eval-cache.jsonl`) persists results across runs, keyed by parameter signature + date windows. Deterministic grid candidates and repeated seeded params are served instantly from cache. Use `--no-cache` to force re-evaluation.
 - Results are appended to `reports/autoresearch-ledger.jsonl` and `reports/autoresearch-exa-ideas.json`.
+- Persisted top-10 winners must also write train/test audit JSON under `reports/autoresearch-audits/`, including exact actual periods, trade ledgers, and equity traces.
+- Promoted winners are upserted into `reports/autoresearch-strategy-registry.json`, keyed by stable parameter signature, so future implementation work can reuse audited strategies instead of scraping JSONL history.
 - Interactive report output: `reports/autoresearch-top10-interactive-report.html`.
 - Exa seeding uses `EXA_API_KEY` from environment; keep python script usage out of the autoresearch path.
 - Use `.env.example` as a starter file:
