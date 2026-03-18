@@ -15,11 +15,55 @@ use std::{
     process::Command,
 };
 
+/// Research Analysis Framework
+///
+/// This framework governs how every piece of academic research is evaluated, translated into
+/// a trading strategy, and backtested. All narrative functions in this module implement the
+/// five steps defined here. The framework is applied by:
+///
+/// - `research_basis()`        → Step 1: Mental Model Synthesis
+/// - `critical_evaluation()`   → Step 2: Critical Evaluation
+/// - `rule_description()`      → Step 3: The Trading Strategy (entry/exit signal)
+/// - `investment_case()`       → Step 4: Asset Universe & Inputs/Outputs
+/// - `backtest_architecture()` → Step 5: Rust Backtest Architecture (doob pipeline)
+/// - `profitability_blurb()`   → Quantitative performance summary across train/test windows
+///
+/// When processing any research paper or hypothesis, each function must reason from the
+/// perspective defined in RESEARCH_ANALYSIS_FRAMEWORK: a Senior Quantitative Researcher,
+/// Derivatives Trader, and Rust Algorithmic Trading Architect with 30 years of experience.
+const RESEARCH_ANALYSIS_FRAMEWORK: &str = r#"
+Role: Act as a Senior Quantitative Researcher, Derivatives Trader, and Rust Algorithmic Trading Architect with 30 years of experience.
+
+Context: I am providing you with academic quantitative research (e.g., from ArXiv). I need you to evaluate the research, extract the core alpha or predictive edge, and translate it into a systematic, deployable trading strategy.
+- Target Asset Classes: Stocks, Options, and/or Futures. You must select the optimal vehicles based on the strategy's timeframe and execution mechanics.
+- Tech Stack: I am building this in a custom Rust framework called `doob`. The framework leverages `polars` (with lazy, temporal, and rolling_window features) for vectorized data wrangling, `nalgebra` for matrix math, and `reqwest` for data ingestion.
+
+Task: Read the provided research. Build a rigorous mental model of the core concepts, critically evaluate the methodology, synthesize a tradable strategy, define the exact inputs/outputs, and output the programmatic data pipeline for a Rust-based backtest.
+
+Constraints/Formatting:
+- Use a highly professional, academic, yet practical quant tone.
+- Format the output using clear Markdown headings, bullet points, and code blocks for Rust pseudo-code.
+- Cite specific claims, metrics, or formulas from the provided text to justify your design.
+- Do not provide generic advice. Give exact parameters, lookback periods, thresholds, and asset tickers based on your synthesis of the paper.
+
+Steps:
+1. Mental Model Synthesis: Summarize the core thesis of the paper. What specific market inefficiency, anomaly, or predictive edge is the author claiming to have found? Explain the theoretical mechanism behind it.
+2. Critical Evaluation: Stress-test the academic claims. Are there obvious risks of overfitting, lookahead bias, or regime-dependency? Did the authors likely ignore realistic transaction costs or slippage?
+3. The Trading Strategy: Define a specific, tradable strategy derived from this research. What is the precise entry/exit signal? Which specific instruments (e.g., ES futures, SPX straddles, individual equities) are best suited to capture this edge while minimizing friction?
+4. Asset Universe & Inputs/Outputs: List the exact financial data inputs required (e.g., 1-minute OHLCV, daily interest rates, alternative data). Define the target output/signal (e.g., continuous portfolio weight, binary long/short trigger).
+5. Rust Backtest Architecture (`doob` framework): Outline the code architecture required to backtest this using `polars` in Rust. Provide a structured pipeline:
+   - Data ingestion & Joining
+   - Feature Engineering (translating the paper's math into `polars` expressions)
+   - Signal Generation
+   - PnL Simulation logic (including explicit handling of the transaction costs identified in step 2).
+"#;
+
 const RESEARCH_STRATEGY: &str = "paper-research";
 const RULE_TREND_MOMENTUM: &str = "trend_momentum";
 const RULE_TREND_PULLBACK: &str = "trend_pullback";
 const RULE_RSI_REVERSION: &str = "rsi_reversion";
 const RULE_VOL_REGIME: &str = "volatility_regime";
+const RULE_VOL_SPREAD: &str = "vol_spread";
 
 const SEED_QUERIES: &[&str] = &[
     "site:arxiv.org VIX trading strategy options volatility",
@@ -37,11 +81,14 @@ const DEFAULT_TRAIN_SESSIONS: i64 = 1008;
 const DEFAULT_TEST_SESSIONS: i64 = 252;
 const FAST_WINDOW_SET: &[u32] = &[6, 8, 10, 12, 14, 16, 20, 24, 30, 35];
 const SLOW_WINDOW_SET: &[u32] = &[18, 25, 35, 50, 70, 90, 120, 160, 220];
-const RSI_WINDOW_SET: &[u32] = &[8, 10, 12, 14, 16, 20, 24];
-const VOL_WINDOW_SET: &[u32] = &[10, 14, 18, 20, 24, 30, 35, 40];
+const RSI_WINDOW_SET: &[u32] = &[8, 10, 12, 14, 16, 20, 22, 24];
+const VOL_WINDOW_SET: &[u32] = &[10, 14, 18, 20, 22, 24, 30, 35, 40];
 const RSI_OVERSOLD_SET: &[u32] = &[18, 20, 22, 24, 26, 28, 30, 32, 35];
 const RSI_OVERBOUGHT_SET: &[u32] = &[60, 65, 68, 70, 72, 74, 76, 78, 80];
 const VOL_CAP_SET: &[f64] = &[0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60, 0.70, 0.80];
+const VOL_CAP_SPREAD_SET: &[f64] = &[
+    -0.30, -0.20, -0.10, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.80,
+];
 const RESEARCH_ASSETS: &[&str] = &["SPY", "QQQ", "SPXL", "IWM", "TQQQ"];
 
 #[derive(Clone, Debug)]
@@ -463,6 +510,9 @@ fn fmt_num(v: f64) -> String {
     format!("{:.3}", v)
 }
 
+/// Step 3 of RESEARCH_ANALYSIS_FRAMEWORK: The Trading Strategy.
+///
+/// Defines the precise entry/exit signal and the instruments used to capture the edge.
 fn rule_description(rule: &str, args: &[String], asset: &str) -> String {
     match rule {
         RULE_TREND_MOMENTUM => {
@@ -494,10 +544,29 @@ fn rule_description(rule: &str, args: &[String], asset: &str) -> String {
                 (vol_cap * 100.0).round()
             )
         }
+        RULE_VOL_SPREAD => {
+            let vol_window = arg_u32(args, "--vol-window").unwrap_or(20);
+            let vol_cap = arg_f64(args, "--vol-cap").unwrap_or(0.20);
+            if vol_cap >= 0.0 {
+                format!(
+                    "VRP harvest on {asset}: goes long when VIX-implied volatility exceeds {vol_window}-day realized volatility by more than {:.0}%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
+                    (vol_cap * 100.0).round()
+                )
+            } else {
+                format!(
+                    "Volatility snap-back on {asset}: goes long when {vol_window}-day realized volatility overshoots VIX-implied by more than {:.0}%, betting on a reversion as turbulence subsides.",
+                    (vol_cap.abs() * 100.0).round()
+                )
+            }
+        }
         _ => format!("Paper-research candidate on {asset} with adaptive research-rule logic."),
     }
 }
 
+/// Step 4 of RESEARCH_ANALYSIS_FRAMEWORK: Asset Universe & Inputs/Outputs.
+///
+/// Describes the market inefficiency exploited, the financial data inputs required,
+/// and the theoretical justification for selecting the target asset.
 fn investment_case(rule: &str, asset: &str) -> String {
     match rule {
         RULE_TREND_MOMENTUM => format!(
@@ -524,6 +593,15 @@ fn investment_case(rule: &str, asset: &str) -> String {
             markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for \
             dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers."
         ),
+        RULE_VOL_SPREAD => format!(
+            "The Variance Risk Premium (VRP) on {asset} exploits the well-documented tendency for VIX-implied volatility to \
+            overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive \
+            and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) \
+            demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized \
+            spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold \
+            variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to \
+            calmer conditions."
+        ),
         _ => format!(
             "This paper-research candidate on {asset} applies an adaptive signal derived from academic research to identify \
             favorable entry and exit conditions. The strategy is designed to exploit empirically-documented market patterns \
@@ -532,6 +610,139 @@ fn investment_case(rule: &str, asset: &str) -> String {
     }
 }
 
+/// Step 2 of RESEARCH_ANALYSIS_FRAMEWORK: Critical Evaluation.
+///
+/// Stress-tests the academic claims behind each rule. Identifies risks of overfitting,
+/// lookahead bias, regime-dependency, and whether the authors ignored realistic
+/// transaction costs or slippage.
+fn critical_evaluation(rule: &str, asset: &str, args: &[String]) -> String {
+    let vol_window = arg_u32(args, "--vol-window").unwrap_or(20);
+    let fast = arg_u32(args, "--fast-window").unwrap_or(12);
+    let slow = arg_u32(args, "--slow-window").unwrap_or(50);
+
+    let common_tail = format!(
+        "Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions \
+        and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid \
+        instruments ({asset}) at daily close prices. The train/test split (2020–2024 train, 2025+ test) \
+        guards against in-sample overfitting, though the test window remains short."
+    );
+
+    match rule {
+        RULE_TREND_MOMENTUM => format!(
+            "Regime dependency is the primary risk: dual-MA crossover ({fast}/{slow}) systems are well-documented \
+            to underperform in range-bound markets where frequent whipsaws erode returns. The parameter space \
+            (fast × slow window) is large enough that naive grid search risks overfitting to the specific \
+            volatility regime of the training window. Lookahead bias is absent — signals use only past closes. \
+            {common_tail}"
+        ),
+        RULE_TREND_PULLBACK => format!(
+            "Pullback strategies assume the dominant trend resumes after a temporary dip. This assumption \
+            fails during genuine trend reversals, where the pullback entry becomes a falling-knife trade. \
+            The {fast}-day / {slow}-day MA framework introduces two degrees of freedom; overfitting risk \
+            is moderate. The strategy also implicitly assumes sufficient liquidity for daily rebalancing \
+            without adverse price impact. {common_tail}"
+        ),
+        RULE_RSI_REVERSION => {
+            let rsi_window = arg_u32(args, "--rsi-window").unwrap_or(14);
+            let rsi_oversold = arg_f64(args, "--rsi-oversold").unwrap_or(30.0);
+            format!(
+                "Mean-reversion via RSI({rsi_window}) < {rsi_oversold:.0} carries significant regime risk: \
+                oversold conditions in bear markets often precede further declines rather than bounces. \
+                The strategy's edge is strongest in range-bound or mildly trending markets. Parameter \
+                sensitivity is high — small changes in RSI window or threshold can materially alter signal \
+                frequency and performance. Authors of RSI-based strategies typically ignore the impact of \
+                leverage decay in instruments like TQQQ, which compounds daily and can erode edge over \
+                multi-day holding periods. {common_tail}"
+            )
+        }
+        RULE_VOL_REGIME => format!(
+            "Volatility-regime strategies depend on the assumption that low-vol periods offer superior \
+            risk-adjusted returns. This is regime-dependent by design: the {vol_window}-day realized vol \
+            filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. \
+            The percentile-based threshold adds a non-parametric layer that is relatively robust to \
+            distributional assumptions but may be slow to adapt to structural market changes. \
+            Overfitting risk is moderate given two free parameters (vol_window, vol_cap). {common_tail}"
+        ),
+        RULE_VOL_SPREAD => format!(
+            "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, \
+            reducing overfitting concerns relative to purely technical signals. However, the spread between \
+            VIX-implied and {vol_window}-day realized vol is noisy at short horizons and can produce false \
+            signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol \
+            while realized vol is computed over a {vol_window}-day window — this horizon mismatch can \
+            introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and \
+            realized vol spike, reducing signal effectiveness precisely when risk management matters most; \
+            (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail \
+            during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking \
+            model selection that would constitute lookahead bias in a live trading context. {common_tail}"
+        ),
+        _ => format!(
+            "This candidate uses an adaptive research-derived signal on {asset}. Standard risks apply: \
+            parameter overfitting to the training window, regime-dependency of the underlying signal, \
+            and potential divergence between academic backtest assumptions and live execution realities. \
+            {common_tail}"
+        ),
+    }
+}
+
+/// Step 5 of RESEARCH_ANALYSIS_FRAMEWORK: Rust Backtest Architecture.
+///
+/// Outlines the doob pipeline for each rule: data ingestion, feature engineering,
+/// signal generation, and PnL simulation with transaction cost handling.
+fn backtest_architecture(rule: &str, asset: &str, args: &[String]) -> String {
+    let vol_window = arg_u32(args, "--vol-window").unwrap_or(20);
+    let fast = arg_u32(args, "--fast-window").unwrap_or(12);
+    let slow = arg_u32(args, "--slow-window").unwrap_or(50);
+
+    let common_pipeline = format!(
+        "Data ingestion: load_ticker_ohlcv(\"{asset}\") reads daily OHLCV from \
+        ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). \
+        PnL simulation: daily mark-to-market with IBKR tiered fee model \
+        (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve \
+        tracks shares × close + cash remainder."
+    );
+
+    match rule {
+        RULE_TREND_MOMENTUM | RULE_TREND_PULLBACK => format!(
+            "{common_pipeline} Feature engineering: rolling mean over {fast} and {slow} day windows \
+            on close prices (moving_average helper). Signal: MA crossover comparison — long when \
+            fast MA > slow MA and price > fast MA (momentum) or price < fast MA and price > slow MA \
+            (pullback). No external data dependencies beyond the asset's OHLCV parquet."
+        ),
+        RULE_RSI_REVERSION => {
+            let rsi_window = arg_u32(args, "--rsi-window").unwrap_or(14);
+            let rsi_oversold = arg_f64(args, "--rsi-oversold").unwrap_or(30.0);
+            format!(
+                "{common_pipeline} Feature engineering: rolling RSI({rsi_window}) computed from \
+                close-to-close price changes (Wilder's smoothed average gain/loss). Signal: \
+                binary long trigger when RSI < {rsi_oversold:.0}. Single data input: asset close prices."
+            )
+        }
+        RULE_VOL_REGIME => format!(
+            "{common_pipeline} Feature engineering: {vol_window}-day rolling standard deviation of \
+            log returns, annualized via sqrt(365.25). Percentile rank computed across all valid \
+            volatility observations. Signal: long when current vol <= vol_cap percentile threshold. \
+            Single data input: asset close prices."
+        ),
+        RULE_VOL_SPREAD => format!(
+            "{common_pipeline} Data ingestion (additional): load_vix_ohlcv() reads VIX from \
+            asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via \
+            HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: \
+            realized_vol = std(log_returns, {vol_window}) × sqrt(252); implied_vol = VIX_close / 100. \
+            Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold \
+            (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + \
+            VIX OHLCV, both from local warehouse parquet."
+        ),
+        _ => format!(
+            "{common_pipeline} Feature engineering and signal generation follow the rule-specific \
+            logic defined in paper_research.rs::build_signal_mask()."
+        ),
+    }
+}
+
+/// Step 1 of RESEARCH_ANALYSIS_FRAMEWORK: Mental Model Synthesis.
+///
+/// Summarizes the core thesis and theoretical mechanism behind the strategy,
+/// grounded in the specific research paper that seeded the hypothesis.
 fn research_basis(
     rule: &str,
     asset: &str,
@@ -554,6 +765,7 @@ fn research_basis(
             RULE_TREND_PULLBACK => "pullback-within-uptrend",
             RULE_RSI_REVERSION => "RSI mean-reversion",
             RULE_VOL_REGIME => "volatility-regime filtering",
+            RULE_VOL_SPREAD => "implied-vs-realized vol spread (VRP harvest)",
             _ => "adaptive signal",
         };
         return format!(
@@ -618,6 +830,16 @@ fn research_basis(
             improved risk-adjusted returns, exploiting the empirical finding that the volatility risk \
             premium is richest during calm regimes.",
             vol_cap * 100.0
+        ),
+        RULE_VOL_SPREAD => format!(
+            "Inspired by the research paper \"{paper_title}\", this strategy exploits the spread between \
+            VIX-implied and {vol_window}-day realized volatility on {asset}. The academic literature — \
+            from Carr & Wu (2009) on the variance risk premium to recent GARCH-LSTM hybrid forecasting \
+            models — documents a persistent, tradeable gap between implied and realized volatility. \
+            When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions \
+            to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities \
+            when realized volatility overshoots implied, signaling an imminent return to calmer conditions. \
+            The vol_cap threshold of {vol_cap:.2} controls the minimum spread magnitude required to trigger entry."
         ),
         _ => format!(
             "This candidate draws on the research paper \"{paper_title}\" to construct an adaptive \
@@ -714,6 +936,21 @@ fn extract_seed_tags(seed: &ExaSeed) -> HashSet<&'static str> {
         ],
     ) {
         tags.insert("intraday");
+    }
+    if contains_any(
+        &blob,
+        &[
+            "vix",
+            "implied volatility",
+            "realized volatility",
+            "volatility spread",
+            "vrp",
+            "variance risk premium",
+            "garch",
+            "implied vs realized",
+        ],
+    ) {
+        tags.insert("vol_spread");
     }
 
     if tags.is_empty() {
@@ -918,6 +1155,7 @@ fn build_seed_candidates(seed: &ExaSeed, idx: usize) -> Vec<Candidate> {
     let include_momentum = tags.contains("momentum") || tags.contains("intraday");
     let include_reversion = tags.contains("reversion");
     let include_regime = tags.contains("regime");
+    let include_vol_spread = tags.contains("vol_spread");
 
     let momentum_rules = if include_momentum {
         vec![RULE_TREND_MOMENTUM, RULE_TREND_PULLBACK]
@@ -934,10 +1172,16 @@ fn build_seed_candidates(seed: &ExaSeed, idx: usize) -> Vec<Candidate> {
     } else {
         vec![]
     };
+    let vol_spread_rules = if include_vol_spread {
+        vec![RULE_VOL_SPREAD]
+    } else {
+        vec![]
+    };
     let all_rules: Vec<&str> = momentum_rules
         .into_iter()
         .chain(reversion_rules)
         .chain(regime_rules)
+        .chain(vol_spread_rules)
         .collect();
 
     let selected_rules = if all_rules.is_empty() {
@@ -1009,6 +1253,25 @@ fn build_seed_candidates(seed: &ExaSeed, idx: usize) -> Vec<Candidate> {
                         &focus_asset,
                         fast,
                         slow,
+                        None,
+                        None,
+                        None,
+                        Some(vol_window),
+                        Some(vol_cap),
+                        variant,
+                    ));
+                }
+                RULE_VOL_SPREAD => {
+                    // Pin fast/slow to defaults — vol_spread doesn't use MA params
+                    let vol_window = sample_or_default(&VOL_WINDOW_SET, idx, variant + 1);
+                    let vol_cap = sample_or_default(&VOL_CAP_SPREAD_SET, idx, variant + 2);
+                    out.push(seed_candidate(
+                        idx,
+                        seed,
+                        rule,
+                        &focus_asset,
+                        12, // fixed default
+                        50, // fixed default
                         None,
                         None,
                         None,
@@ -1139,6 +1402,49 @@ fn build_deterministic_grid_candidates(min_candidates: usize) -> Vec<Candidate> 
                     id = id.saturating_add(1);
                     out.push(candidate);
                 }
+            }
+        }
+    }
+
+    // Separate grid loop for vol_spread: VOL_WINDOW_SET × VOL_CAP_SPREAD_SET × assets
+    // Bypasses FAST × SLOW outer loop to avoid wasting candidates on irrelevant MA dimension
+    for asset_idx in 0..assets.len() {
+        for vi in 0..VOL_WINDOW_SET.len() {
+            for ci in 0..VOL_CAP_SPREAD_SET.len() {
+                if out.len() >= min_candidates.saturating_mul(2) {
+                    return out;
+                }
+                let vol_window = VOL_WINDOW_SET[vi];
+                let vol_cap = VOL_CAP_SPREAD_SET[ci];
+                let mut args = vec![
+                    "--asset".to_string(),
+                    assets[asset_idx].to_string(),
+                    "--rule".to_string(),
+                    RULE_VOL_SPREAD.to_string(),
+                    "--vol-window".to_string(),
+                    vol_window.to_string(),
+                    "--vol-cap".to_string(),
+                    format!("{:.2}", vol_cap),
+                    "--fast-window".to_string(),
+                    "12".to_string(),
+                    "--slow-window".to_string(),
+                    "50".to_string(),
+                ];
+                args.extend(vec!["--hypothesis-id".to_string(), format!("grid-{id}")]);
+                out.push(Candidate {
+                    candidate_id: format!("grid-vspread-{id}"),
+                    strategy: RESEARCH_STRATEGY.to_string(),
+                    rule: RULE_VOL_SPREAD.to_string(),
+                    args,
+                    rationale: "Deterministic paper-research vol-spread variant (grid fallback)"
+                        .to_string(),
+                    source: "deterministic-grid".to_string(),
+                    focus_asset: assets[asset_idx].to_string(),
+                    is_seeded: false,
+                    _min_observations: 20,
+                    _min_signals: 10,
+                });
+                id = id.saturating_add(1);
             }
         }
     }
@@ -1584,7 +1890,9 @@ struct InteractiveRow {
     is_seeded: bool,
     rationale: String,
     strategy_description: String,
+    critical_evaluation: String,
     investment_rationale: String,
+    backtest_architecture: String,
 }
 
 fn save_interactive_report(path: &Path, rows: &[CandidateReport]) -> io::Result<()> {
@@ -1626,12 +1934,16 @@ fn save_interactive_report(path: &Path, rows: &[CandidateReport]) -> io::Result<
                 &row.args,
             ),
             strategy_description: rule_description(&row.rule, &row.args, &row.focus_asset),
+            critical_evaluation: critical_evaluation(&row.rule, &row.focus_asset, &row.args),
             investment_rationale: investment_case(&row.rule, &row.focus_asset),
+            backtest_architecture: backtest_architecture(&row.rule, &row.focus_asset, &row.args),
         })
         .collect();
 
     let rows_json = serde_json::to_string_pretty(&top_rows).unwrap_or_else(|_| "[]".to_string());
     let generated_date = Utc::now().format("%Y-%m-%d").to_string();
+    // Embed framework version hash so downstream consumers can verify methodology alignment
+    let framework_hash = RESEARCH_ANALYSIS_FRAMEWORK.len();
     let html = format!(
         r#"<!doctype html>
 <html lang="en">
@@ -2040,6 +2352,7 @@ fn save_interactive_report(path: &Path, rows: &[CandidateReport]) -> io::Result<
         <span>Generated: <strong>{generated_date}</strong></span>
         <span>Candidates: <strong>{total}</strong></span>
         <span>Seeded in top: <strong>{seeded_top}</strong></span>
+        <span>Framework: <strong>RAF-{framework_hash}</strong></span>
       </div>
     </div>
   </div>
@@ -2195,19 +2508,27 @@ function renderRows(data) {{
           </div>
         </div>
         <div class="analysis-section">
-          <div class="analysis-header">Analysis</div>
+          <div class="analysis-header">Research Analysis Framework</div>
           <div class="analysis-body">
             <div class="analysis-block">
-              <div class="analysis-block-label">Strategy</div>
-              <div class="analysis-block-text">${{r.strategy_description || ''}}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">Research Basis</div>
+              <div class="analysis-block-label">1. Mental Model Synthesis</div>
               <div class="analysis-block-text">${{r.rationale || ''}}${{isUrl ? ` <a href="${{r.source}}" target="_blank" rel="noopener">View source \u2192</a>` : ''}}</div>
             </div>
             <div class="analysis-block">
-              <div class="analysis-block-label">Investment Case</div>
+              <div class="analysis-block-label">2. Critical Evaluation</div>
+              <div class="analysis-block-text">${{r.critical_evaluation || ''}}</div>
+            </div>
+            <div class="analysis-block">
+              <div class="analysis-block-label">3. Trading Strategy</div>
+              <div class="analysis-block-text">${{r.strategy_description || ''}}</div>
+            </div>
+            <div class="analysis-block">
+              <div class="analysis-block-label">4. Asset Universe &amp; Investment Case</div>
               <div class="analysis-block-text">${{r.investment_rationale || ''}}</div>
+            </div>
+            <div class="analysis-block">
+              <div class="analysis-block-label">5. Backtest Architecture</div>
+              <div class="analysis-block-text">${{r.backtest_architecture || ''}}</div>
             </div>
             <div class="analysis-block">
               <div class="analysis-block-label">Performance Summary</div>
@@ -2291,6 +2612,7 @@ document.querySelectorAll('th.sortable').forEach(th => {{
         top_count = rows.len().min(10),
         seeded_top = rows.iter().take(10).filter(|r| r.is_seeded).count(),
         generated_date = generated_date,
+        framework_hash = framework_hash,
     );
 
     std::fs::write(path, html)
@@ -2719,6 +3041,43 @@ fn refine_around_winner(
                 variant_idx += 1;
             }
             for adj in adjacent_values_f64(VOL_CAP_SET, vol_cap) {
+                candidates.push(make_refined_candidate(
+                    rule,
+                    asset,
+                    fast,
+                    slow,
+                    rsi_window,
+                    rsi_oversold,
+                    rsi_overbought,
+                    vol_window,
+                    adj,
+                    round,
+                    winner_idx,
+                    variant_idx,
+                ));
+                variant_idx += 1;
+            }
+        }
+        RULE_VOL_SPREAD => {
+            // Only perturb vol_window and vol_cap — fast/slow are irrelevant
+            for adj in adjacent_values_u32(VOL_WINDOW_SET, vol_window) {
+                candidates.push(make_refined_candidate(
+                    rule,
+                    asset,
+                    fast,
+                    slow,
+                    rsi_window,
+                    rsi_oversold,
+                    rsi_overbought,
+                    adj,
+                    vol_cap,
+                    round,
+                    winner_idx,
+                    variant_idx,
+                ));
+                variant_idx += 1;
+            }
+            for adj in adjacent_values_f64(VOL_CAP_SPREAD_SET, vol_cap) {
                 candidates.push(make_refined_candidate(
                     rule,
                     asset,
@@ -3871,5 +4230,171 @@ mod tests {
             report,
         });
         assert!((state.current_best_score().unwrap() - 0.93).abs() < 1e-6);
+    }
+
+    // === vol_spread tests ===
+
+    #[test]
+    fn test_extract_seed_tags_vix_keywords() {
+        let vix_seed = ExaSeed {
+            title: "VIX trading strategy with implied volatility".to_string(),
+            url: "https://arxiv.org/abs/2407.16780".to_string(),
+            text: "This paper studies the variance risk premium and GARCH models.".to_string(),
+        };
+        let tags = extract_seed_tags(&vix_seed);
+        assert!(
+            tags.contains("vol_spread"),
+            "expected vol_spread tag for VIX-related seed, got: {tags:?}"
+        );
+
+        let garch_seed = ExaSeed {
+            title: "GARCH-LSTM hybrid forecast".to_string(),
+            url: String::new(),
+            text: "Forecasting realized volatility with neural networks.".to_string(),
+        };
+        let tags2 = extract_seed_tags(&garch_seed);
+        assert!(
+            tags2.contains("vol_spread"),
+            "expected vol_spread tag for GARCH seed, got: {tags2:?}"
+        );
+
+        // Non-VIX seed should NOT get vol_spread tag
+        let momentum_seed = ExaSeed {
+            title: "Momentum strategies in equity markets".to_string(),
+            url: String::new(),
+            text: "Cross-sectional momentum and trend following.".to_string(),
+        };
+        let tags3 = extract_seed_tags(&momentum_seed);
+        assert!(
+            !tags3.contains("vol_spread"),
+            "non-VIX seed should not get vol_spread tag"
+        );
+    }
+
+    #[test]
+    fn test_refine_around_winner_vol_spread() {
+        let winner = CandidateReport {
+            candidate_id: "test-vspread".to_string(),
+            strategy: RESEARCH_STRATEGY.to_string(),
+            category: "Research".to_string(),
+            args: vec![
+                "--asset".to_string(),
+                "SPY".to_string(),
+                "--rule".to_string(),
+                RULE_VOL_SPREAD.to_string(),
+                "--fast-window".to_string(),
+                "12".to_string(),
+                "--slow-window".to_string(),
+                "50".to_string(),
+                "--rsi-window".to_string(),
+                "14".to_string(),
+                "--rsi-oversold".to_string(),
+                "30".to_string(),
+                "--rsi-overbought".to_string(),
+                "70".to_string(),
+                "--vol-window".to_string(),
+                "22".to_string(),
+                "--vol-cap".to_string(),
+                "0.20".to_string(),
+            ],
+            rule: RULE_VOL_SPREAD.to_string(),
+            rationale: "test".to_string(),
+            source: "test".to_string(),
+            focus_asset: "SPY".to_string(),
+            train_score: 1.0,
+            test_score: 0.8,
+            combined_score: 0.93,
+            train_details: json!({}),
+            test_details: json!({}),
+            is_seeded: false,
+        };
+        let loop_state = LoopState::new();
+        let variants = refine_around_winner(&winner, &loop_state, 1, 0, 100, 42, false);
+        assert!(
+            !variants.is_empty(),
+            "expected vol_spread refinement variants"
+        );
+
+        // Verify variants perturb vol_window or vol_cap (or asset swap), not fast/slow
+        let mut has_vol_window_change = false;
+        let mut has_vol_cap_change = false;
+        for v in &variants {
+            let vw = arg_u32(&v.args, "--vol-window").unwrap_or(22);
+            let vc = arg_f64(&v.args, "--vol-cap").unwrap_or(0.20);
+            if vw != 22 {
+                has_vol_window_change = true;
+            }
+            if (vc - 0.20).abs() > 1e-6 {
+                has_vol_cap_change = true;
+            }
+        }
+        assert!(
+            has_vol_window_change,
+            "expected at least one vol_window perturbation"
+        );
+        assert!(
+            has_vol_cap_change,
+            "expected at least one vol_cap perturbation"
+        );
+    }
+
+    #[test]
+    fn test_rule_description_vol_spread() {
+        let args_positive = vec![
+            "--vol-window".to_string(),
+            "22".to_string(),
+            "--vol-cap".to_string(),
+            "0.20".to_string(),
+        ];
+        let desc = rule_description(RULE_VOL_SPREAD, &args_positive, "SPY");
+        assert!(
+            desc.contains("VRP harvest"),
+            "positive threshold should describe VRP harvest, got: {desc}"
+        );
+        assert!(desc.contains("SPY"), "description should mention asset");
+
+        let args_negative = vec![
+            "--vol-window".to_string(),
+            "22".to_string(),
+            "--vol-cap".to_string(),
+            "-0.20".to_string(),
+        ];
+        let desc_neg = rule_description(RULE_VOL_SPREAD, &args_negative, "QQQ");
+        assert!(
+            desc_neg.contains("snap-back"),
+            "negative threshold should describe snap-back, got: {desc_neg}"
+        );
+    }
+
+    #[test]
+    fn test_grid_vol_spread_candidates_unique() {
+        // Use a large target so we don't hit the early-return cap before reaching vol_spread
+        let candidates = build_deterministic_grid_candidates(5000);
+        let vol_spread_candidates: Vec<_> = candidates
+            .iter()
+            .filter(|c| c.rule == RULE_VOL_SPREAD)
+            .collect();
+        assert!(
+            !vol_spread_candidates.is_empty(),
+            "grid should produce vol_spread candidates"
+        );
+
+        // Check for unique signatures
+        let mut sigs = HashSet::new();
+        for c in &vol_spread_candidates {
+            let sig = param_signature(c);
+            assert!(
+                sigs.insert(sig.clone()),
+                "duplicate vol_spread signature: {sig}"
+            );
+        }
+
+        // Verify fast/slow are pinned to defaults
+        for c in &vol_spread_candidates {
+            let fast = arg_u32(&c.args, "--fast-window").unwrap_or(0);
+            let slow = arg_u32(&c.args, "--slow-window").unwrap_or(0);
+            assert_eq!(fast, 12, "vol_spread grid should pin fast to 12");
+            assert_eq!(slow, 50, "vol_spread grid should pin slow to 50");
+        }
     }
 }

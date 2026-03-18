@@ -9,8 +9,10 @@ use chrono::NaiveDate;
 
 use num_format::ToFormattedString;
 
+use std::collections::HashMap;
+
 use crate::cli::OutputFormat;
-use crate::data::readers::load_ticker_ohlcv;
+use crate::data::readers::{load_ticker_ohlcv, load_vix_ohlcv};
 use crate::metrics::fees::ibkr_roundtrip_cost;
 use crate::strategies::common::{
     JsonOutput, StrategyResult, build_json_annual_returns, buy_and_hold_equity,
@@ -32,6 +34,7 @@ enum ResearchRule {
     TrendPullback,
     RsiReversion,
     VolatilityRegime,
+    VolSpread,
 }
 
 impl ResearchRule {
@@ -41,6 +44,7 @@ impl ResearchRule {
             "trend_pullback" => Some(Self::TrendPullback),
             "rsi_reversion" => Some(Self::RsiReversion),
             "volatility_regime" => Some(Self::VolatilityRegime),
+            "vol_spread" => Some(Self::VolSpread),
             _ => None,
         }
     }
@@ -51,6 +55,7 @@ impl ResearchRule {
             Self::TrendPullback => "trend_pullback",
             Self::RsiReversion => "rsi_reversion",
             Self::VolatilityRegime => "volatility_regime",
+            Self::VolSpread => "vol_spread",
         }
     }
 }
@@ -73,7 +78,7 @@ pub struct PaperResearchArgs {
     #[arg(
         long,
         default_value = "trend_momentum",
-        help = "Research rule: trend_momentum|trend_pullback|rsi_reversion|volatility_regime"
+        help = "Research rule: trend_momentum|trend_pullback|rsi_reversion|volatility_regime|vol_spread"
     )]
     pub rule: String,
 
@@ -106,7 +111,7 @@ pub struct PaperResearchArgs {
     #[arg(
         long,
         default_value_t = 0.45,
-        help = "Volatility percentile cap [0,1] for volatility_regime"
+        help = "Volatility percentile cap [0,1] for volatility_regime; spread threshold for vol_spread (negative = snap-back)"
     )]
     pub vol_cap: f64,
 
@@ -187,6 +192,31 @@ fn rolling_rsi(closes: &[f64], end: usize, window: usize) -> Option<f64> {
     Some(rsi)
 }
 
+/// Compute annualized realized volatility from log returns using sqrt(252).
+///
+/// Returns the standard deviation of `log_returns[end+1-window..=end]` times sqrt(252).
+/// Compatible with VIX annualization convention (trading days, not calendar days).
+fn realized_vol_252(log_returns: &[f64], end: usize, window: usize) -> Option<f64> {
+    if window < 2 || end + 1 < window {
+        return None;
+    }
+    let start = end + 1 - window;
+    let mut vals = Vec::with_capacity(window);
+    for r in &log_returns[start..=end] {
+        if !r.is_finite() {
+            return None;
+        }
+        vals.push(*r);
+    }
+    if vals.len() < window {
+        return None;
+    }
+    let mean = vals.iter().sum::<f64>() / vals.len() as f64;
+    let var = vals.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / (vals.len() as f64 - 1.0);
+    let vol = var.sqrt() * (252.0_f64).sqrt();
+    if vol.is_finite() { Some(vol) } else { None }
+}
+
 fn build_signal_mask(
     closes: &[f64],
     rule: ResearchRule,
@@ -196,9 +226,28 @@ fn build_signal_mask(
     rsi_oversold: f64,
     vol_window: usize,
     vol_cap: f64,
+    vix_closes: Option<&[f64]>,
 ) -> Vec<bool> {
-    if closes.len() < slow.saturating_add(4) {
-        return vec![false; closes.len()];
+    let n = closes.len();
+
+    // Length guard: if VIX data is provided, it must match closes length
+    if let Some(vix) = vix_closes {
+        assert_eq!(
+            vix.len(),
+            n,
+            "vix_closes length ({}) must match closes length ({})",
+            vix.len(),
+            n
+        );
+    }
+
+    // Rule-specific minimum lookback gate
+    if matches!(rule, ResearchRule::VolSpread) {
+        if n < vol_window + 1 {
+            return vec![false; n];
+        }
+    } else if n < slow.saturating_add(4) {
+        return vec![false; n];
     }
 
     let returns: Vec<f64> = closes.windows(2).map(|w| (w[1] / w[0]).ln()).collect();
@@ -252,6 +301,35 @@ fn build_signal_mask(
                         vol <= vol_threshold.unwrap_or(f64::INFINITY)
                     }
                 }
+                ResearchRule::VolSpread => {
+                    // Need at least vol_window returns to compute realized vol
+                    if idx == 0 || idx.saturating_sub(1) + 1 < vol_window {
+                        return false;
+                    }
+                    let realized =
+                        match realized_vol_252(&returns, idx.saturating_sub(1), vol_window) {
+                            Some(v) if v.is_finite() => v,
+                            _ => return false,
+                        };
+                    let implied = match vix_closes {
+                        Some(vix) => {
+                            let v = vix.get(idx).copied().unwrap_or(f64::NAN);
+                            if !v.is_finite() {
+                                return false;
+                            }
+                            v / 100.0
+                        }
+                        None => return false,
+                    };
+                    let spread = (implied - realized) / realized.max(0.01);
+                    if vol_cap >= 0.0 {
+                        // VRP harvest: go long when VIX overstates realized
+                        spread > vol_cap
+                    } else {
+                        // Snap-back: go long when realized overshoots implied
+                        spread < vol_cap
+                    }
+                }
             };
             signal && closes[idx].is_finite()
         })
@@ -289,10 +367,31 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
     let asset = args.asset.to_uppercase();
     let rule = ResearchRule::from_str(&args.rule).ok_or_else(|| {
         anyhow::anyhow!(
-            "unsupported rule '{}'; expected trend_momentum, trend_pullback, rsi_reversion, volatility_regime",
+            "unsupported rule '{}'; expected trend_momentum, trend_pullback, rsi_reversion, volatility_regime, vol_spread",
             args.rule
         )
     })?;
+
+    // Rule-specific vol_cap validation
+    match rule {
+        ResearchRule::VolatilityRegime => {
+            if !(0.0..=1.0).contains(&args.vol_cap) {
+                bail!(
+                    "volatility_regime requires --vol-cap in [0.0, 1.0], got {}",
+                    args.vol_cap
+                );
+            }
+        }
+        ResearchRule::VolSpread => {
+            if !args.vol_cap.is_finite() {
+                bail!(
+                    "vol_spread requires a finite --vol-cap threshold, got {}",
+                    args.vol_cap
+                );
+            }
+        }
+        _ => {}
+    }
 
     if !quiet {
         println!("Loading {asset} from bronze parquet...");
@@ -328,6 +427,21 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
         bail!("not enough observations after filtering for {asset}");
     }
 
+    // Load VIX data when needed (vol_spread rule)
+    let vix_aligned: Option<Vec<f64>> = if matches!(rule, ResearchRule::VolSpread) {
+        let vix_bars = load_vix_ohlcv(None)?;
+        let vix_map: HashMap<NaiveDate, f64> =
+            vix_bars.iter().map(|r| (r.trade_date, r.close)).collect();
+        Some(
+            dates
+                .iter()
+                .map(|d| *vix_map.get(d).unwrap_or(&f64::NAN))
+                .collect(),
+        )
+    } else {
+        None
+    };
+
     let masks = build_signal_mask(
         &closes,
         rule,
@@ -337,6 +451,7 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
         args.rsi_oversold,
         args.vol_window,
         args.vol_cap,
+        vix_aligned.as_deref(),
     );
     let start_idx = closes.len().saturating_sub(args.sessions);
     if start_idx == closes.len() {
@@ -460,7 +575,99 @@ mod tests {
     #[test]
     fn test_signal_mask_modes() {
         let closes = vec![10.0, 10.5, 10.8, 10.2, 10.4, 10.9, 11.0, 11.2];
-        let mask = build_signal_mask(&closes, ResearchRule::TrendMomentum, 3, 5, 3, 30.0, 3, 0.5);
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::TrendMomentum,
+            3,
+            5,
+            3,
+            30.0,
+            3,
+            0.5,
+            None,
+        );
         assert_eq!(mask.len(), closes.len());
+    }
+
+    #[test]
+    fn test_vol_spread_signal_positive_threshold() {
+        // VRP harvest: VIX >> realized vol → signal should fire
+        // Build closes with low realized vol (~0 variation)
+        let n = 50;
+        let closes: Vec<f64> = (0..n).map(|i| 100.0 + (i as f64) * 0.01).collect();
+        // VIX at 30 (implied = 0.30) while realized will be very low
+        let vix: Vec<f64> = vec![30.0; n];
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::VolSpread,
+            12,
+            40,
+            14,
+            30.0,
+            20,   // vol_window
+            0.20, // positive threshold → VRP harvest
+            Some(&vix),
+        );
+        assert_eq!(mask.len(), n);
+        // After warmup, signals should fire because VIX >> realized
+        let active = mask.iter().filter(|&&b| b).count();
+        assert!(
+            active > 0,
+            "expected VRP harvest signals to fire with high VIX and low realized vol"
+        );
+    }
+
+    #[test]
+    fn test_vol_spread_no_vix_data() {
+        // No VIX data → all signals false
+        let n = 50;
+        let closes: Vec<f64> = (0..n).map(|i| 100.0 + (i as f64) * 0.5).collect();
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::VolSpread,
+            12,
+            40,
+            14,
+            30.0,
+            20,
+            0.20,
+            None, // no VIX
+        );
+        assert_eq!(mask.len(), n);
+        assert!(
+            mask.iter().all(|&b| !b),
+            "expected all-false with no VIX data"
+        );
+    }
+
+    #[test]
+    fn test_vol_spread_negative_threshold_snapback() {
+        // Snap-back: realized >> implied → signal fires when spread < vol_cap (negative)
+        let n = 60;
+        // Create high-volatility closes (big swings)
+        let mut closes = Vec::with_capacity(n);
+        for i in 0..n {
+            closes.push(100.0 + if i % 2 == 0 { 10.0 } else { -10.0 } * (i as f64 / n as f64));
+        }
+        // VIX at 10 (implied = 0.10), very low relative to the swings
+        let vix: Vec<f64> = vec![10.0; n];
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::VolSpread,
+            12,
+            40,
+            14,
+            30.0,
+            20,
+            -0.10, // negative threshold → snap-back
+            Some(&vix),
+        );
+        assert_eq!(mask.len(), n);
+        // With high realized vol and low VIX, spread is very negative → should trigger
+        let active = mask.iter().filter(|&&b| b).count();
+        assert!(
+            active > 0,
+            "expected snap-back signals to fire with high realized vol and low VIX"
+        );
     }
 }

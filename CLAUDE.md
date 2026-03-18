@@ -1,6 +1,6 @@
 # doob — Quantitative Strategy Research & Backtesting
 
-Rust binary for quantitative strategy research. Reads from the shared `~/market-warehouse/` data lake (bronze parquet). **All price data comes from local parquet files — no Yahoo Finance or external API calls for price data.** Universe membership is resolved from local preset JSON files (e.g. `presets/ndx100.json`). The only external HTTP call is the optional CBOE VIX CSV download (cached for 24h).
+Rust binary for quantitative strategy research. Reads from the shared `~/market-warehouse/` data lake (bronze parquet). **All price data comes from local parquet files — no Yahoo Finance or external API calls for price data.** Universe membership is resolved from local preset JSON files (e.g. `presets/ndx100.json`). The only external HTTP call is the optional CBOE VIX CSV download (cached for 24h). VIX OHLCV is also available from local parquet at `asset_class=volatility/symbol=VIX`.
 
 ## Autoresearch Loop (Mandatory Rust-Only Path)
 
@@ -38,7 +38,7 @@ src/
 │   ├── mod.rs
 │   ├── paths.rs                     # Parquet path resolution helpers
 │   ├── discovery.rs                 # Symbol discovery from bronze layer
-│   ├── readers.rs                   # Parquet (polars) data loaders, load_price_panel(), CBOE VIX cache
+│   ├── readers.rs                   # Parquet (polars) data loaders, load_price_panel(), load_vix_ohlcv(), CBOE VIX cache
 │   └── presets.rs                   # Preset loading + validation
 ├── metrics/
 │   ├── mod.rs
@@ -61,8 +61,9 @@ src/
 **All price data is read from local warehouse parquet files.** No Yahoo Finance, no external price APIs.
 
 - Price data: `~/market-warehouse/data-lake/bronze/asset_class=equity/symbol=<TICKER>/data.parquet`
+- VIX data (parquet): `~/market-warehouse/data-lake/bronze/asset_class=volatility/symbol=VIX/data.parquet`
+- VIX data (CBOE CSV): cached locally for 24h (only external HTTP call, used by overnight-drift)
 - Universe membership: `presets/<universe>.json` (e.g. `presets/ndx100.json`, `presets/sp500.json`)
-- VIX data: CBOE CSV, cached locally for 24h (only external HTTP call)
 
 Expected parquet columns: `trade_date`, `open`, `high`, `low`, `close`, `volume`.
 
@@ -86,6 +87,7 @@ Expected parquet columns: `trade_date`, `open`, `high`, `low`, `close`, `volume`
 doob run overnight-drift --no-vix-filter --no-plots
 doob run intraday-drift --ticker SPY --short
 doob run paper-research --output json --asset TQQQ --rule rsi_reversion --fast-window 16 --slow-window 18 --rsi-window 16 --rsi-oversold 28 --rsi-overbought 76 --vol-window 20 --vol-cap 0.40
+doob run paper-research --asset SPY --rule vol_spread --vol-window 22 --vol-cap 0.20
 doob run breadth-washout --universe ndx100 --signal-mode oversold
 doob run breadth-washout --universe ndx100 --lookback 50 --signal-mode oversold --threshold 80
 doob run ndx100-sma-breadth --end-date 2026-03-11
@@ -126,6 +128,44 @@ Dual moving-average breadth strategy. For each stock, checks TWO conditions:
 a short-term pullback while still in a long-term uptrend. Computes the % of the
 universe meeting both conditions simultaneously, and triggers signals when that
 % crosses a threshold.
+
+### paper-research
+
+Single-asset signal strategy used by the autoresearch loop. Applies one of five
+signal rules to close-price history and evaluates a long-only equity curve against
+a buy-and-hold baseline. Rules:
+
+| Rule | Signal | Key Params |
+|------|--------|------------|
+| `trend_momentum` | Long when fast MA > slow MA and price > fast MA | `--fast-window`, `--slow-window` |
+| `trend_pullback` | Long when price < fast MA but > slow MA | `--fast-window`, `--slow-window` |
+| `rsi_reversion` | Long when RSI < oversold threshold | `--rsi-window`, `--rsi-oversold` |
+| `volatility_regime` | Long when realized vol below percentile cap | `--vol-window`, `--vol-cap [0,1]` |
+| `vol_spread` | Long when VIX-implied vs realized vol spread exceeds threshold | `--vol-window`, `--vol-cap` (negative = snap-back) |
+
+The `vol_spread` rule is the first multi-source signal — it loads VIX from local
+parquet (`asset_class=volatility/symbol=VIX`) and compares implied vol against
+realized vol annualized with `sqrt(252)`. Positive `--vol-cap` = VRP harvest
+(VIX overstates realized); negative = snap-back (realized overshoots implied).
+
+## Research Analysis Framework
+
+All research-to-strategy translation in the autoresearch loop follows a mandatory
+5-step framework defined in `RESEARCH_ANALYSIS_FRAMEWORK` (constant in
+`src/bin/autoresearch_loop.rs`). Each step is implemented by a dedicated function:
+
+| Step | Function | Purpose |
+|------|----------|---------|
+| 1. Mental Model Synthesis | `research_basis()` | Core thesis, theoretical mechanism, paper citation |
+| 2. Critical Evaluation | `critical_evaluation()` | Overfitting, lookahead bias, regime-dependency, transaction costs |
+| 3. Trading Strategy | `rule_description()` | Precise entry/exit signal, instruments, parameters |
+| 4. Asset Universe & Inputs/Outputs | `investment_case()` | Data inputs, market inefficiency, asset justification |
+| 5. Backtest Architecture | `backtest_architecture()` | doob pipeline: ingestion, features, signals, PnL simulation |
+
+The interactive HTML report renders all 5 steps in a numbered "Research Analysis
+Framework" section for each strategy candidate, plus a Performance Summary.
+
+When adding a new rule, all 5 functions must be implemented for it.
 
 ## Universe Modes
 
@@ -178,7 +218,7 @@ cargo build --release && cp target/release/doob ~/.cargo/bin/doob
 ## Testing
 
 ```bash
-# Unit tests (145 tests, < 0.1s, no external dependencies)
+# Unit tests (184 tests: 154 lib + 30 bin, < 0.1s, no external dependencies)
 cargo test
 
 # CLI integration tests (106 tests, requires ~/market-warehouse)
@@ -187,7 +227,7 @@ cargo test
 
 ### Test Rules
 
-1. 146 unit tests covering all modules (mock all I/O, use `tempfile`)
+1. 184 unit tests covering all modules (mock all I/O, use `tempfile`)
 2. 106 CLI integration tests covering every command, flag combination, output format (text/json/md), and error case
 3. Tests run with `set -euo pipefail` — any unexpected failure stops the suite
 4. Edge cases tested: future dates, 0 sessions, missing tickers, invalid modes, invalid output formats

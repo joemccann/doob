@@ -208,6 +208,45 @@ pub fn load_price_panel(
     Ok((map, missing))
 }
 
+/// Load VIX OHLCV from local warehouse parquet at `asset_class=volatility/symbol=VIX`.
+///
+/// Same parquet schema as equities (trade_date, open, high, low, close, volume).
+/// No HTTP download — pure local data.
+pub fn load_vix_ohlcv(warehouse: Option<&std::path::Path>) -> Result<Vec<OhlcvRow>> {
+    let root = match warehouse {
+        Some(w) => w.to_path_buf(),
+        None => warehouse_root()?,
+    };
+    let data_file = root
+        .join("data-lake")
+        .join("bronze")
+        .join("asset_class=volatility")
+        .join("symbol=VIX")
+        .join("data.parquet");
+
+    if !data_file.exists() {
+        bail!(
+            "VIX parquet not found: {}. Ensure VIX data is in the warehouse at asset_class=volatility/symbol=VIX/",
+            data_file.display()
+        );
+    }
+
+    let df = LazyFrame::scan_parquet(&data_file, Default::default())?
+        .select([
+            col("trade_date"),
+            col("open"),
+            col("high"),
+            col("low"),
+            col("close"),
+            col("volume"),
+        ])
+        .sort(["trade_date"], Default::default())
+        .collect()
+        .with_context(|| "reading VIX parquet from volatility asset class")?;
+
+    dataframe_to_ohlcv(&df)
+}
+
 const VIX_URL: &str = "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv";
 const STALE_SECONDS: u64 = 86400;
 
@@ -405,5 +444,14 @@ mod tests {
         let (data, missing) = result.unwrap();
         assert!(data.is_empty());
         assert_eq!(missing, vec!["NOPE"]);
+    }
+
+    #[test]
+    fn test_load_vix_ohlcv_missing_parquet() {
+        let tmp = tempfile::tempdir().unwrap();
+        let result = load_vix_ohlcv(Some(tmp.path()));
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("VIX parquet not found"), "got: {err_msg}");
     }
 }
