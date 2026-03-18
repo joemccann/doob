@@ -317,5 +317,27 @@ Verification:
 - Inspected `git diff --cached -- .claude/settings.json .claude/hooks/pre-commit-check.sh tasks/todo.md` before committing.
 - Verified the cleanup commit was pushed to `origin/main`.
 
+## Ruff Cache Cleanup Plan (2026-03-18)
+
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Record the Ruff-cache cleanup scope and confirm the remaining worktree changes `depends_on: []`
+- [x] T2 Stage the `.gitignore` update and verify the exact diff being committed `depends_on: [T1]`
+- [x] T3 Commit the Ruff-cache cleanup and push `main` to `origin` `depends_on: [T2]`
+
+## Ruff Cache Cleanup Review (2026-03-18)
+
+Summary:
+- Added `.ruff_cache/` to `.gitignore` so Ruff's local cache stays out of the repo worktree.
+- Removed the existing repo-local `.ruff_cache` directory from disk as disposable tool cache.
+- Kept the cleanup limited to the ignore rule and this task-log update, then pushed it directly to `origin/main`.
+
+Verification:
+- Confirmed `.ruff_cache` was not tracked by git and no longer exists in the repo root.
+- Inspected `git diff --cached -- .gitignore tasks/todo.md` before committing.
+- Verified the cleanup commit was pushed to `origin/main`.
+
 ## Lessons
 _(Move to `tasks/lessons.md` as they accumulate)_
