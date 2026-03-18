@@ -42,8 +42,37 @@ Looping is the default (`--max-rounds 10`). After round 0, the loop refines top 
 | `--patience` | 3 | Stale rounds before stopping |
 | `--min-improvement` | 0.02 | Minimum relative improvement to reset patience |
 | `--refine-top` | 5 | Winners to refine per round |
-| `--refine-variants` | 20 | Max variants per winner |
+| `--refine-variants` | 30 | Max variants per winner |
 | `--no-loop` | false | Disable refinement (single-pass legacy) |
+
+### Asset universe expansion
+
+Controls which assets are tested during refinement rounds. Round 0 always uses core assets (5) for speed.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--asset-universe` | `broad` | `core` (5), `broad` (SP500+NDX100 ~550), `full` (all viable warehouse), or preset name |
+| `--refine-asset-swaps` | 10 | Max asset swap variants per winner per round |
+| `--min-asset-rows` | auto | Min parquet rows for viability (default: train+test sessions) |
+
+### Quality gates
+
+Filter final report to only "investable" strategies. Applied after all rounds complete.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--min-sharpe` | none | Minimum test-window Sharpe ratio |
+| `--max-drawdown` | none | Maximum test-window drawdown (absolute %, e.g. `20` = reject worse than -20%) |
+
+When gates are active, the report shows pass/fail counts. If none pass, unfiltered results shown for reference.
+
+### Convergence summary
+
+When the refinement loop terminates (patience, frontier exhaustion, or max rounds), a diagnostic summary prints:
+- Stop reason
+- Total evaluated/passed counts and exhausted refinement centers
+- Rule and asset distribution among passing candidates
+- Score trajectory from first to last round
 
 ### Evaluation cache
 

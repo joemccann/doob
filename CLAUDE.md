@@ -14,7 +14,24 @@ Rust binary for quantitative strategy research. Reads from the shared `~/market-
   - `cargo run --release --bin autoresearch_loop -- --doob-bin target/release/doob --seed-web --train-start 2020-01-01 --train-end 2024-12-31 --test-start 2025-01-01 --test-end 2026-03-11 --train-sessions 1008 --test-sessions 252`
 - **Iterative refinement** is the default (`--max-rounds 10`). After round 0 exploration, the loop refines top winners by perturbing parameters within the existing discrete grids and swapping assets. Convergence stops the loop when no meaningful improvement is found (`--patience 3`, `--min-improvement 0.02`). Use `--no-loop` for legacy single-pass behavior.
   - `--refine-top 5` — number of winners to refine per round
-  - `--refine-variants 20` — max variants generated per winner
+  - `--refine-variants 30` — max variants generated per winner
+- **Asset universe expansion** controls which assets are tested during refinement rounds:
+  - `--asset-universe core` — 5 core assets (SPY, QQQ, SPXL, IWM, TQQQ) — fastest, backward-compatible
+  - `--asset-universe broad` — SP500 + NDX100 + core (~550 tickers) — default
+  - `--asset-universe full` — all viable warehouse symbols (~3,500+, adds ~10s startup for parquet metadata scan)
+  - `--asset-universe <preset>` — any preset name (e.g. `ndx100`, `sp500`)
+  - `--refine-asset-swaps 10` — max asset swap variants per winner per refinement round
+  - `--min-asset-rows <N>` — minimum parquet rows for asset viability (default: auto = train+test sessions)
+  - Round 0 exploration always uses core assets (5) for speed; expanded universe only applies to refinement rounds
+- **Quality gates** filter the final report to only "investable" strategies:
+  - `--min-sharpe 1.0` — reject strategies with test-window Sharpe below threshold
+  - `--max-drawdown 20` — reject strategies with test-window drawdown worse than -20%
+  - When gates are active, the report shows how many candidates pass. If none pass, unfiltered results are shown for reference
+- **Convergence summary** prints a diagnostic when the refinement loop terminates, including:
+  - Stop reason (patience exhausted, frontier exhausted, max rounds reached)
+  - Total evaluated/passed counts, exhausted refinement centers
+  - Rule and asset distribution among passing candidates
+  - Score trajectory from first to last round
 - **Evaluation cache** (`reports/autoresearch-eval-cache.jsonl`) persists results across runs, keyed by parameter signature + date windows. Deterministic grid candidates and repeated seeded params are served instantly from cache. Use `--no-cache` to force re-evaluation.
 - Results are appended to `reports/autoresearch-ledger.jsonl` and `reports/autoresearch-exa-ideas.json`.
 - Interactive report output: `reports/autoresearch-top10-interactive-report.html`.
@@ -218,7 +235,7 @@ cargo build --release && cp target/release/doob ~/.cargo/bin/doob
 ## Testing
 
 ```bash
-# Unit tests (184 tests: 154 lib + 30 bin, < 0.1s, no external dependencies)
+# Unit tests (198 tests: 156 lib + 42 bin, < 0.1s, no external dependencies)
 cargo test
 
 # CLI integration tests (106 tests, requires ~/market-warehouse)
@@ -227,7 +244,7 @@ cargo test
 
 ### Test Rules
 
-1. 184 unit tests covering all modules (mock all I/O, use `tempfile`)
+1. 198 unit tests covering all modules (mock all I/O, use `tempfile`)
 2. 106 CLI integration tests covering every command, flag combination, output format (text/json/md), and error case
 3. Tests run with `set -euo pipefail` — any unexpected failure stops the suite
 4. Edge cases tested: future dates, 0 sessions, missing tickers, invalid modes, invalid output formats

@@ -315,8 +315,8 @@ struct Args {
     #[arg(long, default_value_t = 5)]
     refine_top: usize,
 
-    /// Maximum refinement variants per winner (default: 20)
-    #[arg(long, default_value_t = 20)]
+    /// Maximum refinement variants per winner (default: 30)
+    #[arg(long, default_value_t = 30)]
     refine_variants: usize,
 
     /// Disable iterative refinement (single-pass legacy mode)
@@ -326,6 +326,28 @@ struct Args {
     /// Disable evaluation cache (re-evaluate all candidates from scratch)
     #[arg(long)]
     no_cache: bool,
+
+    /// Asset universe for refinement: core (5 tickers), broad (SP500+NDX100 ~550),
+    /// full (all viable warehouse symbols), or a preset name
+    #[arg(long, default_value = "broad")]
+    asset_universe: String,
+
+    /// Max asset swap variants per winner per refinement round
+    #[arg(long, default_value_t = 10)]
+    refine_asset_swaps: usize,
+
+    /// Minimum parquet rows for asset viability (default: auto = train+test sessions)
+    #[arg(long)]
+    min_asset_rows: Option<usize>,
+
+    /// Minimum test-window Sharpe ratio for a strategy to be "investable" (default: none)
+    #[arg(long)]
+    min_sharpe: Option<f64>,
+
+    /// Maximum test-window drawdown (absolute %) for a strategy to be "investable" (default: none).
+    /// e.g. --max-drawdown 20 rejects strategies with test drawdown worse than -20%
+    #[arg(long)]
+    max_drawdown: Option<f64>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -1147,9 +1169,8 @@ fn seed_candidate(
     }
 }
 
-fn build_seed_candidates(seed: &ExaSeed, idx: usize) -> Vec<Candidate> {
+fn build_seed_candidates(seed: &ExaSeed, idx: usize, assets: &[&str]) -> Vec<Candidate> {
     let tags = extract_seed_tags(seed);
-    let assets = RESEARCH_ASSETS;
     let mut out = Vec::new();
 
     let include_momentum = tags.contains("momentum") || tags.contains("intraday");
@@ -1288,9 +1309,8 @@ fn build_seed_candidates(seed: &ExaSeed, idx: usize) -> Vec<Candidate> {
     out
 }
 
-fn build_deterministic_grid_candidates(min_candidates: usize) -> Vec<Candidate> {
+fn build_deterministic_grid_candidates(min_candidates: usize, assets: &[&str]) -> Vec<Candidate> {
     let mut out = Vec::new();
-    let assets = RESEARCH_ASSETS;
     let mut id = 0usize;
 
     for rule in [
@@ -1457,6 +1477,7 @@ fn build_candidate_pool(
     seed_web: bool,
     include_grid: bool,
     min_candidates: usize,
+    assets: &[&str],
 ) -> Vec<Candidate> {
     let mut pool = Vec::new();
     let mut seen = HashSet::new();
@@ -1470,7 +1491,7 @@ fn build_candidate_pool(
 
     if seed_web && !seed_ideas.is_empty() {
         for (idx, seed) in seed_ideas.iter().enumerate() {
-            let candidates = build_seed_candidates(seed, idx + 1);
+            let candidates = build_seed_candidates(seed, idx + 1, assets);
             for candidate in candidates {
                 push(candidate, &mut pool, &mut seen);
             }
@@ -1479,7 +1500,7 @@ fn build_candidate_pool(
 
     if include_grid || pool.len() < min_candidates {
         let target = min_candidates.saturating_sub(pool.len());
-        for mut candidate in build_deterministic_grid_candidates(target.max(1)) {
+        for mut candidate in build_deterministic_grid_candidates(target.max(1), assets) {
             candidate.is_seeded = false;
             candidate.source = "deterministic-grid".to_string();
             push(candidate, &mut pool, &mut seen);
@@ -1489,6 +1510,7 @@ fn build_candidate_pool(
     if pool.is_empty() {
         return build_deterministic_grid_candidates(
             min_candidates.max(MIN_CANDIDATES_TARGET_DEFAULT),
+            assets,
         );
     }
 
@@ -1848,6 +1870,25 @@ fn shuffle_candidates(items: &mut [Candidate], seed: u64) {
         let j = (state % (i as u64 + 1)) as usize;
         items.swap(i, j);
     }
+}
+
+/// Reproducible Fisher-Yates subset sampling.
+///
+/// Returns up to `n` items from `pool` in a deterministic order based on `seed`.
+/// If pool.len() <= n, returns the entire pool (shuffled).
+fn deterministic_sample(pool: &[String], n: usize, seed: u64) -> Vec<String> {
+    if pool.is_empty() {
+        return Vec::new();
+    }
+    let mut items = pool.to_vec();
+    let mut state = seed.wrapping_add(0x9E3779B97F4A7C15);
+    for i in (1..items.len()).rev() {
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        let j = (state % (i as u64 + 1)) as usize;
+        items.swap(i, j);
+    }
+    items.truncate(n);
+    items
 }
 
 fn rank_rows(rows: &[CandidateReport]) -> Vec<CandidateReport> {
@@ -2761,6 +2802,110 @@ fn has_converged(summaries: &[RoundSummary], patience: u32, min_improvement: f64
     stale_count >= patience
 }
 
+/// Filter ranked results through hard quality gates.
+///
+/// Only retains candidates whose **test-window** Sharpe >= min_sharpe
+/// and **test-window** max drawdown (absolute) <= max_drawdown.
+fn apply_quality_gates(
+    ranked: &[CandidateReport],
+    min_sharpe: Option<f64>,
+    max_drawdown: Option<f64>,
+) -> Vec<CandidateReport> {
+    ranked
+        .iter()
+        .filter(|r| {
+            let test_sharpe = safe_float(r.test_details.get("sharpe").unwrap_or(&Value::Null))
+                .unwrap_or(f64::NEG_INFINITY);
+            let test_dd = safe_float(r.test_details.get("max_drawdown").unwrap_or(&Value::Null))
+                .unwrap_or(f64::NEG_INFINITY);
+
+            if let Some(ms) = min_sharpe {
+                if test_sharpe < ms {
+                    return false;
+                }
+            }
+            if let Some(md) = max_drawdown {
+                // max_drawdown is stored as a negative fraction (e.g. -0.15 = -15%)
+                // user specifies --max-drawdown 20 meaning "reject if worse than -20%"
+                if test_dd.abs() * 100.0 > md {
+                    return false;
+                }
+            }
+            true
+        })
+        .cloned()
+        .collect()
+}
+
+/// Print a diagnostic summary when the refinement loop terminates.
+fn print_convergence_summary(loop_state: &LoopState, stop_reason: &str) {
+    println!("\n--- Convergence Summary ---");
+    println!("Stop reason: {}", stop_reason);
+
+    let total_evaluated = loop_state.all_evaluated.len();
+    let total_passed = loop_state.recorded_results.len();
+    let rounds = loop_state.round_summaries.len();
+    println!(
+        "Total evaluated: {} | Passed scoring: {} | Rounds: {}",
+        total_evaluated, total_passed, rounds
+    );
+
+    if !loop_state.exhausted_centers.is_empty() {
+        println!(
+            "Exhausted refinement centers: {}",
+            loop_state.exhausted_centers.len()
+        );
+    }
+
+    // Rule distribution among passing candidates
+    let mut rule_counts: HashMap<String, usize> = HashMap::new();
+    let mut asset_counts: HashMap<String, usize> = HashMap::new();
+    for r in &loop_state.recorded_results {
+        *rule_counts.entry(r.report.rule.clone()).or_insert(0) += 1;
+        *asset_counts
+            .entry(r.report.focus_asset.clone())
+            .or_insert(0) += 1;
+    }
+
+    let mut rules: Vec<_> = rule_counts.into_iter().collect();
+    rules.sort_by(|a, b| b.1.cmp(&a.1));
+    let rule_summary: Vec<String> = rules.iter().map(|(r, c)| format!("{r}({c})")).collect();
+    println!("Rules explored: {}", rule_summary.join(", "));
+
+    let mut assets: Vec<_> = asset_counts.into_iter().collect();
+    assets.sort_by(|a, b| b.1.cmp(&a.1));
+    let top_assets: Vec<String> = assets
+        .iter()
+        .take(10)
+        .map(|(a, c)| format!("{a}({c})"))
+        .collect();
+    println!("Top assets tested: {}", top_assets.join(", "));
+
+    // Best score trajectory
+    if rounds >= 2 {
+        let first_best = loop_state
+            .round_summaries
+            .first()
+            .and_then(|s| s.global_best);
+        let last_best = loop_state
+            .round_summaries
+            .last()
+            .and_then(|s| s.global_best);
+        if let (Some(first), Some(last)) = (first_best, last_best) {
+            let total_improvement = if first.abs() > 1e-10 {
+                (last - first) / first.abs() * 100.0
+            } else {
+                0.0
+            };
+            println!(
+                "Score trajectory: {:.3} -> {:.3} ({:+.1}% total)",
+                first, last, total_improvement
+            );
+        }
+    }
+    println!("---");
+}
+
 fn adjacent_values_u32(set: &[u32], current: u32) -> Vec<u32> {
     let mut result = Vec::new();
     let pos = set.iter().position(|&v| v == current);
@@ -2884,6 +3029,8 @@ fn refine_around_winner(
     round: u32,
     winner_idx: usize,
     max_variants: usize,
+    max_asset_swaps: usize,
+    viable_assets: &[String],
     seed: u64,
     verbose: bool,
 ) -> Vec<Candidate> {
@@ -3103,25 +3250,32 @@ fn refine_around_winner(
         }
     }
 
-    // Asset swaps
-    for &alt_asset in RESEARCH_ASSETS {
-        if alt_asset != asset {
-            candidates.push(make_refined_candidate(
-                rule,
-                alt_asset,
-                fast,
-                slow,
-                rsi_window,
-                rsi_oversold,
-                rsi_overbought,
-                vol_window,
-                vol_cap,
-                round,
-                winner_idx,
-                variant_idx,
-            ));
-            variant_idx += 1;
-        }
+    // Asset swaps — sample from viable pool, excluding current asset
+    let swap_pool: Vec<String> = viable_assets
+        .iter()
+        .filter(|a| a.as_str() != asset)
+        .cloned()
+        .collect();
+    let swap_seed = seed
+        .wrapping_mul(round as u64 + 1)
+        .wrapping_add(winner_idx as u64 + 0xA5A5);
+    let sampled_assets = deterministic_sample(&swap_pool, max_asset_swaps, swap_seed);
+    for alt_asset in &sampled_assets {
+        candidates.push(make_refined_candidate(
+            rule,
+            alt_asset,
+            fast,
+            slow,
+            rsi_window,
+            rsi_oversold,
+            rsi_overbought,
+            vol_window,
+            vol_cap,
+            round,
+            winner_idx,
+            variant_idx,
+        ));
+        variant_idx += 1;
     }
 
     // Local + global dedup
@@ -3147,6 +3301,8 @@ fn refine_around_winners(
     loop_state: &mut LoopState,
     refine_top: usize,
     refine_variants: usize,
+    max_asset_swaps: usize,
+    viable_assets: &[String],
     round: u32,
     seed: u64,
     verbose: bool,
@@ -3177,6 +3333,8 @@ fn refine_around_winners(
             round,
             idx,
             refine_variants,
+            max_asset_swaps,
+            viable_assets,
             seed,
             verbose,
         );
@@ -3253,9 +3411,67 @@ fn main() {
 
     let legacy_mode = args.no_loop || args.max_rounds == 1;
 
+    // Build viable asset pool based on --asset-universe
+    let train_sessions_est =
+        estimate_sessions(&args.train_start, &args.train_end).unwrap_or(args.train_sessions);
+    let test_sessions_est =
+        estimate_sessions(&args.test_start, &args.test_end).unwrap_or(args.test_sessions);
+    let min_rows = args
+        .min_asset_rows
+        .unwrap_or((train_sessions_est + test_sessions_est) as usize);
+
+    let viable_assets: Vec<String> = match args.asset_universe.as_str() {
+        "core" => RESEARCH_ASSETS.iter().map(|s| s.to_string()).collect(),
+        "broad" => {
+            let mut pool: HashSet<String> = RESEARCH_ASSETS.iter().map(|s| s.to_string()).collect();
+            for preset_name in &["sp500", "ndx100"] {
+                match doob::data::presets::load_preset(preset_name) {
+                    Ok((_, tickers)) => {
+                        pool.extend(tickers);
+                    }
+                    Err(e) => {
+                        eprintln!("Warning: could not load preset {preset_name}: {e}");
+                    }
+                }
+            }
+            let mut sorted: Vec<String> = pool.into_iter().collect();
+            sorted.sort();
+            sorted
+        }
+        "full" => match doob::data::discovery::discover_viable_symbols(None, min_rows) {
+            Ok(symbols) => symbols,
+            Err(e) => {
+                eprintln!("Failed to discover viable symbols: {e}");
+                RESEARCH_ASSETS.iter().map(|s| s.to_string()).collect()
+            }
+        },
+        preset_name => match doob::data::presets::load_preset(preset_name) {
+            Ok((_, tickers)) => {
+                let mut pool: HashSet<String> = tickers.into_iter().collect();
+                pool.extend(RESEARCH_ASSETS.iter().map(|s| s.to_string()));
+                let mut sorted: Vec<String> = pool.into_iter().collect();
+                sorted.sort();
+                sorted
+            }
+            Err(e) => {
+                eprintln!(
+                    "Failed to load preset '{}': {e}. Falling back to core assets.",
+                    preset_name
+                );
+                RESEARCH_ASSETS.iter().map(|s| s.to_string()).collect()
+            }
+        },
+    };
+
     println!(
         "Autoresearch run: paper-research only | strategy seed web: {} | candidates up to {}",
         args.seed_web, args.candidates
+    );
+    println!(
+        "Asset universe: {} ({} viable assets, min_rows={})",
+        args.asset_universe,
+        viable_assets.len(),
+        min_rows
     );
     println!(
         "Train window: {} -> {} (fallback sessions {}), Test window: {} -> {} (fallback sessions {})",
@@ -3268,13 +3484,24 @@ fn main() {
     );
     if !legacy_mode {
         println!(
-            "Iterative refinement: max_rounds={} patience={} min_improvement={:.2} refine_top={} refine_variants={}",
+            "Iterative refinement: max_rounds={} patience={} min_improvement={:.2} refine_top={} refine_variants={} asset_swaps={}",
             args.max_rounds,
             args.patience,
             args.min_improvement,
             args.refine_top,
-            args.refine_variants
+            args.refine_variants,
+            args.refine_asset_swaps
         );
+    }
+    if args.min_sharpe.is_some() || args.max_drawdown.is_some() {
+        let mut gates = Vec::new();
+        if let Some(ms) = args.min_sharpe {
+            gates.push(format!("min_sharpe={ms:.2}"));
+        }
+        if let Some(md) = args.max_drawdown {
+            gates.push(format!("max_drawdown={md:.1}%"));
+        }
+        println!("Quality gates: {}", gates.join(", "));
     }
 
     let seed_ideas = if args.seed_web {
@@ -3296,6 +3523,7 @@ fn main() {
         args.seed_web,
         args.include_grid || !args.seed_web,
         args.candidates,
+        RESEARCH_ASSETS,
     );
 
     if candidates.is_empty() {
@@ -3378,16 +3606,21 @@ fn main() {
 
     // === Phase 2: Iterative Refinement ===
     if !legacy_mode {
+        let mut stopped_early = false;
         for round in 1..args.max_rounds {
             if has_converged(
                 &loop_state.round_summaries,
                 args.patience,
                 args.min_improvement,
             ) {
-                println!(
-                    "Converged after {} rounds (patience={}, min_improvement={:.2})",
-                    round, args.patience, args.min_improvement
+                print_convergence_summary(
+                    &loop_state,
+                    &format!(
+                        "patience exhausted after {} rounds (patience={}, min_improvement={:.2})",
+                        round, args.patience, args.min_improvement
+                    ),
                 );
+                stopped_early = true;
                 break;
             }
 
@@ -3403,13 +3636,22 @@ fn main() {
                 &mut loop_state,
                 args.refine_top,
                 args.refine_variants,
+                args.refine_asset_swaps,
+                &viable_assets,
                 round,
                 args.random_seed,
                 args.verbose,
             );
 
             if refined.is_empty() {
-                println!("Refinement frontier exhausted after {} rounds", round);
+                print_convergence_summary(
+                    &loop_state,
+                    &format!(
+                        "refinement frontier exhausted after {} rounds (all top winners fully explored)",
+                        round
+                    ),
+                );
+                stopped_early = true;
                 break;
             }
 
@@ -3452,6 +3694,12 @@ fn main() {
                 print_round_summary(summary);
             }
         }
+        if !stopped_early {
+            print_convergence_summary(
+                &loop_state,
+                &format!("max rounds reached ({})", args.max_rounds),
+            );
+        }
     }
 
     // === Phase 3: Final Reporting ===
@@ -3474,10 +3722,43 @@ fn main() {
         .map(|r| r.report.clone())
         .collect();
     let ranked = rank_rows(&all_reports);
-    let top_k = args.top.min(ranked.len());
-    print_top(&ranked, top_k);
-    if let Some(best) = ranked.first() {
-        print_best(best);
+
+    // Apply hard quality gates if specified
+    let has_gates = args.min_sharpe.is_some() || args.max_drawdown.is_some();
+    let investable = if has_gates {
+        let filtered = apply_quality_gates(&ranked, args.min_sharpe, args.max_drawdown);
+        let mut gate_desc = Vec::new();
+        if let Some(ms) = args.min_sharpe {
+            gate_desc.push(format!("Sharpe >= {ms:.2}"));
+        }
+        if let Some(md) = args.max_drawdown {
+            gate_desc.push(format!("drawdown <= {md:.1}%"));
+        }
+        println!(
+            "\nQuality gates ({}): {}/{} candidates pass",
+            gate_desc.join(", "),
+            filtered.len(),
+            ranked.len()
+        );
+        filtered
+    } else {
+        ranked.clone()
+    };
+
+    let top_k = args.top.min(investable.len());
+    if top_k > 0 {
+        print_top(&investable, top_k);
+        if let Some(best) = investable.first() {
+            print_best(best);
+        }
+    } else if has_gates {
+        println!("No candidates passed quality gates.");
+        // Still show top unfiltered results for reference
+        let fallback_k = args.top.min(ranked.len());
+        if fallback_k > 0 {
+            println!("\nTop candidates (before quality gates):");
+            print_top(&ranked, fallback_k);
+        }
     }
 
     // Round history table
@@ -3563,6 +3844,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Helper: returns RESEARCH_ASSETS as Vec<String> for test use.
+    fn core_assets() -> Vec<String> {
+        RESEARCH_ASSETS.iter().map(|s| s.to_string()).collect()
+    }
 
     fn make_summary(round: u32, global_best: Option<f64>, rel_improvement: f64) -> RoundSummary {
         RoundSummary {
@@ -3856,7 +4142,17 @@ mod tests {
             is_seeded: false,
         };
         let loop_state = LoopState::new();
-        let variants = refine_around_winner(&winner, &loop_state, 1, 0, 100, 42, false);
+        let variants = refine_around_winner(
+            &winner,
+            &loop_state,
+            1,
+            0,
+            100,
+            10,
+            &core_assets(),
+            42,
+            false,
+        );
         for v in &variants {
             let fast = arg_u32(&v.args, "--fast-window").unwrap();
             let slow = arg_u32(&v.args, "--slow-window").unwrap();
@@ -3906,7 +4202,17 @@ mod tests {
             is_seeded: false,
         };
         let loop_state = LoopState::new();
-        let variants = refine_around_winner(&winner, &loop_state, 1, 0, 100, 42, false);
+        let variants = refine_around_winner(
+            &winner,
+            &loop_state,
+            1,
+            0,
+            100,
+            10,
+            &core_assets(),
+            42,
+            false,
+        );
         for v in &variants {
             let os = arg_u32(&v.args, "--rsi-oversold").unwrap();
             let ob = arg_u32(&v.args, "--rsi-overbought").unwrap();
@@ -3958,7 +4264,17 @@ mod tests {
 
         // Get initial variants
         let loop_state = LoopState::new();
-        let variants_1 = refine_around_winner(&winner, &loop_state, 1, 0, 100, 42, false);
+        let variants_1 = refine_around_winner(
+            &winner,
+            &loop_state,
+            1,
+            0,
+            100,
+            10,
+            &core_assets(),
+            42,
+            false,
+        );
         assert!(!variants_1.is_empty());
 
         // Mark all those signatures as seen
@@ -3968,7 +4284,17 @@ mod tests {
         }
 
         // Second refinement should produce no novel variants
-        let variants_2 = refine_around_winner(&winner, &loop_state_2, 2, 0, 100, 42, false);
+        let variants_2 = refine_around_winner(
+            &winner,
+            &loop_state_2,
+            2,
+            0,
+            100,
+            10,
+            &core_assets(),
+            42,
+            false,
+        );
         assert!(
             variants_2.is_empty(),
             "expected 0 novel variants, got {}",
@@ -4018,7 +4344,17 @@ mod tests {
         let sig = param_signature_from_args(&winner.args);
         loop_state.mark_center_exhausted(&sig);
 
-        let result = refine_around_winners(&[winner], &mut loop_state, 5, 20, 1, 42, false);
+        let result = refine_around_winners(
+            &[winner],
+            &mut loop_state,
+            5,
+            20,
+            10,
+            &core_assets(),
+            1,
+            42,
+            false,
+        );
         assert!(result.is_empty());
     }
 
@@ -4060,8 +4396,28 @@ mod tests {
             is_seeded: false,
         };
         let loop_state = LoopState::new();
-        let v1 = refine_around_winner(&winner, &loop_state, 1, 0, 100, 42, false);
-        let v2 = refine_around_winner(&winner, &loop_state, 1, 0, 100, 42, false);
+        let v1 = refine_around_winner(
+            &winner,
+            &loop_state,
+            1,
+            0,
+            100,
+            10,
+            &core_assets(),
+            42,
+            false,
+        );
+        let v2 = refine_around_winner(
+            &winner,
+            &loop_state,
+            1,
+            0,
+            100,
+            10,
+            &core_assets(),
+            42,
+            false,
+        );
         let ids1: Vec<&str> = v1.iter().map(|c| c.candidate_id.as_str()).collect();
         let ids2: Vec<&str> = v2.iter().map(|c| c.candidate_id.as_str()).collect();
         assert_eq!(ids1, ids2, "same seed should produce same ordering");
@@ -4309,7 +4665,17 @@ mod tests {
             is_seeded: false,
         };
         let loop_state = LoopState::new();
-        let variants = refine_around_winner(&winner, &loop_state, 1, 0, 100, 42, false);
+        let variants = refine_around_winner(
+            &winner,
+            &loop_state,
+            1,
+            0,
+            100,
+            10,
+            &core_assets(),
+            42,
+            false,
+        );
         assert!(
             !variants.is_empty(),
             "expected vol_spread refinement variants"
@@ -4369,7 +4735,7 @@ mod tests {
     #[test]
     fn test_grid_vol_spread_candidates_unique() {
         // Use a large target so we don't hit the early-return cap before reaching vol_spread
-        let candidates = build_deterministic_grid_candidates(5000);
+        let candidates = build_deterministic_grid_candidates(5000, RESEARCH_ASSETS);
         let vol_spread_candidates: Vec<_> = candidates
             .iter()
             .filter(|c| c.rule == RULE_VOL_SPREAD)
@@ -4396,5 +4762,352 @@ mod tests {
             assert_eq!(fast, 12, "vol_spread grid should pin fast to 12");
             assert_eq!(slow, 50, "vol_spread grid should pin slow to 50");
         }
+    }
+
+    // === Deterministic sample tests ===
+
+    #[test]
+    fn test_deterministic_sample_reproducible() {
+        let pool: Vec<String> = (0..50).map(|i| format!("TICK{i}")).collect();
+        let a = deterministic_sample(&pool, 10, 42);
+        let b = deterministic_sample(&pool, 10, 42);
+        assert_eq!(a, b, "same seed must produce same subset");
+    }
+
+    #[test]
+    fn test_deterministic_sample_different_seeds() {
+        let pool: Vec<String> = (0..50).map(|i| format!("TICK{i}")).collect();
+        let a = deterministic_sample(&pool, 10, 42);
+        let b = deterministic_sample(&pool, 10, 99);
+        assert_ne!(a, b, "different seeds should produce different subsets");
+    }
+
+    #[test]
+    fn test_deterministic_sample_small_pool() {
+        let pool: Vec<String> = vec!["A".into(), "B".into(), "C".into()];
+        let result = deterministic_sample(&pool, 10, 42);
+        assert_eq!(result.len(), 3, "pool <= n should return entire pool");
+        // All original items should be present
+        let mut sorted = result.clone();
+        sorted.sort();
+        assert_eq!(sorted, vec!["A", "B", "C"]);
+    }
+
+    // === Asset swap refinement tests ===
+
+    #[test]
+    fn test_refine_asset_swaps_from_viable_pool() {
+        let viable = vec![
+            "SPY".to_string(),
+            "QQQ".to_string(),
+            "AAPL".to_string(),
+            "MSFT".to_string(),
+            "GOOGL".to_string(),
+            "AMZN".to_string(),
+        ];
+        let winner = CandidateReport {
+            candidate_id: "test-pool".to_string(),
+            strategy: RESEARCH_STRATEGY.to_string(),
+            category: "Research".to_string(),
+            args: vec![
+                "--asset".to_string(),
+                "SPY".to_string(),
+                "--rule".to_string(),
+                RULE_TREND_MOMENTUM.to_string(),
+                "--fast-window".to_string(),
+                "12".to_string(),
+                "--slow-window".to_string(),
+                "50".to_string(),
+                "--rsi-window".to_string(),
+                "14".to_string(),
+                "--rsi-oversold".to_string(),
+                "30".to_string(),
+                "--rsi-overbought".to_string(),
+                "70".to_string(),
+                "--vol-window".to_string(),
+                "20".to_string(),
+                "--vol-cap".to_string(),
+                "0.40".to_string(),
+            ],
+            rule: RULE_TREND_MOMENTUM.to_string(),
+            rationale: "test".to_string(),
+            source: "test".to_string(),
+            focus_asset: "SPY".to_string(),
+            train_score: 1.0,
+            test_score: 0.8,
+            combined_score: 0.93,
+            train_details: json!({}),
+            test_details: json!({}),
+            is_seeded: false,
+        };
+        let loop_state = LoopState::new();
+        let variants =
+            refine_around_winner(&winner, &loop_state, 1, 0, 200, 10, &viable, 42, false);
+
+        // Collect all asset swaps (non-SPY assets)
+        let swap_assets: Vec<&str> = variants
+            .iter()
+            .map(|v| v.focus_asset.as_str())
+            .filter(|a| *a != "SPY")
+            .collect();
+
+        // Should have some swaps from the viable pool
+        assert!(
+            !swap_assets.is_empty(),
+            "expected asset swaps from viable pool"
+        );
+
+        // All swap assets must come from the viable pool
+        for asset in &swap_assets {
+            assert!(
+                viable.iter().any(|v| v.as_str() == *asset),
+                "swap asset {asset} not in viable pool"
+            );
+        }
+    }
+
+    #[test]
+    fn test_refine_asset_swaps_excludes_current_asset() {
+        let viable = vec![
+            "SPY".to_string(),
+            "QQQ".to_string(),
+            "AAPL".to_string(),
+            "MSFT".to_string(),
+        ];
+        let winner = CandidateReport {
+            candidate_id: "test-exclude".to_string(),
+            strategy: RESEARCH_STRATEGY.to_string(),
+            category: "Research".to_string(),
+            args: vec![
+                "--asset".to_string(),
+                "SPY".to_string(),
+                "--rule".to_string(),
+                RULE_VOL_REGIME.to_string(),
+                "--fast-window".to_string(),
+                "12".to_string(),
+                "--slow-window".to_string(),
+                "50".to_string(),
+                "--rsi-window".to_string(),
+                "14".to_string(),
+                "--rsi-oversold".to_string(),
+                "30".to_string(),
+                "--rsi-overbought".to_string(),
+                "70".to_string(),
+                "--vol-window".to_string(),
+                "20".to_string(),
+                "--vol-cap".to_string(),
+                "0.40".to_string(),
+            ],
+            rule: RULE_VOL_REGIME.to_string(),
+            rationale: "test".to_string(),
+            source: "test".to_string(),
+            focus_asset: "SPY".to_string(),
+            train_score: 1.0,
+            test_score: 0.8,
+            combined_score: 0.93,
+            train_details: json!({}),
+            test_details: json!({}),
+            is_seeded: false,
+        };
+        let loop_state = LoopState::new();
+        let variants =
+            refine_around_winner(&winner, &loop_state, 1, 0, 200, 10, &viable, 42, false);
+
+        // Asset swap variants should never include the winner's asset as a swap target
+        // (parameter perturbation variants keep the same asset, which is fine)
+        let asset_swap_variants: Vec<&Candidate> =
+            variants.iter().filter(|v| v.focus_asset != "SPY").collect();
+        for v in &asset_swap_variants {
+            assert_ne!(
+                v.focus_asset, "SPY",
+                "asset swap should never re-use the winner's asset"
+            );
+        }
+    }
+
+    #[test]
+    fn test_backward_compat_core_universe() {
+        // When viable_assets = RESEARCH_ASSETS, behavior should match old code
+        let winner = CandidateReport {
+            candidate_id: "test-compat".to_string(),
+            strategy: RESEARCH_STRATEGY.to_string(),
+            category: "Research".to_string(),
+            args: vec![
+                "--asset".to_string(),
+                "SPY".to_string(),
+                "--rule".to_string(),
+                RULE_TREND_MOMENTUM.to_string(),
+                "--fast-window".to_string(),
+                "12".to_string(),
+                "--slow-window".to_string(),
+                "50".to_string(),
+                "--rsi-window".to_string(),
+                "14".to_string(),
+                "--rsi-oversold".to_string(),
+                "30".to_string(),
+                "--rsi-overbought".to_string(),
+                "70".to_string(),
+                "--vol-window".to_string(),
+                "20".to_string(),
+                "--vol-cap".to_string(),
+                "0.40".to_string(),
+            ],
+            rule: RULE_TREND_MOMENTUM.to_string(),
+            rationale: "test".to_string(),
+            source: "test".to_string(),
+            focus_asset: "SPY".to_string(),
+            train_score: 1.0,
+            test_score: 0.8,
+            combined_score: 0.93,
+            train_details: json!({}),
+            test_details: json!({}),
+            is_seeded: false,
+        };
+        let loop_state = LoopState::new();
+        // Use core assets (same 5 as RESEARCH_ASSETS), allow all swaps
+        let variants = refine_around_winner(
+            &winner,
+            &loop_state,
+            1,
+            0,
+            200,
+            10,
+            &core_assets(),
+            42,
+            false,
+        );
+
+        // Should have variants with assets from core list only
+        for v in &variants {
+            assert!(
+                RESEARCH_ASSETS.contains(&v.focus_asset.as_str()),
+                "core universe variant has unexpected asset: {}",
+                v.focus_asset
+            );
+        }
+
+        // Should have exactly 4 asset swap variants (RESEARCH_ASSETS minus SPY)
+        let swap_count = variants.iter().filter(|v| v.focus_asset != "SPY").count();
+        assert_eq!(
+            swap_count, 4,
+            "core universe should produce 4 asset swaps (5 - current)"
+        );
+    }
+
+    // === Quality gate tests ===
+
+    fn make_report_with_metrics(
+        asset: &str,
+        test_sharpe: f64,
+        test_drawdown: f64,
+        combined_score: f64,
+    ) -> CandidateReport {
+        CandidateReport {
+            candidate_id: format!("test-{asset}"),
+            strategy: RESEARCH_STRATEGY.to_string(),
+            category: "Research".to_string(),
+            args: vec!["--asset".to_string(), asset.to_string()],
+            rule: RULE_TREND_MOMENTUM.to_string(),
+            rationale: "test".to_string(),
+            source: "test".to_string(),
+            focus_asset: asset.to_string(),
+            train_score: 1.0,
+            test_score: combined_score,
+            combined_score,
+            train_details: json!({"sharpe": 1.5, "max_drawdown": -0.10}),
+            test_details: json!({"sharpe": test_sharpe, "max_drawdown": test_drawdown}),
+            is_seeded: false,
+        }
+    }
+
+    #[test]
+    fn test_quality_gates_min_sharpe() {
+        let candidates = vec![
+            make_report_with_metrics("SPY", 1.5, -0.10, 5.0), // passes
+            make_report_with_metrics("QQQ", 0.8, -0.05, 4.0), // fails sharpe
+            make_report_with_metrics("AAPL", 1.0, -0.15, 3.0), // passes (exactly at threshold)
+        ];
+        let filtered = apply_quality_gates(&candidates, Some(1.0), None);
+        assert_eq!(filtered.len(), 2);
+        assert_eq!(filtered[0].focus_asset, "SPY");
+        assert_eq!(filtered[1].focus_asset, "AAPL");
+    }
+
+    #[test]
+    fn test_quality_gates_max_drawdown() {
+        let candidates = vec![
+            make_report_with_metrics("SPY", 1.5, -0.10, 5.0), // -10% passes (< 20%)
+            make_report_with_metrics("QQQ", 2.0, -0.25, 4.0), // -25% fails (> 20%)
+            make_report_with_metrics("AAPL", 1.0, -0.20, 3.0), // -20% passes (exactly at threshold)
+        ];
+        let filtered = apply_quality_gates(&candidates, None, Some(20.0));
+        assert_eq!(filtered.len(), 2);
+        assert_eq!(filtered[0].focus_asset, "SPY");
+        assert_eq!(filtered[1].focus_asset, "AAPL");
+    }
+
+    #[test]
+    fn test_quality_gates_combined() {
+        let candidates = vec![
+            make_report_with_metrics("SPY", 1.5, -0.10, 5.0), // passes both
+            make_report_with_metrics("QQQ", 0.8, -0.05, 4.0), // fails sharpe
+            make_report_with_metrics("AAPL", 1.2, -0.25, 3.0), // fails drawdown
+            make_report_with_metrics("MSFT", 1.1, -0.15, 2.0), // passes both
+        ];
+        let filtered = apply_quality_gates(&candidates, Some(1.0), Some(20.0));
+        assert_eq!(filtered.len(), 2);
+        assert_eq!(filtered[0].focus_asset, "SPY");
+        assert_eq!(filtered[1].focus_asset, "MSFT");
+    }
+
+    #[test]
+    fn test_quality_gates_no_filters() {
+        let candidates = vec![
+            make_report_with_metrics("SPY", 0.5, -0.30, 5.0),
+            make_report_with_metrics("QQQ", -1.0, -0.50, 4.0),
+        ];
+        let filtered = apply_quality_gates(&candidates, None, None);
+        assert_eq!(filtered.len(), 2, "no gates should pass everything");
+    }
+
+    #[test]
+    fn test_quality_gates_all_rejected() {
+        let candidates = vec![
+            make_report_with_metrics("SPY", 0.5, -0.30, 5.0),
+            make_report_with_metrics("QQQ", 0.3, -0.40, 4.0),
+        ];
+        let filtered = apply_quality_gates(&candidates, Some(1.0), Some(20.0));
+        assert!(filtered.is_empty(), "all should be rejected");
+    }
+
+    // === Convergence summary tests ===
+
+    #[test]
+    fn test_convergence_summary_does_not_panic() {
+        // Just verify print_convergence_summary doesn't panic with various states
+        let empty_state = LoopState::new();
+        print_convergence_summary(&empty_state, "test: empty state");
+
+        let mut state = LoopState::new();
+        let report = CandidateReport {
+            candidate_id: "test".to_string(),
+            strategy: RESEARCH_STRATEGY.to_string(),
+            category: "Research".to_string(),
+            args: vec!["--asset".to_string(), "SPY".to_string()],
+            rule: RULE_TREND_MOMENTUM.to_string(),
+            rationale: "test".to_string(),
+            source: "test".to_string(),
+            focus_asset: "SPY".to_string(),
+            train_score: 1.0,
+            test_score: 0.8,
+            combined_score: 0.93,
+            train_details: json!({}),
+            test_details: json!({}),
+            is_seeded: false,
+        };
+        state.record_round(0, 10, 10, vec![report.clone()], false);
+        state.record_round(1, 5, 5, vec![report], false);
+        state.mark_center_exhausted("test-sig");
+        print_convergence_summary(&state, "test: with data");
     }
 }
