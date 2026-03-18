@@ -259,6 +259,19 @@ Summary:
 - The autoresearch loop now upserts the persisted top-10 into that registry after writing the report and ledger, so future implementation work has a structured catalog of research candidates rather than only historical JSONL rows.
 - The latest registry build contains 10 promoted entries. The current top registry entry is `seed-001-vol_spread-v0` on `QQQ` with combined score `3.6949`, train/test audit links, and `times_in_top10 = 1`.
 
+Verification:
+- `cargo fmt --all`
+- `cargo test --bin autoresearch_loop`
+- `cargo build --release --bin autoresearch_loop`
+- `target/release/autoresearch_loop --seed-web --candidates 100 --top 10 --verbose`
+- Verified `reports/autoresearch-strategy-registry.json` exists and was updated at `2026-03-18 12:30:39` local time.
+- Verified the registry contains 10 entries, each with `registry_status = "research_candidate"`, stable `signature`, `latest`, and `best` snapshots.
+- Verified the top registry entry includes audit artifact links for both train and test windows, so the registry can point directly at proof files when a candidate is later promoted to hand-coded strategy work.
+
+Artifacts:
+- `src/bin/autoresearch_loop.rs`
+- `reports/autoresearch-strategy-registry.json`
+
 ## Release Docs Plan (2026-03-18)
 
 Dependency graph:
@@ -283,18 +296,26 @@ Verification:
 - Verified release binaries were rebuilt at `2026-03-18 12:57` local time.
 - Reviewed diffs for `README.md`, `AGENTS.md`, `CLAUDE.md`, `Cargo.toml`, and `Cargo.lock` to confirm the new artifacts and version bump are described consistently.
 
-Verification:
-- `cargo fmt --all`
-- `cargo test --bin autoresearch_loop`
-- `cargo build --release --bin autoresearch_loop`
-- `target/release/autoresearch_loop --seed-web --candidates 100 --top 10 --verbose`
-- Verified `reports/autoresearch-strategy-registry.json` exists and was updated at `2026-03-18 12:30:39` local time.
-- Verified the registry contains 10 entries, each with `registry_status = "research_candidate"`, stable `signature`, `latest`, and `best` snapshots.
-- Verified the top registry entry includes audit artifact links for both train and test windows, so the registry can point directly at proof files when a candidate is later promoted to hand-coded strategy work.
+## Claude Cleanup Plan (2026-03-18)
 
-Artifacts:
-- `src/bin/autoresearch_loop.rs`
-- `reports/autoresearch-strategy-registry.json`
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Inspect the remaining `.claude` worktree changes and record the cleanup scope `depends_on: []`
+- [x] T2 Stage the `.claude` cleanup and verify the exact diff being committed `depends_on: [T1]`
+- [x] T3 Commit the `.claude` cleanup and push `main` to `origin` `depends_on: [T2]`
+
+## Claude Cleanup Review (2026-03-18)
+
+Summary:
+- Removed the Claude-side pre-tool hook wiring from `.claude/settings.json`, leaving an empty JSON object instead of a `PreToolUse` bash hook configuration.
+- Committed the deletion of `.claude/hooks/pre-commit-check.sh`, which had been the shell entrypoint for the Claude pre-commit checks.
+- Kept the cleanup isolated to the `.claude` files plus this task-log update, then pushed the cleanup commit directly to `origin/main`.
+
+Verification:
+- Inspected `git diff --cached -- .claude/settings.json .claude/hooks/pre-commit-check.sh tasks/todo.md` before committing.
+- Verified the cleanup commit was pushed to `origin/main`.
 
 ## Lessons
 _(Move to `tasks/lessons.md` as they accumulate)_
