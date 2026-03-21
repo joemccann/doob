@@ -277,7 +277,7 @@ All price data reads from local parquet. Typical benchmarks on Apple Silicon:
 ### Design System Location
 
 ```
-branding/
+design/
 ├── tokens.css              # CSS custom properties (design tokens)
 ├── brand-guidelines.html   # Visual reference — open in browser to preview
 └── report-template.html    # Drop-in template for autoresearch HTML reports
@@ -285,23 +285,14 @@ branding/
 
 ### Rules for All Visual Output
 
-1. **Use `branding/report-template.html` as the base** for any HTML report or visual artifact. Adapt the template structure (header, KPI bar, table, footer) to the specific use case.
-2. **Inline the tokens from `branding/tokens.css`** (the `:root` block) into the report `<style>` tag — reports must be self-contained single-file HTML.
-3. **Required design tokens** — always reference these CSS variables, never hardcode colors:
-   - `--doob-teal` (#3e5b63) — headers, footer, primary panels
-   - `--doob-lime` (#c6e758) — accent, positive signals, CTAs
-   - `--doob-sky` (#5fc4e3) — info highlights, links
-   - `--doob-slate` (#4a5760) — muted text, labels
-   - `--doob-sage` (#c7cdc8) — borders, neutral backgrounds
-   - `--doob-positive-text` / `--doob-negative-text` — financial gain/loss coloring
-4. **Fonts**: primary = `var(--doob-font-display)` (Helvetica Now Display with system fallback stack); data/mono = `var(--doob-font-mono)` (DM Mono via Google Fonts).
-5. **Typography conventions**:
-   - Section labels: `font-family: var(--doob-font-mono)`, `text-transform: uppercase`, `letter-spacing: 0.08em`, `font-size: 11px`
-   - All numerical data (CAGR, Sharpe, drawdown, equity): `font-family: var(--doob-font-mono)`
-   - Positive values: `color: var(--doob-positive-text)`; negative values: `color: var(--doob-negative-text)`
-6. **Layout**: teal hero header with `border-radius: 0 0 24px 24px`, KPI summary bar, filterable/sortable data table, teal footer with `border-radius: 24px 24px 0 0`.
-7. **No dark-blue themes** — the old `#071023` / `#0f1f3a` dark-blue report style is deprecated. All new reports use the light theme with teal accents.
-8. **Components**: use pills (`.pill-teal`, `.pill-sky`, `.pill-lime`) for tags/badges, expandable row details for per-strategy deep-dive, and the KPI card pattern for summary metrics.
+1. **Use `DESIGN.md` as the authority** for any HTML report or browser-rendered artifact.
+2. **Treat the Figma `Reports` file as the target format** when it is accessible: `https://www.figma.com/design/0TCEsZxLVO6x5pJkOSOwCl/Reports?node-id=0-1&t=K0IBsu4WJyJ8qmjn-1`
+3. **Use `design/report-template.html` as the implementation base** for generated reports, but keep it aligned with `DESIGN.md` rather than treating it as a fixed visual source of truth.
+4. **Creative direction**: "The Digital Curator" — editorial prestige, intentional asymmetry, whitespace as authority, dense data presented as an asset.
+5. **Typography**: prestige serif for display, functional sans for body, calculated sans for data/labels, consistent with `DESIGN.md`.
+6. **Surface logic**: use tonal layering, ghost borders only when needed, and avoid boxed-in UI sectioning.
+7. **Shape language**: default to square-cornered structure; do not use soft rounded consumer-app UI.
+8. **Accent discipline**: reserve lime/high-energy accents for critical insight or action states only.
 9. **Load DM Mono** from Google Fonts: `<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />`
 10. **Scope**: These rules apply to ALL visual artifacts — not just autoresearch reports. Any HTML, dashboard, chart, website, or visual output in this project must follow this design system.
 

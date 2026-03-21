@@ -1,0 +1,97 @@
+/*
+ * doob Design Tokens
+ * Editorial Intelligence system
+ * --------------------------------------------------
+ * Usage: <link rel="stylesheet" href="tokens.css">
+ *        or copy :root block into your <style> tag
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+:root {
+  /* ── Core Surfaces ────────────────────────────── */
+  --doob-surface:                 #f3fbf8;
+  --doob-surface-container-low:   #edf5f2;
+  --doob-surface-container:       #e5edeb;
+  --doob-surface-container-high:  #dce4e1;
+  --doob-surface-container-lowest:#ffffff;
+  --doob-on-surface:              #151d1c;
+  --doob-on-surface-muted:        #4e635c;
+
+  /* ── Editorial Brand ─────────────────────────── */
+  --doob-primary:                 #003434;
+  --doob-primary-container:       #004d4d;
+  --doob-secondary:               #4e635c;
+  --doob-secondary-container:     #cee5dc;
+  --doob-outline:                 #6f7978;
+  --doob-outline-variant:         #bfc8c8;
+  --doob-accent-lime:             #c3f400;
+
+  /* ── Compatibility Aliases ───────────────────── */
+  --doob-bg:                      var(--doob-surface);
+  --doob-bg-alt:                  var(--doob-surface-container-low);
+  --doob-bg-surface:              var(--doob-surface-container);
+  --doob-text:                    var(--doob-on-surface);
+  --doob-text-muted:              var(--doob-on-surface-muted);
+  --doob-teal:                    var(--doob-primary);
+  --doob-teal-deep:               var(--doob-primary-container);
+  --doob-lime:                    var(--doob-accent-lime);
+  --doob-sky:                     #7aa7a1;
+  --doob-slate:                   var(--doob-secondary);
+  --doob-sage:                    var(--doob-outline-variant);
+  --doob-positive-text:           #3d5a00;
+  --doob-negative-text:           #6b2f2f;
+  --doob-info-text:               var(--doob-primary-container);
+
+  /* ── Typography ──────────────────────────────── */
+  --doob-font-display:            "Newsreader", Georgia, "Times New Roman", serif;
+  --doob-font-body:               "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --doob-font-data:               "Space Grotesk", "Inter", sans-serif;
+  --doob-font-mono:               var(--doob-font-data);
+
+  /* ── Type Scale ──────────────────────────────── */
+  --doob-text-xs:                 0.6875rem;
+  --doob-text-sm:                 0.8125rem;
+  --doob-text-base:               1rem;
+  --doob-text-lg:                 1.25rem;
+  --doob-text-xl:                 1.75rem;
+  --doob-text-2xl:                2.625rem;
+  --doob-text-3xl:                5.375rem;
+  --doob-leading-tight:           1.0;
+  --doob-leading-snug:            1.2;
+  --doob-leading-normal:          1.5;
+  --doob-tracking-tight:          -0.02em;
+  --doob-tracking-normal:         0;
+  --doob-tracking-wide:           0.05rem;
+
+  /* ── Spacing ─────────────────────────────────── */
+  --doob-space-1:                 4px;
+  --doob-space-2:                 8px;
+  --doob-space-3:                 12px;
+  --doob-space-4:                 16px;
+  --doob-space-5:                 20px;
+  --doob-space-6:                 24px;
+  --doob-space-7:                 32px;
+  --doob-space-8:                 40px;
+  --doob-space-9:                 48px;
+  --doob-space-10:                64px;
+  --doob-space-11:                80px;
+  --doob-space-12:                100px;
+
+  /* ── Layout ──────────────────────────────────── */
+  --doob-max-width:               1540px;
+  --doob-gutter:                  clamp(20px, calc(12px + 1.8vw), 40px);
+  --doob-radius-sm:               0px;
+  --doob-radius-md:               0px;
+  --doob-radius-lg:               0px;
+  --doob-radius-xl:               0px;
+
+  /* ── Shadows / Elevation ─────────────────────── */
+  --doob-shadow-sm:               0 24px 48px -12px rgba(21, 29, 28, 0.04);
+  --doob-shadow-md:               0 24px 48px -12px rgba(21, 29, 28, 0.04);
+  --doob-shadow-lg:               0 24px 48px -12px rgba(21, 29, 28, 0.04);
+
+  /* ── Transitions ─────────────────────────────── */
+  --doob-ease:                    cubic-bezier(0.2, 0.8, 0.2, 1);
+  --doob-duration:                220ms;
+}

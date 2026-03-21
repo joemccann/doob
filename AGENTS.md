@@ -114,35 +114,30 @@ When the refinement loop terminates (patience, frontier exhaustion, or max round
 
 ### What to use
 
-- **Template**: `branding/report-template.html` — use this as the base for any autoresearch HTML report. Inject the `rows` JSON array into the `/* PASTE_ROWS_HERE */` slot.
-- **Tokens**: `branding/tokens.css` — inline the `:root` block into the report's `<style>`. Reports must be self-contained single-file HTML.
-- **Reference**: `branding/brand-guidelines.html` — open in browser to see the full visual system.
+- **Primary spec**: `DESIGN.md` — this is the authoritative design-system strategy for browser-rendered output.
+- **Template**: `design/report-template.html` — use this as the generator base for autoresearch HTML reports, but keep it aligned with `DESIGN.md`.
+- **Local assets**: `design/tokens.css` and `design/brand-guidelines.html` — implementation helpers, not the authority over `DESIGN.md`.
+- **External source of truth**: Figma `Reports` file — `https://www.figma.com/design/0TCEsZxLVO6x5pJkOSOwCl/Reports?node-id=0-1&t=K0IBsu4WJyJ8qmjn-1`
 
 ### Hard constraints (apply to ALL visual output, not just reports)
 
-1. **Never use the old dark-blue theme** (`#071023`, `#0f1f3a`, `#102548`). It is deprecated. All visual artifacts use the light theme with teal accents.
-2. **Always use CSS variables** from `branding/tokens.css` — never hardcode colors. Key tokens:
-   - `--doob-teal` (#3e5b63) — hero header, footer, primary panels
-   - `--doob-lime` (#c6e758) — accent, positive signals
-   - `--doob-sky` (#5fc4e3) — info, links
-   - `--doob-slate` (#4a5760) — muted text
-   - `--doob-sage` (#c7cdc8) — borders, neutral bg
-   - `--doob-positive-text` (#3a5200) — gains; `--doob-negative-text` (#7a1a1a) — losses
-3. **Fonts**: display = `var(--doob-font-display)` (Helvetica Now Display + system fallbacks); data = `var(--doob-font-mono)` (DM Mono from Google Fonts).
-4. **All numerical data** (CAGR, Sharpe, drawdown, equity, VaR) must use `font-family: var(--doob-font-mono)`.
-5. **Section labels**: monospace, uppercase, `letter-spacing: 0.08em`, `font-size: 11px`.
-6. **Layout pattern**: teal hero header (rounded bottom), KPI summary bar, filterable data table, expandable row details, teal footer (rounded top).
-7. **Pills/badges**: use `.pill-teal`, `.pill-sky`, `.pill-lime` classes for asset tags, rule names, and status indicators.
-8. **Load DM Mono**: `<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />`
-9. **Scope**: These rules apply to ALL visual artifacts — HTML reports, dashboards, charts, websites, landing pages, tools. Anything rendered in a browser must use the doob design system.
+1. **Design authority**: follow `DESIGN.md` first, and use the Figma `Reports` file as the target format when it is accessible.
+2. **Creative direction**: every report should read as "The Digital Curator" — editorial, asymmetrical, high-trust, and data-dense without falling back to generic SaaS UI patterns.
+3. **Surface rule**: avoid obvious boxed-in sectioning. Prefer tonal shifts between surfaces over visible 1px borders, except for accessibility-driven ghost borders.
+4. **Typography rule**: prestige serif for display, functional sans for body, and calculated sans for data/labels, per `DESIGN.md`.
+5. **Shape rule**: no rounded-corner UI language. Default to square-cornered structure unless a future spec explicitly changes it.
+6. **Accent rule**: use the lime accent sparingly and only for critical insight or action states.
+7. **Scope**: these rules apply to ALL browser-rendered artifacts.
 
 ### When generating a report
 
 ```
-1. Read branding/report-template.html
-2. Replace /* PASTE_ROWS_HERE */ with the actual rows JSON array
-3. Update title, dates, and KPI values
-4. Write to reports/autoresearch-top10-interactive-report.html
+1. Read DESIGN.md first
+2. When available, inspect the Figma Reports file and align the report format to it
+3. Use design/report-template.html as the generator base
+4. Replace /* PASTE_ROWS_HERE */ with the actual rows JSON array
+5. Update title, dates, and KPI values
+6. Write to reports/autoresearch-top10-interactive-report.html
 ```
 
 ## Environment
