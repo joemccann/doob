@@ -3,6 +3,7 @@
 /// Usage:
 ///     doob run overnight-drift [OPTIONS]
 ///     doob run intraday-drift [OPTIONS]
+///     doob paper-research [OPTIONS]
 ///     doob run breadth-washout [OPTIONS]
 ///     doob run ndx100-sma-breadth [OPTIONS]
 ///     doob list-strategies
@@ -46,6 +47,8 @@ pub enum Command {
         #[command(subcommand)]
         strategy: StrategyCommand,
     },
+    /// Compatibility shortcut for `run paper-research`
+    PaperResearch(PaperResearchArgs),
     /// List available strategies
     ListStrategies,
     /// List available presets
@@ -285,6 +288,54 @@ mod tests {
                 _ => panic!("Expected PaperResearch"),
             },
             _ => panic!("Expected Run command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_top_level_paper_research_compat() {
+        let cli = Cli::try_parse_from(&[
+            "doob",
+            "paper-research",
+            "--asset",
+            "QQQ",
+            "--rule",
+            "vol_spread",
+            "--fast-window",
+            "12",
+            "--slow-window",
+            "50",
+            "--rsi-window",
+            "14",
+            "--rsi-oversold",
+            "30",
+            "--rsi-overbought",
+            "70",
+            "--vol-window",
+            "10",
+            "--vol-cap",
+            "0.15",
+            "--hypothesis-id",
+            "seed-24-2",
+            "--output",
+            "json",
+        ])
+        .unwrap();
+
+        assert_eq!(cli.output, OutputFormat::Json);
+        match cli.command {
+            Command::PaperResearch(args) => {
+                assert_eq!(args.asset, "QQQ");
+                assert_eq!(args.rule, "vol_spread");
+                assert_eq!(args.fast_window, 12);
+                assert_eq!(args.slow_window, 50);
+                assert_eq!(args.rsi_window, 14);
+                assert_eq!(args.rsi_oversold, 30.0);
+                assert_eq!(args.rsi_overbought, 70.0);
+                assert_eq!(args.vol_window, 10);
+                assert_eq!(args.vol_cap, 0.15);
+                assert_eq!(args.hypothesis_id.as_deref(), Some("seed-24-2"));
+            }
+            _ => panic!("Expected top-level PaperResearch command"),
         }
     }
 

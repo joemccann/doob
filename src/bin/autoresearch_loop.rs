@@ -90,6 +90,7 @@ const VOL_CAP_SPREAD_SET: &[f64] = &[
     -0.30, -0.20, -0.10, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.80,
 ];
 const RESEARCH_ASSETS: &[&str] = &["SPY", "QQQ", "SPXL", "IWM", "TQQQ"];
+const INTERACTIVE_REPORT_TEMPLATE: &str = include_str!("../../design/report-template.html");
 
 #[derive(Clone, Debug)]
 struct Candidate {
@@ -2598,11 +2599,19 @@ struct InteractiveRow {
     backtest_architecture: String,
 }
 
-fn save_interactive_report(path: &Path, rows: &[CandidateReport]) -> io::Result<()> {
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
+#[derive(Serialize)]
+struct InteractiveReportMeta {
+    generated_date: String,
+    total_ranked: usize,
+    round_count: usize,
+    train_start: String,
+    train_end: String,
+    test_start: String,
+    test_end: String,
+    framework_tag: String,
+}
 
+fn build_interactive_report_html(rows: &[CandidateReport], meta: &InteractiveReportMeta) -> String {
     let top_rows: Vec<InteractiveRow> = rows
         .iter()
         .enumerate()
@@ -2646,702 +2655,21 @@ fn save_interactive_report(path: &Path, rows: &[CandidateReport]) -> io::Result<
         .collect();
 
     let rows_json = serde_json::to_string_pretty(&top_rows).unwrap_or_else(|_| "[]".to_string());
-    let generated_date = Utc::now().format("%Y-%m-%d").to_string();
-    // Embed framework version hash so downstream consumers can verify methodology alignment
-    let framework_hash = RESEARCH_ANALYSIS_FRAMEWORK.len();
-    let html = format!(
-        r#"<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>doob Autoresearch Loop — Top {top_count} Research Strategies</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
-  <style>
-    :root {{
-      --doob-bg:             #ffffff;
-      --doob-bg-alt:         #f5f5f5;
-      --doob-bg-surface:     #c7cdc8;
-      --doob-text:           #1e1e1e;
-      --doob-text-muted:     #4a5760;
-      --doob-teal:           #3e5b63;
-      --doob-teal-deep:      #2e454c;
-      --doob-lime:           #c6e758;
-      --doob-lime-hover:     #d4f06a;
-      --doob-sky:            #5fc4e3;
-      --doob-slate:          #4a5760;
-      --doob-sage:           #c7cdc8;
-      --doob-dark-bg:        #1e1e1e;
-      --doob-dark-surface:   #2a3a42;
-      --doob-dark-panel:     #3e5b63;
-      --doob-dark-text:      #f5f5f5;
-      --doob-dark-muted:     #c7cdc8;
-      --doob-positive:       #c6e758;
-      --doob-positive-text:  #3a5200;
-      --doob-warning:        #f5a623;
-      --doob-warning-text:   #7a4a00;
-      --doob-negative:       #e85d5d;
-      --doob-negative-text:  #7a1a1a;
-      --doob-info:           #5fc4e3;
-      --doob-info-text:      #1a5a6a;
-      --doob-font-display:   "Helvetica Now Display", -apple-system, BlinkMacSystemFont,
-                              "Avenir Next", Avenir, "Segoe UI", "Helvetica Neue",
-                              Helvetica, Cantarell, Ubuntu, Roboto, Noto, Arial, sans-serif;
-      --doob-font-mono:      "DM Mono", Menlo, Consolas, Monaco, "Liberation Mono",
-                              "Lucida Console", monospace;
-      --doob-radius-sm:      6px;
-      --doob-radius-md:      10px;
-      --doob-radius-lg:      16px;
-      --doob-radius-xl:      24px;
-      --doob-shadow-sm:      0 1px 2px rgba(30,30,30,0.06);
-      --doob-shadow-md:      0 4px 12px rgba(30,30,30,0.08);
-      --doob-shadow-lg:      0 8px 32px rgba(30,30,30,0.12);
-      --doob-ease:           cubic-bezier(0.25, 0.1, 0.25, 1);
-      --doob-duration:       200ms;
-    }}
-    *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
-    body {{
-      font-family: var(--doob-font-display);
-      background: var(--doob-bg);
-      color: var(--doob-text);
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
-    }}
-    .report-header {{
-      background: var(--doob-teal);
-      color: #fff;
-      padding: 48px clamp(20px, 4vw, 40px) 40px;
-      border-radius: 0 0 var(--doob-radius-xl) var(--doob-radius-xl);
-    }}
-    .report-header-inner {{
-      max-width: 1540px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 32px;
-      flex-wrap: wrap;
-    }}
-    .report-brand {{
-      font-size: 28px;
-      letter-spacing: -0.02em;
-      font-weight: 400;
-    }}
-    .report-brand span {{ color: var(--doob-lime); }}
-    .report-title {{
-      font-size: clamp(32px, 5vw, 54px);
-      font-weight: 400;
-      letter-spacing: -0.02em;
-      line-height: 1.05;
-      margin-top: 16px;
-      max-width: 700px;
-    }}
-    .report-subtitle {{
-      font-family: var(--doob-font-mono);
-      font-size: 13px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--doob-lime);
-      margin-top: 8px;
-    }}
-    .report-meta {{
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      color: var(--doob-sage);
-      margin-top: 20px;
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-    }}
-    .report-meta span {{ display: flex; align-items: center; gap: 6px; }}
-    .container {{
-      max-width: 1540px;
-      margin: 0 auto;
-      padding: 0 clamp(20px, 4vw, 40px);
-    }}
-    .kpi-bar {{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-      margin: 24px 0;
-    }}
-    .kpi {{
-      background: var(--doob-bg-alt);
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-md);
-      padding: 16px;
-    }}
-    .kpi-label {{
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--doob-slate);
-      margin-bottom: 4px;
-    }}
-    .kpi-value {{
-      font-family: var(--doob-font-mono);
-      font-size: 28px;
-      font-weight: 400;
-      letter-spacing: -0.02em;
-    }}
-    .kpi-value.positive {{ color: var(--doob-positive-text); }}
-    .kpi-value.negative {{ color: var(--doob-negative-text); }}
-    .controls {{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 10px;
-      margin: 20px 0;
-    }}
-    .controls input, .controls select {{
-      font-family: var(--doob-font-mono);
-      font-size: 13px;
-      padding: 10px 14px;
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-sm);
-      background: var(--doob-bg);
-      color: var(--doob-text);
-      outline: none;
-      transition: border-color var(--doob-duration) var(--doob-ease);
-    }}
-    .controls input:focus, .controls select:focus {{
-      border-color: var(--doob-teal);
-      box-shadow: 0 0 0 3px rgba(62, 91, 99, 0.12);
-    }}
-    .controls input::placeholder {{ color: var(--doob-sage); }}
-    .table-wrap {{
-      background: var(--doob-bg);
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-lg);
-      overflow: hidden;
-      box-shadow: var(--doob-shadow-md);
-    }}
-    .table-scroll {{ overflow: auto; max-height: 70vh; }}
-    table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
-    th {{
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      text-align: left;
-      padding: 12px 14px;
-      background: var(--doob-bg-alt);
-      color: var(--doob-slate);
-      border-bottom: 2px solid var(--doob-teal);
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }}
-    th.sortable {{ cursor: pointer; user-select: none; }}
-    th.sortable:hover {{ color: var(--doob-teal); }}
-    th.sorted-asc::after {{ content: ' \u25B2'; font-size: 9px; }}
-    th.sorted-desc::after {{ content: ' \u25BC'; font-size: 9px; }}
-    td {{
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(199, 205, 200, 0.5);
-      vertical-align: top;
-    }}
-    tr:last-child td {{ border-bottom: none; }}
-    tr:hover td {{ background: rgba(62, 91, 99, 0.03); }}
-    tr.expanded td {{ background: rgba(62, 91, 99, 0.05); }}
-    td.mono {{ font-family: var(--doob-font-mono); }}
-    td.pos {{ color: var(--doob-positive-text); }}
-    td.neg {{ color: var(--doob-negative-text); }}
-    td.rank {{
-      font-family: var(--doob-font-mono);
-      font-weight: 500;
-      color: var(--doob-teal);
-    }}
-    .pill {{
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      padding: 2px 10px;
-      border-radius: 999px;
-      letter-spacing: 0.04em;
-      white-space: nowrap;
-    }}
-    .pill-teal {{ background: rgba(62,91,99,0.1); color: var(--doob-teal); }}
-    .pill-lime {{ background: rgba(198,231,88,0.2); color: var(--doob-positive-text); }}
-    .pill-sky  {{ background: rgba(95,196,227,0.15); color: var(--doob-info-text); }}
-    .row-details {{
-      background: var(--doob-bg-alt);
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-md);
-      padding: 14px 16px;
-      margin-top: 8px;
-      font-size: 12px;
-      line-height: 1.6;
-    }}
-    .row-details .detail-grid {{
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }}
-    .row-details h4 {{
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--doob-slate);
-      margin-bottom: 8px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid var(--doob-sage);
-    }}
-    .detail-row {{
-      display: flex;
-      justify-content: space-between;
-      padding: 3px 0;
-    }}
-    .detail-row .label {{ color: var(--doob-text-muted); }}
-    .detail-row .value {{ font-family: var(--doob-font-mono); font-weight: 500; }}
-    .rationale {{
-      margin-top: 12px;
-      padding: 12px;
-      background: rgba(62,91,99,0.05);
-      border-radius: var(--doob-radius-sm);
-      border-left: 3px solid var(--doob-teal);
-      color: var(--doob-text-muted);
-      font-size: 12px;
-      line-height: 1.6;
-    }}
-    .source-link {{
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      color: var(--doob-info-text);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }}
-    .info-bubble {{
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: rgba(95,196,227,0.15);
-      color: var(--doob-info-text);
-      font-family: var(--doob-font-mono);
-      font-size: 10px;
-      font-weight: 500;
-      cursor: help;
-      position: relative;
-      margin-left: 6px;
-      vertical-align: middle;
-      flex-shrink: 0;
-    }}
-    .info-bubble .info-tip {{
-      display: none;
-      position: absolute;
-      top: calc(100% + 8px);
-      left: 0;
-      width: 280px;
-      padding: 12px 14px;
-      background: var(--doob-teal-deep);
-      color: #fff;
-      border-radius: var(--doob-radius-sm);
-      font-family: var(--doob-font-display);
-      font-size: 12px;
-      font-weight: 400;
-      line-height: 1.5;
-      letter-spacing: 0;
-      text-transform: none;
-      box-shadow: var(--doob-shadow-lg);
-      z-index: 100;
-    }}
-    .info-bubble .info-tip::before {{
-      content: '';
-      position: absolute;
-      bottom: 100%;
-      left: 6px;
-      border: 6px solid transparent;
-      border-bottom-color: var(--doob-teal-deep);
-    }}
-    .info-bubble:hover .info-tip {{ display: block; }}
-    .analysis-section {{
-      margin-top: 16px;
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-md);
-      overflow: hidden;
-    }}
-    .analysis-header {{
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--doob-slate);
-      padding: 10px 16px;
-      background: var(--doob-bg-alt);
-      border-bottom: 1px solid var(--doob-sage);
-    }}
-    .analysis-body {{
-      padding: 16px;
-    }}
-    .analysis-block {{
-      margin-bottom: 14px;
-    }}
-    .analysis-block:last-child {{ margin-bottom: 0; }}
-    .analysis-block-label {{
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--doob-teal);
-      font-weight: 500;
-      margin-bottom: 4px;
-    }}
-    .analysis-block-text {{
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--doob-text-muted);
-    }}
-    .analysis-block-text a {{
-      color: var(--doob-info-text);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }}
-    .toggle-btn {{
-      background: none;
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-sm);
-      width: 28px;
-      height: 28px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 12px;
-      color: var(--doob-slate);
-      transition: all var(--doob-duration) var(--doob-ease);
-    }}
-    .toggle-btn:hover {{ border-color: var(--doob-teal); color: var(--doob-teal); }}
-    .toggle-btn.open {{ background: var(--doob-teal); border-color: var(--doob-teal); color: #fff; }}
-    .report-footer {{
-      background: var(--doob-teal);
-      color: #fff;
-      padding: 32px clamp(20px, 4vw, 40px);
-      border-radius: var(--doob-radius-xl) var(--doob-radius-xl) 0 0;
-      margin-top: 64px;
-    }}
-    .report-footer-inner {{
-      max-width: 1540px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
-    }}
-    .report-footer .brand {{ font-size: 20px; letter-spacing: -0.02em; }}
-    .report-footer .meta {{ font-family: var(--doob-font-mono); font-size: 11px; color: var(--doob-sage); }}
-    @media (max-width: 768px) {{
-      .report-header-inner {{ flex-direction: column; }}
-      .kpi-bar {{ grid-template-columns: repeat(2, 1fr); }}
-      .row-details .detail-grid {{ grid-template-columns: 1fr; }}
-    }}
-  </style>
-</head>
-<body>
+    let meta_json = serde_json::to_string_pretty(meta).unwrap_or_else(|_| "{}".to_string());
+    INTERACTIVE_REPORT_TEMPLATE
+        .replace("/* PASTE_META_HERE */", &meta_json)
+        .replace("/* PASTE_ROWS_HERE */", &rows_json)
+}
 
-<div class="report-header">
-  <div class="report-header-inner">
-    <div>
-      <div class="report-brand">doob<span>.</span></div>
-      <h1 class="report-title">Autoresearch Loop &mdash; Paper-Research Top {top_count}</h1>
-      <div class="report-subtitle">Net-new strategy discovery from Exa/arXiv paper hypotheses</div>
-      <div class="report-meta">
-        <span>Generated: <strong>{generated_date}</strong></span>
-        <span>Candidates: <strong>{total}</strong></span>
-        <span>Seeded in top: <strong>{seeded_top}</strong></span>
-        <span>Framework: <strong>RAF-{framework_hash}</strong></span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="container" style="padding-top: 28px;">
-  <div class="kpi-bar">
-    <div class="kpi">
-      <div class="kpi-label">Candidates Evaluated</div>
-      <div class="kpi-value" id="kpi-candidates">&mdash;</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Top Shown</div>
-      <div class="kpi-value" id="kpi-top">&mdash;</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Best CAGR (Train)</div>
-      <div class="kpi-value positive" id="kpi-cagr">&mdash;</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Best Sharpe (Train)</div>
-      <div class="kpi-value positive" id="kpi-sharpe">&mdash;</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Seeded in Top</div>
-      <div class="kpi-value" id="kpi-seeded">&mdash;</div>
-    </div>
-  </div>
-
-  <div class="controls">
-    <input id="search" placeholder="Search strategy, rule, asset, source..." />
-    <select id="cat">
-      <option value="All">All Categories</option>
-    </select>
-    <select id="src">
-      <option value="All">All Sources</option>
-    </select>
-    <select id="seeded">
-      <option value="All">All Origins</option>
-      <option value="Seeded">Seeded</option>
-      <option value="Fallback">Fallback</option>
-    </select>
-  </div>
-
-  <div class="table-wrap">
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:50px;">#</th>
-            <th class="sortable" data-col="candidate_id">Candidate</th>
-            <th class="sortable" data-col="rule">Rule</th>
-            <th class="sortable" data-col="focus_asset">Asset</th>
-            <th class="sortable" data-col="category">Category</th>
-            <th class="sortable" data-col="combined_score">Score</th>
-            <th class="sortable" data-col="train_cagr">Train CAGR</th>
-            <th class="sortable" data-col="test_cagr">Test CAGR</th>
-            <th>Source</th>
-            <th style="width:36px;"></th>
-          </tr>
-        </thead>
-        <tbody id="body"></tbody>
-      </table>
-    </div>
-  </div>
-  <div id="details"></div>
-</div>
-
-<div class="report-footer">
-  <div class="report-footer-inner">
-    <div class="brand">doob<span style="color:var(--doob-lime);">.</span></div>
-    <div class="meta">Quantitative Strategy Research &middot; Autoresearch Report</div>
-  </div>
-</div>
-
-<script>
-const rows = {rows_json};
-const tbody = document.getElementById('body');
-const searchEl = document.getElementById('search');
-const catEl = document.getElementById('cat');
-const srcEl = document.getElementById('src');
-const seededEl = document.getElementById('seeded');
-
-const cats = [...new Set(rows.map(r => r.category))];
-cats.forEach(c => {{ const o = document.createElement('option'); o.value = c; o.textContent = c; catEl.appendChild(o); }});
-const srcs = [...new Set(rows.map(r => {{ try {{ return new URL(r.source).hostname; }} catch {{ return r.source; }} }}))];
-srcs.forEach(s => {{ const o = document.createElement('option'); o.value = s; o.textContent = s; srcEl.appendChild(o); }});
-
-document.getElementById('kpi-candidates').textContent = rows.length;
-document.getElementById('kpi-top').textContent = rows.length;
-if (rows.length) {{
-  const bestCagr = Math.max(...rows.map(r => r.train_details?.cagr ?? 0));
-  const bestSharpe = Math.max(...rows.map(r => r.train_details?.sharpe ?? 0));
-  document.getElementById('kpi-cagr').textContent = (bestCagr * 100).toFixed(1) + '%';
-  document.getElementById('kpi-sharpe').textContent = bestSharpe.toFixed(3);
-  document.getElementById('kpi-seeded').textContent = rows.filter(r => r.is_seeded).length;
-}}
-
-function fmt(v, pct) {{
-  if (v == null || v === undefined) return '\u2014';
-  return pct ? (v * 100).toFixed(1) + '%' : v.toFixed(3);
-}}
-function fmtMoney(v) {{
-  if (v == null || v === undefined) return '\u2014';
-  return '$' + Number(v).toLocaleString('en-US', {{ maximumFractionDigits: 0 }});
-}}
-function fmtWindow(meta, details) {{
-  const start = meta?.actual_period_start || details?.period_start;
-  const end = meta?.actual_period_end || details?.period_end;
-  if (!start && !end) return '\u2014';
-  return `${{start || '\u2014'}} \u2192 ${{end || '\u2014'}}`;
-}}
-function fmtAuditLink(meta) {{
-  if (!meta?.artifact_path) return '\u2014';
-  return `<a class="source-link" href="${{meta.artifact_path}}" target="_blank" rel="noopener">Open JSON</a>`;
-}}
-function cagrClass(v) {{
-  if (v == null) return '';
-  return v >= 0 ? 'pos' : 'neg';
-}}
-
-function renderRows(data) {{
-  tbody.innerHTML = '';
-  data.forEach(r => {{
-    let srcHost, isUrl = false;
-    try {{ const u = new URL(r.source); srcHost = u.hostname.replace('www.', ''); isUrl = true; }} catch {{ srcHost = r.source || '\u2014'; }}
-    const srcCell = isUrl
-      ? `<a class="source-link" href="${{r.source}}" target="_blank" rel="noopener">${{srcHost}}</a>`
-      : `<span style="font-family:var(--doob-font-mono);font-size:11px;color:var(--doob-slate);">${{srcHost}}</span>`;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="rank">${{r.rank}}</td>
-      <td style="font-size:12px;">${{r.candidate_id || '\u2014'}}</td>
-      <td><span class="pill pill-sky">${{r.rule || '\u2014'}}</span></td>
-      <td><span class="pill pill-teal">${{r.focus_asset || '\u2014'}}</span></td>
-      <td>${{r.category || '\u2014'}}</td>
-      <td class="mono" style="font-weight:500;">${{fmt(r.combined_score, false)}}</td>
-      <td class="mono ${{cagrClass(r.train_details?.cagr)}}">${{fmt(r.train_details?.cagr, true)}}</td>
-      <td class="mono ${{cagrClass(r.test_details?.cagr)}}">${{fmt(r.test_details?.cagr, true)}}</td>
-      <td>${{srcCell}}</td>
-      <td><button class="toggle-btn" data-rank="${{r.rank}}">+</button></td>
-    `;
-    tbody.appendChild(tr);
-
-    const detailTr = document.createElement('tr');
-    detailTr.id = 'detail-' + r.rank;
-    detailTr.style.display = 'none';
-    detailTr.innerHTML = `<td colspan="10">
-      <div class="row-details">
-        <div class="detail-grid">
-          <div>
-            <h4 style="display:flex;align-items:center;">Train Window<span class="info-bubble">i<span class="info-tip">The in-sample period used to fit and calibrate the strategy. Strong train metrics confirm the signal exists historically, but high train scores alone can indicate overfitting. Compare against the test window and the linked audit trail.</span></span></h4>
-            <div class="detail-row"><span class="label">CAGR</span><span class="value ${{cagrClass(r.train_details?.cagr)}}">${{fmt(r.train_details?.cagr, true)}}</span></div>
-            <div class="detail-row"><span class="label">Sharpe</span><span class="value">${{fmt(r.train_details?.sharpe, false)}}</span></div>
-            <div class="detail-row"><span class="label">Max Drawdown</span><span class="value neg">${{fmt(r.train_details?.max_drawdown, true)}}</span></div>
-            <div class="detail-row"><span class="label">Actual Period</span><span class="value">${{fmtWindow(r.train_audit, r.train_details)}}</span></div>
-            <div class="detail-row"><span class="label">Beginning Equity</span><span class="value">${{fmtMoney(r.train_details?.beginning_equity)}}</span></div>
-            <div class="detail-row"><span class="label">Final Equity</span><span class="value">${{fmtMoney(r.train_details?.final_equity)}}</span></div>
-            <div class="detail-row"><span class="label">Executed Trades</span><span class="value">${{r.train_audit?.trade_count ?? '\u2014'}}</span></div>
-            <div class="detail-row"><span class="label">Audit Trail</span><span class="value">${{fmtAuditLink(r.train_audit)}}</span></div>
-            <div class="detail-row"><span class="label">VaR 95</span><span class="value">${{fmt(r.train_details?.var_95, true)}}</span></div>
-          </div>
-          <div>
-            <h4 style="display:flex;align-items:center;">Test Window<span class="info-bubble">i<span class="info-tip">The out-of-sample period the strategy has never seen during calibration. Test performance is the most reliable indicator of real-world viability. Use the linked audit trail to inspect the concrete trades and equity path.</span></span></h4>
-            <div class="detail-row"><span class="label">CAGR</span><span class="value ${{cagrClass(r.test_details?.cagr)}}">${{fmt(r.test_details?.cagr, true)}}</span></div>
-            <div class="detail-row"><span class="label">Sharpe</span><span class="value">${{fmt(r.test_details?.sharpe, false)}}</span></div>
-            <div class="detail-row"><span class="label">Max Drawdown</span><span class="value neg">${{fmt(r.test_details?.max_drawdown, true)}}</span></div>
-            <div class="detail-row"><span class="label">Actual Period</span><span class="value">${{fmtWindow(r.test_audit, r.test_details)}}</span></div>
-            <div class="detail-row"><span class="label">Beginning Equity</span><span class="value">${{fmtMoney(r.test_details?.beginning_equity)}}</span></div>
-            <div class="detail-row"><span class="label">Final Equity</span><span class="value">${{fmtMoney(r.test_details?.final_equity)}}</span></div>
-            <div class="detail-row"><span class="label">Executed Trades</span><span class="value">${{r.test_audit?.trade_count ?? '\u2014'}}</span></div>
-            <div class="detail-row"><span class="label">Audit Trail</span><span class="value">${{fmtAuditLink(r.test_audit)}}</span></div>
-            <div class="detail-row"><span class="label">VaR 95</span><span class="value">${{fmt(r.test_details?.var_95, true)}}</span></div>
-          </div>
-        </div>
-        <div class="analysis-section">
-          <div class="analysis-header">Research Analysis Framework</div>
-          <div class="analysis-body">
-            <div class="analysis-block">
-              <div class="analysis-block-label">1. Mental Model Synthesis</div>
-              <div class="analysis-block-text">${{r.rationale || ''}}${{isUrl ? ` <a href="${{r.source}}" target="_blank" rel="noopener">View source \u2192</a>` : ''}}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">2. Critical Evaluation</div>
-              <div class="analysis-block-text">${{r.critical_evaluation || ''}}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">3. Trading Strategy</div>
-              <div class="analysis-block-text">${{r.strategy_description || ''}}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">4. Asset Universe &amp; Investment Case</div>
-              <div class="analysis-block-text">${{r.investment_rationale || ''}}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">5. Backtest Architecture</div>
-              <div class="analysis-block-text">${{r.backtest_architecture || ''}}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">Performance Summary</div>
-              <div class="analysis-block-text">${{r.why || ''}}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </td>`;
-    tbody.appendChild(detailTr);
-  }});
-}}
-
-renderRows(rows);
-
-function applyFilters() {{
-  const q = searchEl.value.toLowerCase();
-  const cat = catEl.value;
-  const src = srcEl.value;
-  const seed = seededEl.value;
-  const filtered = rows.filter(r => {{
-    if (q) {{
-      const haystack = [r.candidate_id, r.rule, r.focus_asset, r.source, r.why, r.category].join(' ').toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }}
-    if (cat !== 'All' && r.category !== cat) return false;
-    if (src !== 'All') {{
-      let h; try {{ h = new URL(r.source).hostname; }} catch {{ h = r.source; }}
-      if (h !== src) return false;
-    }}
-    if (seed === 'Seeded' && !r.is_seeded) return false;
-    if (seed === 'Fallback' && r.is_seeded) return false;
-    return true;
-  }});
-  renderRows(filtered);
-}}
-
-searchEl.addEventListener('input', applyFilters);
-catEl.addEventListener('change', applyFilters);
-srcEl.addEventListener('change', applyFilters);
-seededEl.addEventListener('change', applyFilters);
-
-document.addEventListener('click', e => {{
-  const btn = e.target.closest('.toggle-btn');
-  if (!btn) return;
-  const rank = btn.dataset.rank;
-  const row = document.getElementById('detail-' + rank);
-  if (!row) return;
-  const open = row.style.display !== 'none';
-  row.style.display = open ? 'none' : '';
-  btn.textContent = open ? '+' : '\u2212';
-  btn.classList.toggle('open', !open);
-  btn.closest('tr').classList.toggle('expanded', !open);
-}});
-
-let sortCol = null, sortDir = 'desc';
-document.querySelectorAll('th.sortable').forEach(th => {{
-  th.addEventListener('click', () => {{
-    const col = th.dataset.col;
-    if (sortCol === col) {{ sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }}
-    else {{ sortCol = col; sortDir = 'desc'; }}
-    document.querySelectorAll('th.sortable').forEach(t => t.classList.remove('sorted-asc', 'sorted-desc'));
-    th.classList.add(sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
-    rows.sort((a, b) => {{
-      let va, vb;
-      if (col === 'train_cagr') {{ va = a.train_details?.cagr ?? 0; vb = b.train_details?.cagr ?? 0; }}
-      else if (col === 'test_cagr') {{ va = a.test_details?.cagr ?? 0; vb = b.test_details?.cagr ?? 0; }}
-      else {{ va = a[col] ?? ''; vb = b[col] ?? ''; }}
-      if (typeof va === 'string') {{ return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va); }}
-      return sortDir === 'asc' ? va - vb : vb - va;
-    }});
-    rows.forEach((r, i) => r.rank = i + 1);
-    applyFilters();
-  }});
-}});
-</script>
-</body>
-</html>"#,
-        rows_json = rows_json,
-        total = rows.len(),
-        top_count = rows.len().min(10),
-        seeded_top = rows.iter().take(10).filter(|r| r.is_seeded).count(),
-        generated_date = generated_date,
-        framework_hash = framework_hash,
-    );
-
+fn save_interactive_report(
+    path: &Path,
+    rows: &[CandidateReport],
+    meta: &InteractiveReportMeta,
+) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let html = build_interactive_report_html(rows, meta);
     std::fs::write(path, html)
 }
 
@@ -4639,7 +3967,17 @@ fn main() {
         .iter()
         .map(|entry| entry.report.clone())
         .collect();
-    if let Err(err) = save_interactive_report(report_path, &top_reports) {
+    let report_meta = InteractiveReportMeta {
+        generated_date: Utc::now().to_rfc3339(),
+        total_ranked: ranked.len(),
+        round_count: loop_state.round_summaries.len(),
+        train_start: args.train_start.clone(),
+        train_end: args.train_end.clone(),
+        test_start: args.test_start.clone(),
+        test_end: args.test_end.clone(),
+        framework_tag: "5-step Research Analysis Framework".to_string(),
+    };
+    if let Err(err) = save_interactive_report(report_path, &top_reports, &report_meta) {
         eprintln!("Failed to write interactive report: {err}");
     }
 
@@ -5402,6 +4740,76 @@ mod tests {
         assert_eq!(meta.trade_count, 88);
         assert_eq!(meta.actual_period_start, "2020-01-02");
         assert_eq!(meta.actual_period_end, "2024-12-31");
+    }
+
+    #[test]
+    fn test_build_interactive_report_html_replaces_template_placeholders() {
+        let report = CandidateReport {
+            candidate_id: "seed-001-vol_spread-v0".to_string(),
+            strategy: RESEARCH_STRATEGY.to_string(),
+            category: "Research".to_string(),
+            args: vec![
+                "--asset".to_string(),
+                "QQQ".to_string(),
+                "--rule".to_string(),
+                RULE_VOL_SPREAD.to_string(),
+            ],
+            rule: RULE_VOL_SPREAD.to_string(),
+            rationale: "Research lead from volatility spread literature.".to_string(),
+            source: "https://arxiv.org/abs/1234.5678".to_string(),
+            focus_asset: "QQQ".to_string(),
+            train_score: 2.1,
+            test_score: 1.9,
+            combined_score: 2.0,
+            train_details: json!({
+                "name": "PaperResearch [QQQ|vol_spread]",
+                "beginning_equity": 1000000.0,
+                "final_equity": 1542500.0,
+                "cagr": 0.12,
+                "sharpe": 0.88,
+                "max_drawdown": 0.11,
+                "var_95": -0.01
+            }),
+            test_details: json!({
+                "name": "PaperResearch [QQQ|vol_spread]",
+                "beginning_equity": 1000000.0,
+                "final_equity": 1184000.0,
+                "cagr": 0.09,
+                "sharpe": 0.73,
+                "max_drawdown": 0.08,
+                "var_95": -0.01
+            }),
+            train_audit: Some(AuditWindowMeta {
+                artifact_path: "autoresearch-audits/seed-001-vol_spread-v0-train.json".to_string(),
+                trade_count: 184,
+                actual_period_start: "2020-01-02".to_string(),
+                actual_period_end: "2024-12-31".to_string(),
+            }),
+            test_audit: Some(AuditWindowMeta {
+                artifact_path: "autoresearch-audits/seed-001-vol_spread-v0-test.json".to_string(),
+                trade_count: 90,
+                actual_period_start: "2025-01-02".to_string(),
+                actual_period_end: "2026-03-11".to_string(),
+            }),
+            is_seeded: true,
+        };
+        let meta = InteractiveReportMeta {
+            generated_date: "2026-03-18T20:00:00Z".to_string(),
+            total_ranked: 10,
+            round_count: 5,
+            train_start: "2020-01-01".to_string(),
+            train_end: "2024-12-31".to_string(),
+            test_start: "2025-01-01".to_string(),
+            test_end: "2026-03-11".to_string(),
+            framework_tag: "5-step Research Analysis Framework".to_string(),
+        };
+
+        let html = build_interactive_report_html(&[report], &meta);
+        assert!(html.contains("The Strategy Frontier"));
+        assert!(html.contains("seed-001-vol_spread-v0"));
+        assert!(html.contains("5-step Research Analysis Framework"));
+        assert!(!html.contains("/* PASTE_META_HERE */"));
+        assert!(!html.contains("/* PASTE_ROWS_HERE */"));
     }
 
     #[test]
