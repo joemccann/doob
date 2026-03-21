@@ -19,7 +19,7 @@
 - [x] `--output json` / `--output md` global flags
 - [x] 192 unit tests + 106 CLI integration tests
 - [x] Local warehouse parquet reads (no Yahoo Finance)
-- [x] Branding/design system (`branding/tokens.css`, templates)
+- [x] Design system (`design/tokens.css`, templates)
 - [x] 5 paper-research rules: trend_momentum, trend_pullback, rsi_reversion, volatility_regime, vol_spread
 - [x] Breadth strategies: washout, MA, dual-MA, NDX-100 SMA
 - [x] Asset universe expansion (core/broad/full/preset)
@@ -338,6 +338,258 @@ Verification:
 - Confirmed `.ruff_cache` was not tracked by git and no longer exists in the repo root.
 - Inspected `git diff --cached -- .gitignore tasks/todo.md` before committing.
 - Verified the cleanup commit was pushed to `origin/main`.
+
+## Design MD Plan (2026-03-18)
+
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Read the official Design MD overview/format docs and inspect the local design assets `depends_on: []`
+- [x] T2 Write a repo-specific `DESIGN.md` that references the design assets and follows the Design MD structure `depends_on: [T1]`
+- [x] T3 Verify the new `DESIGN.md` against the source docs and local assets, then update this review section `depends_on: [T2]`
+
+## Design MD Review (2026-03-18)
+
+Summary:
+- Added a new root-level `DESIGN.md` that follows Stitch's documented section order: Overview, Colors, Typography, Elevation, Components, and Do's and Don'ts.
+- Grounded the document in the local design source files, especially `design/tokens.css`, `design/brand-guidelines.html`, and `design/report-template.html`, so design agents can map the markdown back to the repo's actual token and layout system.
+- Translated the repo's light-theme doob brand constraints into plain markdown guidance suitable for DESIGN.md consumers, including token roles, typography hierarchy, elevation rules, layout defaults, component behavior, and explicit prohibitions against the deprecated dark-blue theme.
+
+Verification:
+- Reviewed the rendered Stitch docs for `What is DESIGN.md?`, `The DESIGN.md format`, and the adjacent `View, edit, and export` page to confirm the required structure and usage model.
+- Verified `DESIGN.md` preserves the documented section order and stays plain markdown with no special syntax.
+- Cross-checked the new content against `design/tokens.css`, `design/brand-guidelines.html`, `design/report-template.html`, and the repo's existing design rules in `AGENTS.md`.
+
+## HTML Report Overhaul Plan (2026-03-18)
+
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Inspect the current report generation flow, template, generated outputs, and the new `DESIGN.md` constraints `depends_on: []`
+- [x] T2 Redesign the source template and any supporting generation code so generated reports follow `DESIGN.md` and the doob brand system end-to-end `depends_on: [T1]`
+- [x] T3 Regenerate and verify the updated report for hierarchy, responsiveness, accessibility, and data integrity, then record the review `depends_on: [T2]`
+
+## HTML Report Overhaul Review (2026-03-18)
+
+Summary:
+- Replaced the old table-first HTML report template with a new `Autoresearch Strategy Deck` layout driven by `DESIGN.md` and the local doob design system.
+- Refactored `src/bin/autoresearch_loop.rs` so the report renderer now injects both report metadata and row data into `design/report-template.html`, instead of maintaining a large inline HTML string in Rust.
+- The new report presents a teal editorial hero, KPI summary strip, filter workbench, ranked candidate table, and a sticky strategy inspector that surfaces beginning/ending equity, requested versus actual windows, trade counts, audit links, and the five Research Analysis Framework sections.
+- Added responsive mobile cards and verified that row selection and filtering update the inspector cleanly without JavaScript errors.
+- Scope note: the live generator-backed report is `reports/autoresearch-top10-interactive-report.html`; the legacy `reports/refactor-report.html` was not part of the active Rust generation flow for this task.
+
+Verification:
+- `cargo fmt --all`
+- `cargo test --bin autoresearch_loop`
+- `cargo build --release --bin autoresearch_loop --quiet`
+- `target/release/autoresearch_loop --seed-web --candidates 100 --top 10 --verbose`
+- Browser render check against the generated local file at desktop (`1440px`) and mobile (`430px`) widths using a temporary isolated `playwright-core` install under `/tmp/doob-browser-check`
+- Interaction check: filtering for `SPY` reduced the visible results to 3 candidates and clicking the second row switched the inspector from `seed-144-vol_spread-v1` to `seed-003-vol_spread-v2` without console errors
+
+Artifacts:
+- `DESIGN.md`
+- `design/report-template.html`
+- `src/bin/autoresearch_loop.rs`
+- `reports/autoresearch-top10-interactive-report.html`
+
+## Design Lab Plan (2026-03-18)
+
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Detect the repo frontend/runtime constraints, design memory, and live visual surfaces for design-lab setup `depends_on: []`
+- [x] T2 Gather the remaining design brief inputs from the user and define the temporary lab target plus evaluation criteria `depends_on: [T1]`
+- [x] T3 Generate the temporary standalone design lab with five report variations and present the preview workflow `depends_on: [T2]`
+
+## Design Lab Review (2026-03-18)
+
+Summary:
+- Built a temporary standalone design lab for `autoresearch-top10-interactive-report` because the repo has no app framework or package-manager-backed frontend runtime.
+- Translated the user brief into five distinct full-page redesign directions focused on hierarchy, subtle motion, and improved legibility while staying anchored to the doob brand tokens and typography system.
+- Added an in-browser feedback overlay so review comments can be attached to labeled surfaces inside each variant and exported back into the terminal as structured markdown.
+- Tightened the overlay targeting after verification so clicking the Variant B comparison surface resolves to `Dense comparison table` instead of a nested table cell.
+
+Verification:
+- Opened `.claude-design/lab/index.html` in Chrome via Playwright against the local file path.
+- Verified the lab loads without console errors or page errors.
+- Verified all five variants (`A` through `E`) render and the summary strip renders five cards.
+- Verified the feedback panel toggles correctly and the modal opens on the intended labeled surface for Variant B.
+
+Artifacts:
+- `.claude-design/design-brief.json`
+- `.claude-design/run-log.md`
+- `.claude-design/lab/index.html`
+- `.claude-design/lab/data/fixtures.js`
+- `.claude-design/lab/feedback-overlay.js`
+
+## Variant D Finalization Plan (2026-03-18)
+
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Inspect the current report template/generator and map the selected Variant D command-center layout into the production report structure `depends_on: []`
+- [x] T2 Implement the Variant D redesign in the live report template and regenerate the current HTML artifact from persisted report data `depends_on: [T1]`
+- [x] T3 Verify the regenerated report in Chrome, document the final result, create design-memory artifacts, and clean up `.claude-design/` `depends_on: [T2]`
+
+## Variant D Finalization Review (2026-03-18)
+
+Summary:
+- Implemented the winning Variant D direction as the live autoresearch report: a three-panel command-center layout with a left control rail, center briefing plus frontier cards, and a right audit rail.
+- Replaced the old table-plus-inspector composition in `design/report-template.html` with a clearer selection-driven card workflow while preserving filters, sort controls, source links, audit links, beginning equity, ending equity, and the five research framework narratives.
+- Regenerated `reports/autoresearch-top10-interactive-report.html` from the persisted embedded report JSON so the current artifact matches the new template without requiring a fresh strategy run.
+- Added `DESIGN_PLAN.md` and `DESIGN_MEMORY.md` so the chosen report direction is documented for future UI/report work.
+- Cleaned up the temporary design-lab workspace by deleting `.claude-design/` after finalization.
+
+Verification:
+- `cargo test --bin autoresearch_loop`
+- Opened `reports/autoresearch-top10-interactive-report.html` in Chrome via Playwright against the local file path
+- Verified no browser console errors or page errors
+- Verified 10 candidate cards render initially, candidate selection updates the briefing and active state, and asset filtering updates the visible count and frontier card set
+
+Artifacts:
+- `design/report-template.html`
+- `reports/autoresearch-top10-interactive-report.html`
+- `src/bin/autoresearch_loop.rs`
+- `DESIGN_PLAN.md`
+- `DESIGN_MEMORY.md`
+
+## Top-Level paper-research CLI Bug Plan (2026-03-18)
+
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Reproduce the reported `doob paper-research ...` failure and inspect how the top-level CLI currently parses `paper-research` `depends_on: []`
+- [x] T2 Implement a compatible fix for direct `paper-research` invocation and add regression coverage if appropriate `depends_on: [T1]`
+- [x] T3 Verify the exact reported command succeeds and document the result in a review section `depends_on: [T2]`
+
+## Top-Level paper-research CLI Bug Review (2026-03-18)
+
+Summary:
+- Reproduced the failure exactly: `doob paper-research ...` was rejected because `paper-research` only existed as a nested `run paper-research` subcommand in the top-level CLI parser.
+- Added a top-level compatibility shortcut in `src/cli.rs` so `doob paper-research ...` now routes to the same `PaperResearchArgs` parser as `doob run paper-research ...`.
+- Refactored `src/main.rs` to share strategy dispatch through a helper so both entry paths execute the same runtime behavior and elapsed-time handling.
+- Added a regression test that parses the exact top-level invocation shape, including the trailing global `--output json` flag and the full set of `vol_spread` parameters.
+- Refreshed the installed binary at `~/.cargo/bin/doob` with `cargo install --path . --force --quiet` so the plain `doob` command now picks up the fix in this environment.
+
+Verification:
+- `cargo fmt --all`
+- `cargo test parse_top_level_paper_research_compat`
+- `cargo build --quiet`
+- `./target/debug/doob paper-research --asset QQQ --rule vol_spread --fast-window 12 --slow-window 50 --rsi-window 14 --rsi-oversold 30 --rsi-overbought 70 --vol-window 10 --vol-cap 0.15 --hypothesis-id seed-24-2 --output json`
+- `doob paper-research --asset QQQ --rule vol_spread --fast-window 12 --slow-window 50 --rsi-window 14 --rsi-oversold 30 --rsi-overbought 70 --vol-window 10 --vol-cap 0.15 --hypothesis-id seed-24-2 --output json`
+
+Artifacts:
+- `src/cli.rs`
+- `src/main.rs`
+
+## design/ Relocation Plan (2026-03-18)
+
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Choose replacement locations for the former `branding/` assets and record the relocation plan `depends_on: []`
+- [x] T2 Move the template/tokens/reference files to `design/` and update code/docs to the new paths `depends_on: [T1]`
+- [x] T3 Verify no `branding` references remain, remove the old directory, and document the result `depends_on: [T2]`
+
+## design/ Relocation Review (2026-03-18)
+
+Summary:
+- Removed the `branding/` directory entirely by relocating its three live assets to `design/`: `design/report-template.html`, `design/tokens.css`, and `design/brand-guidelines.html`.
+- Updated the Rust autoresearch loop to load the report template from `design/report-template.html` instead of the deleted path.
+- Rewrote all repo references that still pointed at `branding/` or the old directory guidance, including `AGENTS.md`, `CLAUDE.md`, `DESIGN.md`, `DESIGN_MEMORY.md`, `DESIGN_PLAN.md`, and the historical notes in `tasks/todo.md`.
+- Left the relocated assets functionally intact; this was a path and documentation cleanup, not a visual redesign.
+
+Verification:
+- `rg -n "branding/|branding directory|\\bbranding\\b" .` returned no matches
+- `find branding -maxdepth 2 -print 2>/dev/null || true` returned nothing
+- `cargo test build_interactive_report_html_replaces_template_placeholders --bin autoresearch_loop`
+
+Artifacts:
+- `design/report-template.html`
+- `design/tokens.css`
+- `design/brand-guidelines.html`
+- `src/bin/autoresearch_loop.rs`
+
+## Editorial Intelligence + Figma Direction Plan (2026-03-18)
+
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Replace `DESIGN.md` with the new "Editorial Intelligence" design-system specification provided by the user `depends_on: []`
+- [x] T2 Inspect Figma MCP availability and the referenced `Reports` file so the report direction can align to the source design `depends_on: [T1]`
+- [x] T3 Update the ongoing report-template guidance to use the new spec and Figma direction going forward, then document the result `depends_on: [T2]`
+
+## Editorial Intelligence + Figma Direction Review (2026-03-18)
+
+Summary:
+- Replaced `DESIGN.md` with the user-provided "Editorial Intelligence" design-system strategy verbatim.
+- Checked for Figma MCP access in this session and found none: MCP resources/templates were empty, and direct access to the provided Figma URL returned `403`, so the actual Figma file could not be inspected from this environment.
+- Updated repo-level design guidance in `AGENTS.md`, `CLAUDE.md`, and `DESIGN_MEMORY.md` so future report work treats `DESIGN.md` as the authority and the provided Figma `Reports` file as the external target format when it becomes accessible.
+- Shifted the shared design token layer in `design/tokens.css` and the shared report generator template in `design/report-template.html` toward the new editorial system: Newsreader for display, Inter for body, Space Grotesk for labels/data, square-cornered structure, tonal surfaces, gradient hero treatment, and less boxed-in UI framing.
+- Regenerated the current `reports/autoresearch-top10-interactive-report.html` from its embedded JSON so the live artifact picks up the updated template direction immediately.
+
+Verification:
+- `list_mcp_resources` returned no resources
+- `list_mcp_resource_templates` returned no resource templates
+- `curl -L -I <figma-url>` returned `HTTP/2 403`
+- `cargo test build_interactive_report_html_replaces_template_placeholders --bin autoresearch_loop`
+- Browser smoke check against `reports/autoresearch-top10-interactive-report.html`
+- Verified the regenerated report loads without console/page errors and uses `Inter` for body, `Newsreader` for the hero title, and `Space Grotesk` for section labels
+
+Artifacts:
+- `DESIGN.md`
+- `AGENTS.md`
+- `CLAUDE.md`
+- `DESIGN_MEMORY.md`
+- `design/tokens.css`
+- `design/report-template.html`
+- `reports/autoresearch-top10-interactive-report.html`
+
+## Figma Reports Implementation Plan (2026-03-19)
+
+Dependency graph:
+- T1 -> T2 -> T3
+
+Tasks:
+- [x] T1 Pull the referenced Figma `Reports` file context and inspect the current local report/template implementation `depends_on: []`
+- [x] T2 Apply the Figma-informed design to the shared report template and regenerate the live report artifact `depends_on: [T1]`
+- [x] T3 Verify the regenerated report in browser, document the result, and call out any remaining gaps versus Figma `depends_on: [T2]`
+
+## Figma Reports Implementation Review (2026-03-19)
+
+Summary:
+- Pulled the referenced Figma `Reports` file through MCP and used concrete frame metadata plus design context for the body shell, top app bar, hero section, metrics row, filter strip, primary visualization, candidate briefing cards, and audit rail.
+- Replaced the old command-center template in `design/report-template.html` with a Figma-aligned editorial layout: left curator rail, glass top navigation, asymmetrical hero, four-metric strip, primary alpha-vector chart, hidden grid configuration drawer, two-column candidate briefing cards, and an audit rail that keeps proof surfaces visible.
+- Kept the report honest to live data instead of reproducing placeholder Figma copy verbatim. The chart is a normalized profile synthesized from audited summary metrics, and the metrics/telemetry labels are mapped to fields the report actually has today.
+- Regenerated `reports/autoresearch-top10-interactive-report.html` from the updated binary so the live artifact now carries the new design system rather than only the template source.
+- Updated the stale regression assertion in `src/bin/autoresearch_loop.rs` so the template test now checks for the new report title instead of the retired `Autoresearch Command Center` string.
+
+Verification:
+- `cargo test --bin autoresearch_loop`
+- `cargo test`
+- `cargo build --bin autoresearch_loop --quiet`
+- `target/debug/autoresearch_loop --seed-web --candidates 100 --top 10 --verbose`
+- Playwright smoke check against `reports/autoresearch-top10-interactive-report.html`
+- Verified browser summary: title `doob Strategy Frontier · 10 visible`, hero `The Strategy Frontier`, `4` metric cards, `10` candidate cards, audit heading `Audit Rail`, selected title `vol_spread`, configure control text `Configure Grid`
+- Verified no browser console errors or page errors
+- Verified visually from a full-page screenshot that the new shell renders the intended Figma-derived composition with sidebar, hero, metrics, vector panel, candidate grid, and audit rail
+
+Remaining gaps vs Figma:
+- The report preserves a hidden configuration drawer behind `Configure Grid` so filtering/searching remains usable; the Figma frame shows only the collapsed strip state.
+- The primary alpha chart uses a normalized profile derived from available report metrics because the single-file report payload does not yet embed full equity traces inline.
+- The audit rail extends beyond the visible Figma crop to retain execution-window proof and artifact links that the project requires for auditability.
+
+Artifacts:
+- `design/report-template.html`
+- `reports/autoresearch-top10-interactive-report.html`
+- `src/bin/autoresearch_loop.rs`
 
 ## Lessons
 _(Move to `tasks/lessons.md` as they accumulate)_

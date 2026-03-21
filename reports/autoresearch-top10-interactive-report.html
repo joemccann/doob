@@ -3,492 +3,1350 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>doob Autoresearch Loop — Top 10 Research Strategies</title>
+  <title>doob Strategy Frontier</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --doob-bg:             #ffffff;
-      --doob-bg-alt:         #f5f5f5;
-      --doob-bg-surface:     #c7cdc8;
-      --doob-text:           #1e1e1e;
-      --doob-text-muted:     #4a5760;
-      --doob-teal:           #3e5b63;
-      --doob-teal-deep:      #2e454c;
-      --doob-lime:           #c6e758;
-      --doob-lime-hover:     #d4f06a;
-      --doob-sky:            #5fc4e3;
-      --doob-slate:          #4a5760;
-      --doob-sage:           #c7cdc8;
-      --doob-dark-bg:        #1e1e1e;
-      --doob-dark-surface:   #2a3a42;
-      --doob-dark-panel:     #3e5b63;
-      --doob-dark-text:      #f5f5f5;
-      --doob-dark-muted:     #c7cdc8;
-      --doob-positive:       #c6e758;
-      --doob-positive-text:  #3a5200;
-      --doob-warning:        #f5a623;
-      --doob-warning-text:   #7a4a00;
-      --doob-negative:       #e85d5d;
-      --doob-negative-text:  #7a1a1a;
-      --doob-info:           #5fc4e3;
-      --doob-info-text:      #1a5a6a;
-      --doob-font-display:   "Helvetica Now Display", -apple-system, BlinkMacSystemFont,
-                              "Avenir Next", Avenir, "Segoe UI", "Helvetica Neue",
-                              Helvetica, Cantarell, Ubuntu, Roboto, Noto, Arial, sans-serif;
-      --doob-font-mono:      "DM Mono", Menlo, Consolas, Monaco, "Liberation Mono",
-                              "Lucida Console", monospace;
-      --doob-radius-sm:      6px;
-      --doob-radius-md:      10px;
-      --doob-radius-lg:      16px;
-      --doob-radius-xl:      24px;
-      --doob-shadow-sm:      0 1px 2px rgba(30,30,30,0.06);
-      --doob-shadow-md:      0 4px 12px rgba(30,30,30,0.08);
-      --doob-shadow-lg:      0 8px 32px rgba(30,30,30,0.12);
-      --doob-ease:           cubic-bezier(0.25, 0.1, 0.25, 1);
-      --doob-duration:       200ms;
+      --surface: #f3fbf8;
+      --surface-container-low: #edf5f2;
+      --surface-container: #e8f0ed;
+      --surface-container-high: #dce4e1;
+      --surface-container-lowest: #ffffff;
+      --on-surface: #151d1c;
+      --on-surface-muted: #4e635c;
+      --on-surface-soft: #6f7978;
+      --primary: #003434;
+      --primary-container: #004d4d;
+      --secondary: #4e635c;
+      --secondary-container: #cee5dc;
+      --outline: #6f7978;
+      --outline-variant: #bfc8c8;
+      --accent-lime: #c3f400;
+      --accent-lime-deep: #abd600;
+      --ink-dark: #161e00;
+      --shadow: 0 24px 48px -12px rgba(21, 29, 28, 0.04);
+      --glass: rgba(243, 251, 248, 0.8);
+      --ghost-line: rgba(191, 200, 200, 0.2);
+      --ghost-line-strong: rgba(191, 200, 200, 0.3);
+      --transition: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: var(--doob-font-display);
-      background: var(--doob-bg);
-      color: var(--doob-text);
-      line-height: 1.5;
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-container-low) 100%);
+      color: var(--on-surface);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
-    .report-header {
-      background: var(--doob-teal);
-      color: #fff;
-      padding: 48px clamp(20px, 4vw, 40px) 40px;
-      border-radius: 0 0 var(--doob-radius-xl) var(--doob-radius-xl);
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background:
+        radial-gradient(circle at top left, rgba(206, 229, 220, 0.42) 0%, transparent 24%),
+        radial-gradient(circle at top right, rgba(195, 244, 0, 0.12) 0%, transparent 18%);
     }
-    .report-header-inner {
-      max-width: 1540px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 32px;
-      flex-wrap: wrap;
+
+    a {
+      color: inherit;
+      text-decoration: none;
     }
-    .report-brand {
-      font-size: 28px;
-      letter-spacing: -0.02em;
-      font-weight: 400;
+
+    button,
+    input,
+    select {
+      font: inherit;
     }
-    .report-brand span { color: var(--doob-lime); }
-    .report-title {
-      font-size: clamp(32px, 5vw, 54px);
-      font-weight: 400;
-      letter-spacing: -0.02em;
-      line-height: 1.05;
-      margin-top: 16px;
-      max-width: 700px;
+
+    button {
+      cursor: pointer;
     }
-    .report-subtitle {
-      font-family: var(--doob-font-mono);
-      font-size: 13px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--doob-lime);
-      margin-top: 8px;
-    }
-    .report-meta {
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      color: var(--doob-sage);
-      margin-top: 20px;
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-    .report-meta span { display: flex; align-items: center; gap: 6px; }
-    .container {
-      max-width: 1540px;
-      margin: 0 auto;
-      padding: 0 clamp(20px, 4vw, 40px);
-    }
-    .kpi-bar {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-      margin: 24px 0;
-    }
-    .kpi {
-      background: var(--doob-bg-alt);
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-md);
-      padding: 16px;
-    }
-    .kpi-label {
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--doob-slate);
-      margin-bottom: 4px;
-    }
-    .kpi-value {
-      font-family: var(--doob-font-mono);
-      font-size: 28px;
-      font-weight: 400;
-      letter-spacing: -0.02em;
-    }
-    .kpi-value.positive { color: var(--doob-positive-text); }
-    .kpi-value.negative { color: var(--doob-negative-text); }
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 10px;
-      margin: 20px 0;
-    }
-    .controls input, .controls select {
-      font-family: var(--doob-font-mono);
-      font-size: 13px;
-      padding: 10px 14px;
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-sm);
-      background: var(--doob-bg);
-      color: var(--doob-text);
-      outline: none;
-      transition: border-color var(--doob-duration) var(--doob-ease);
-    }
-    .controls input:focus, .controls select:focus {
-      border-color: var(--doob-teal);
-      box-shadow: 0 0 0 3px rgba(62, 91, 99, 0.12);
-    }
-    .controls input::placeholder { color: var(--doob-sage); }
-    .table-wrap {
-      background: var(--doob-bg);
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-lg);
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
       overflow: hidden;
-      box-shadow: var(--doob-shadow-md);
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
-    .table-scroll { overflow: auto; max-height: 70vh; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th {
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      text-align: left;
-      padding: 12px 14px;
-      background: var(--doob-bg-alt);
-      color: var(--doob-slate);
-      border-bottom: 2px solid var(--doob-teal);
+
+    .mono,
+    .mini-kicker,
+    .section-label,
+    .telemetry-key,
+    .window-period,
+    .nav-link,
+    .nav-footer-link,
+    .metric-card-label,
+    .pill,
+    .candidate-code,
+    .candidate-score-label,
+    .candidate-select,
+    .config-label,
+    .command-shell,
+    .evidence-link {
+      font-family: "Space Grotesk", "Inter", sans-serif;
+    }
+
+    .page-shell {
+      display: grid;
+      grid-template-columns: 288px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidenav {
       position: sticky;
       top: 0;
-      z-index: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 96px 16px 32px;
+      background: var(--surface-container-low);
     }
-    th.sortable { cursor: pointer; user-select: none; }
-    th.sortable:hover { color: var(--doob-teal); }
-    th.sorted-asc::after { content: ' \u25B2'; font-size: 9px; }
-    th.sorted-desc::after { content: ' \u25BC'; font-size: 9px; }
-    td {
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(199, 205, 200, 0.5);
-      vertical-align: top;
+
+    .sidenav-brand {
+      padding: 0 16px 40px;
     }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(62, 91, 99, 0.03); }
-    tr.expanded td { background: rgba(62, 91, 99, 0.05); }
-    td.mono { font-family: var(--doob-font-mono); }
-    td.pos { color: var(--doob-positive-text); }
-    td.neg { color: var(--doob-negative-text); }
-    td.rank {
-      font-family: var(--doob-font-mono);
-      font-weight: 500;
-      color: var(--doob-teal);
+
+    .sidenav-title {
+      margin: 0;
+      color: var(--primary);
+      font-family: "Newsreader", Georgia, serif;
+      font-size: 24px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 32px;
     }
+
+    .sidenav-tag {
+      margin: 4px 0 0;
+      color: var(--secondary);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .sidenav-nav,
+    .sidenav-footer {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-link,
+    .nav-footer-link {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-height: 44px;
+      padding: 12px 16px;
+      border: 0;
+      background: transparent;
+      color: var(--secondary);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-align: left;
+      text-transform: uppercase;
+      transition: background var(--transition), color var(--transition), transform var(--transition);
+    }
+
+    .nav-link::before,
+    .nav-footer-link::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      border: 1px solid currentColor;
+      opacity: 0.78;
+    }
+
+    .nav-link:hover,
+    .nav-footer-link:hover,
+    .nav-link:focus-visible,
+    .nav-footer-link:focus-visible {
+      transform: translateX(2px);
+      color: var(--primary);
+      outline: none;
+    }
+
+    .nav-link.is-active {
+      margin: 0 4px;
+      background: var(--surface-container-lowest);
+      color: var(--primary);
+      box-shadow: var(--shadow);
+    }
+
+    .workspace {
+      min-width: 0;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 20px 40px;
+      backdrop-filter: blur(20px);
+      background:
+        linear-gradient(180deg, rgba(237, 245, 242, 1) 0%, rgba(237, 245, 242, 0) 100%),
+        linear-gradient(90deg, rgba(243, 251, 248, 0.8) 0%, rgba(243, 251, 248, 0.8) 100%);
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+      min-width: 0;
+    }
+
+    .brandmark {
+      color: var(--primary);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .topnav {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      min-width: 0;
+    }
+
+    .topnav-link {
+      color: var(--on-surface-soft);
+      font-family: "Newsreader", Georgia, serif;
+      font-size: 20px;
+      font-style: italic;
+      line-height: 28px;
+      transition: color var(--transition), border-color var(--transition);
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+
+    .topnav-link:hover,
+    .topnav-link:focus-visible,
+    .topnav-link.is-active {
+      color: var(--primary);
+      border-color: currentColor;
+      outline: none;
+    }
+
+    .primary-cta {
+      padding: 8px 24px;
+      border: 0;
+      background: var(--primary);
+      color: #ffffff;
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: transform var(--transition), background var(--transition);
+    }
+
+    .primary-cta:hover,
+    .primary-cta:focus-visible,
+    .configure-button:hover,
+    .configure-button:focus-visible,
+    .candidate-select:hover,
+    .candidate-select:focus-visible,
+    .evidence-link:hover,
+    .evidence-link:focus-visible {
+      transform: translateY(-2px);
+      outline: none;
+    }
+
+    .primary-cta.is-copied {
+      background: var(--primary-container);
+    }
+
+    .canvas {
+      padding: 0 40px 56px;
+    }
+
+    .hero-section {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 32px;
+      min-height: 294px;
+      padding: 10px 0 32px;
+      align-items: end;
+    }
+
+    .hero-copy {
+      grid-column: span 8;
+      display: grid;
+      gap: 16px;
+      max-width: 760px;
+    }
+
+    .hero-title {
+      margin: 0;
+      color: var(--primary);
+      font-family: "Newsreader", Georgia, serif;
+      font-size: clamp(56px, 6vw, 72px);
+      font-style: italic;
+      font-weight: 400;
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+    }
+
+    .hero-lede,
+    .hero-meta,
+    .candidate-description,
+    .mental-model-copy,
+    .framework-copy,
+    .empty-state,
+    .config-note {
+      color: var(--on-surface-muted);
+      font-size: 20px;
+      line-height: 1.6;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+
+    .phase-badge {
+      grid-column: 9 / span 4;
+      justify-self: end;
+      align-self: end;
+      padding: 4px 16px;
+      background: var(--accent-lime);
+      color: var(--ink-dark);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
     .pill {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      font-family: var(--doob-font-mono);
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--surface-container-lowest);
+      color: var(--secondary);
       font-size: 11px;
-      padding: 2px 10px;
-      border-radius: 999px;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--ghost-line);
       white-space: nowrap;
     }
-    .pill-teal { background: rgba(62,91,99,0.1); color: var(--doob-teal); }
-    .pill-lime { background: rgba(198,231,88,0.2); color: var(--doob-positive-text); }
-    .pill-sky  { background: rgba(95,196,227,0.15); color: var(--doob-info-text); }
-    .row-details {
-      background: var(--doob-bg-alt);
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-md);
-      padding: 14px 16px;
-      margin-top: 8px;
-      font-size: 12px;
-      line-height: 1.6;
+
+    .pill.primary {
+      color: var(--primary);
+      background: var(--surface-container-lowest);
     }
-    .row-details .detail-grid {
+
+    .pill.secondary {
+      background: var(--secondary-container);
+      color: var(--secondary);
+    }
+
+    .pill.lime {
+      background: rgba(195, 244, 0, 0.18);
+      color: var(--ink-dark);
+    }
+
+    .metrics-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0;
+      border: 1px solid var(--ghost-line-strong);
+      background: var(--surface-container-lowest);
     }
-    .row-details h4 {
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
+
+    .metric-card {
+      padding: 32px;
+      min-height: 148px;
+      background: var(--surface-container-lowest);
+      border-right: 1px solid var(--ghost-line-strong);
+    }
+
+    .metric-card:last-child {
+      border-right: 0;
+    }
+
+    .metric-card-label,
+    .mini-kicker,
+    .section-label,
+    .config-label {
+      margin: 0;
+      color: var(--on-surface-soft);
+      font-size: 10px;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
-      color: var(--doob-slate);
-      margin-bottom: 8px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid var(--doob-sage);
     }
-    .detail-row {
+
+    .metric-card-value {
+      margin: 8px 0 0;
+      color: var(--primary);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: clamp(34px, 4vw, 36px);
+      font-weight: 300;
+      line-height: 1.05;
+    }
+
+    .metric-bar {
+      width: 48px;
+      height: 4px;
+      margin-top: 16px;
+    }
+
+    .metric-bar.primary {
+      background: var(--primary);
+    }
+
+    .metric-bar.secondary {
+      background: var(--secondary);
+    }
+
+    .metric-bar.lime {
+      background: var(--accent-lime);
+    }
+
+    .metric-bar.deep {
+      background: var(--primary-container);
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.85fr);
+      gap: 32px;
+      margin-top: 32px;
+      align-items: start;
+    }
+
+    .main-column {
+      display: grid;
+      gap: 32px;
+      min-width: 0;
+    }
+
+    .section-heading {
       display: flex;
+      align-items: end;
       justify-content: space-between;
-      padding: 3px 0;
+      gap: 24px;
+      border-bottom: 1px solid var(--ghost-line);
+      padding-bottom: 17px;
     }
-    .detail-row .label { color: var(--doob-text-muted); }
-    .detail-row .value { font-family: var(--doob-font-mono); font-weight: 500; }
-    .rationale {
-      margin-top: 12px;
-      padding: 12px;
-      background: rgba(62,91,99,0.05);
-      border-radius: var(--doob-radius-sm);
-      border-left: 3px solid var(--doob-teal);
-      color: var(--doob-text-muted);
-      font-size: 12px;
-      line-height: 1.6;
+
+    .section-display,
+    .audit-heading,
+    .mental-model-subhead,
+    .framework-title {
+      margin: 0;
+      color: var(--primary);
+      font-family: "Newsreader", Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
     }
-    .source-link {
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      color: var(--doob-info-text);
-      text-decoration: underline;
-      text-underline-offset: 2px;
+
+    .section-display,
+    .audit-heading {
+      font-size: 30px;
+      line-height: 36px;
     }
-    .info-bubble {
+
+    .vector-legend,
+    .results-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .legend-item {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: rgba(95,196,227,0.15);
-      color: var(--doob-info-text);
-      font-family: var(--doob-font-mono);
+      gap: 8px;
+      color: var(--on-surface);
+      font-family: "Space Grotesk", "Inter", sans-serif;
       font-size: 10px;
-      font-weight: 500;
-      cursor: help;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .legend-swatch {
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+    }
+
+    .vector-section {
+      display: grid;
+      gap: 24px;
+    }
+
+    .vector-panel {
       position: relative;
-      margin-left: 6px;
-      vertical-align: middle;
-      flex-shrink: 0;
-    }
-    .info-bubble .info-tip {
-      display: none;
-      position: absolute;
-      top: calc(100% + 8px);
-      left: 0;
-      width: 280px;
-      padding: 12px 14px;
-      background: var(--doob-teal-deep);
-      color: #fff;
-      border-radius: var(--doob-radius-sm);
-      font-family: var(--doob-font-display);
-      font-size: 12px;
-      font-weight: 400;
-      line-height: 1.5;
-      letter-spacing: 0;
-      text-transform: none;
-      box-shadow: var(--doob-shadow-lg);
-      z-index: 100;
-    }
-    .info-bubble .info-tip::before {
-      content: '';
-      position: absolute;
-      bottom: 100%;
-      left: 6px;
-      border: 6px solid transparent;
-      border-bottom-color: var(--doob-teal-deep);
-    }
-    .info-bubble:hover .info-tip { display: block; }
-    .analysis-section {
-      margin-top: 16px;
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-md);
+      min-height: 384px;
+      padding: 0;
+      background: linear-gradient(180deg, rgba(232, 240, 237, 0.92) 0%, rgba(232, 240, 237, 0.98) 100%);
       overflow: hidden;
     }
-    .analysis-header {
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
+
+    .vector-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.34) 0, rgba(255, 255, 255, 0.34) 1px, transparent 1px, transparent 25%),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.34) 0, rgba(255, 255, 255, 0.34) 1px, transparent 1px, transparent 50%),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.34) 0, rgba(255, 255, 255, 0.34) 1px, transparent 1px, transparent 75%);
+      opacity: 0.22;
+      pointer-events: none;
+    }
+
+    .vector-tag {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 1;
+      padding: 9px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid var(--ghost-line);
+      color: var(--on-surface-soft);
+      font-size: 10px;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      color: var(--doob-slate);
-      padding: 10px 16px;
-      background: var(--doob-bg-alt);
-      border-bottom: 1px solid var(--doob-sage);
     }
-    .analysis-body {
-      padding: 16px;
+
+    .vector-chart {
+      display: block;
+      width: 100%;
+      height: 384px;
     }
-    .analysis-block {
-      margin-bottom: 14px;
+
+    .filter-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 8px;
+      background: var(--surface-container-low);
     }
-    .analysis-block:last-child { margin-bottom: 0; }
-    .analysis-block-label {
-      font-family: var(--doob-font-mono);
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--doob-teal);
-      font-weight: 500;
-      margin-bottom: 4px;
+
+    .filter-strip-main {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      min-width: 0;
+      flex: 1 1 auto;
     }
-    .analysis-block-text {
-      font-size: 13px;
+
+    .filter-strip-label {
+      padding-left: 16px;
+      min-width: 0;
+    }
+
+    .filter-pill-track {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .filter-pill {
+      padding: 6px 18px;
+      border: 1px solid rgba(111, 121, 120, 0.3);
+      background: transparent;
+      color: var(--on-surface);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 12px;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .configure-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border: 0;
+      background: transparent;
+      color: var(--primary);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .configure-button::before {
+      content: "";
+      width: 11px;
+      height: 11px;
+      border: 1px solid currentColor;
+      background:
+        linear-gradient(currentColor, currentColor) center / 7px 1px no-repeat,
+        linear-gradient(currentColor, currentColor) center / 1px 7px no-repeat;
+      opacity: 0.85;
+    }
+
+    .configuration-panel {
+      display: grid;
+      gap: 18px;
+      padding: 24px;
+      background: var(--surface-container-lowest);
+      box-shadow: var(--shadow);
+    }
+
+    .configuration-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .config-field {
+      display: grid;
+      gap: 10px;
+    }
+
+    .config-input,
+    .config-select {
+      min-height: 44px;
+      padding: 11px 0;
+      border: 0;
+      border-bottom: 1px solid var(--outline);
+      background: transparent;
+      color: var(--on-surface);
+    }
+
+    .config-input::placeholder {
+      color: rgba(79, 99, 92, 0.78);
+    }
+
+    .config-input:focus-visible,
+    .config-select:focus-visible,
+    .primary-cta:focus-visible {
+      outline: none;
+      border-bottom-color: var(--primary);
+      box-shadow: inset 0 -2px 0 var(--primary);
+    }
+
+    .config-note {
+      margin: 0;
+      font-size: 14px;
       line-height: 1.6;
-      color: var(--doob-text-muted);
     }
-    .analysis-block-text a {
-      color: var(--doob-info-text);
-      text-decoration: underline;
-      text-underline-offset: 2px;
+
+    .candidate-section {
+      display: grid;
+      gap: 32px;
     }
-    .toggle-btn {
-      background: none;
-      border: 1px solid var(--doob-sage);
-      border-radius: var(--doob-radius-sm);
-      width: 28px;
-      height: 28px;
+
+    .candidate-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 32px;
+    }
+
+    .candidate-card {
+      display: grid;
+      align-content: start;
+      gap: 22px;
+      min-height: 518px;
+      padding: 32px;
+      background: var(--surface-container-lowest);
+      border: 1px solid rgba(191, 200, 200, 0.1);
+      transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition), background var(--transition);
+      animation: rise-in 360ms var(--transition) both;
+    }
+
+    .candidate-card.is-active {
+      background: #ffffff;
+      border-color: rgba(191, 200, 200, 0.24);
+      box-shadow: var(--shadow);
+    }
+
+    .candidate-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .candidate-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .candidate-header-left {
+      display: grid;
+      gap: 4px;
+    }
+
+    .candidate-meta-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .rank-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      font-size: 12px;
-      color: var(--doob-slate);
-      transition: all var(--doob-duration) var(--doob-ease);
+      min-width: 29px;
+      min-height: 19px;
+      padding: 2px 8px;
+      background: var(--primary);
+      color: #ffffff;
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 15px;
     }
-    .toggle-btn:hover { border-color: var(--doob-teal); color: var(--doob-teal); }
-    .toggle-btn.open { background: var(--doob-teal); border-color: var(--doob-teal); color: #fff; }
-    .report-footer {
-      background: var(--doob-teal);
-      color: #fff;
-      padding: 32px clamp(20px, 4vw, 40px);
-      border-radius: var(--doob-radius-xl) var(--doob-radius-xl) 0 0;
-      margin-top: 64px;
+
+    .candidate-card[data-rank="2"] .rank-badge {
+      background: var(--secondary);
     }
-    .report-footer-inner {
-      max-width: 1540px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
+
+    .candidate-code {
+      color: var(--secondary);
+      font-size: 10px;
+      line-height: 15px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .candidate-title {
+      margin: 0;
+      color: var(--primary);
+      font-family: "Newsreader", Georgia, serif;
+      font-size: 24px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 1.15;
+    }
+
+    .candidate-score {
+      display: grid;
+      justify-items: end;
+      gap: 2px;
+      text-align: right;
+    }
+
+    .candidate-score-label {
+      color: var(--on-surface-soft);
+      font-size: 10px;
+      line-height: 15px;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+    }
+
+    .candidate-score-value {
+      color: var(--primary);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 32px;
+    }
+
+    .candidate-card[data-rank="1"] .candidate-score-value,
+    .candidate-card.is-active .candidate-score-value {
+      color: var(--accent-lime-deep);
+    }
+
+    .candidate-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
     }
-    .report-footer .brand { font-size: 20px; letter-spacing: -0.02em; }
-    .report-footer .meta { font-family: var(--doob-font-mono); font-size: 11px; color: var(--doob-sage); }
-    @media (max-width: 768px) {
-      .report-header-inner { flex-direction: column; }
-      .kpi-bar { grid-template-columns: repeat(2, 1fr); }
-      .row-details .detail-grid { grid-template-columns: 1fr; }
+
+    .candidate-stat {
+      padding: 12px;
+      background: var(--surface-container);
+    }
+
+    .candidate-stat-label {
+      margin: 0;
+      color: var(--secondary);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      line-height: 1.5;
+      text-transform: uppercase;
+    }
+
+    .candidate-stat-value {
+      margin: 2px 0 0;
+      color: var(--primary);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 24px;
+    }
+
+    .candidate-description {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .candidate-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(191, 200, 200, 0.1);
+      margin-top: auto;
+    }
+
+    .sparkline {
+      width: 128px;
+      height: 32px;
+      opacity: 0.72;
+    }
+
+    .candidate-select {
+      border: 0;
+      border-bottom: 2px solid var(--primary);
+      padding: 0 0 2px;
+      background: transparent;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .empty-state {
+      padding: 32px;
+      background: var(--surface-container-lowest);
+      box-shadow: var(--shadow);
+      font-size: 16px;
+    }
+
+    .audit-panel {
+      position: sticky;
+      top: 104px;
+      display: grid;
+      gap: 32px;
+      align-content: start;
+      min-width: 0;
+    }
+
+    .audit-section {
+      display: grid;
+      gap: 16px;
+    }
+
+    .command-card {
+      display: grid;
+      gap: 15px;
+      padding: 24px;
+      background: var(--on-surface);
+      color: #e2eae7;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .command-label {
+      margin: 0;
+      color: #bfc8c8;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .command-shell {
+      margin: 0;
+      color: #e2eae7;
+      font-size: 12px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .command-links,
+    .evidence-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .evidence-link {
+      border-bottom: 2px solid currentColor;
+      padding-bottom: 2px;
+      color: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .mental-model-card {
+      display: grid;
+      gap: 16px;
+      padding: 32px 32px 32px 36px;
+      background: var(--surface-container-low);
+      border-left: 4px solid var(--primary);
+    }
+
+    .mental-model-subhead {
+      font-size: 20px;
+      line-height: 28px;
+    }
+
+    .mental-model-copy,
+    .framework-copy,
+    .telemetry-value,
+    .window-value {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .telemetry-stack,
+    .window-stack,
+    .evidence-stack,
+    .framework-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .telemetry-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(191, 200, 200, 0.1);
+    }
+
+    .telemetry-key {
+      color: var(--secondary);
+      font-size: 11px;
+      line-height: 16.5px;
+      text-transform: uppercase;
+    }
+
+    .telemetry-value {
+      color: var(--primary);
+      font-family: "Space Grotesk", "Inter", sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .telemetry-value.high {
+      color: var(--accent-lime-deep);
+    }
+
+    .telemetry-value.moderate {
+      color: #8e7a33;
+    }
+
+    .telemetry-value.watch {
+      color: #7c5656;
+    }
+
+    .window-card,
+    .evidence-card,
+    .framework-card {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      background: var(--surface-container-lowest);
+      box-shadow: var(--shadow);
+    }
+
+    .window-period {
+      color: var(--secondary);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      line-height: 1.5;
+      text-transform: uppercase;
+    }
+
+    .window-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .window-metric {
+      display: grid;
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--surface-container-low);
+    }
+
+    .window-value.positive {
+      color: #375c00;
+    }
+
+    .window-value.negative {
+      color: #7c3b3b;
+    }
+
+    .framework-title {
+      font-size: 20px;
+      line-height: 28px;
+    }
+
+    .framework-copy {
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .surface-divider {
+      height: 1px;
+      background: var(--ghost-line);
+      opacity: 0.7;
+    }
+
+    @keyframes rise-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 1260px) {
+      .page-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidenav {
+        position: relative;
+        height: auto;
+        padding: 32px 20px 20px;
+        gap: 20px;
+      }
+
+      .sidenav-nav,
+      .sidenav-footer {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .topbar,
+      .canvas {
+        padding-inline: 20px;
+      }
+
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .audit-panel {
+        position: static;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .topbar,
+      .topbar-left,
+      .hero-section,
+      .section-heading,
+      .filter-strip {
+        display: grid;
+      }
+
+      .topbar,
+      .topbar-left {
+        gap: 16px;
+      }
+
+      .topbar-left,
+      .hero-copy,
+      .phase-badge {
+        grid-column: 1 / -1;
+      }
+
+      .hero-section {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+
+      .phase-badge {
+        justify-self: start;
+      }
+
+      .metrics-row,
+      .configuration-grid,
+      .candidate-grid,
+      .window-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .section-heading,
+      .filter-strip {
+        gap: 14px;
+      }
+
+      .vector-legend,
+      .results-meta {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topnav,
+      .filter-strip-main,
+      .sidenav-nav,
+      .sidenav-footer,
+      .metrics-row,
+      .configuration-grid,
+      .candidate-grid,
+      .window-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topnav,
+      .filter-pill-track {
+        flex-wrap: wrap;
+      }
+
+      .topbar {
+        padding-top: 16px;
+      }
+
+      .hero-title {
+        font-size: 48px;
+      }
+
+      .hero-lede {
+        font-size: 18px;
+      }
+
+      .metric-card,
+      .candidate-card,
+      .mental-model-card,
+      .command-card,
+      .configuration-panel {
+        padding: 20px;
+      }
+
+      .candidate-footer {
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .section-display,
+      .audit-heading {
+        font-size: 28px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="page-shell">
+    <aside class="sidenav" aria-label="Curator navigation">
+      <div>
+        <div class="sidenav-brand">
+          <h1 class="sidenav-title">The Curator</h1>
+          <p class="sidenav-tag">PhD-Level Intelligence</p>
+        </div>
 
-<div class="report-header">
-  <div class="report-header-inner">
-    <div>
-      <div class="report-brand">doob<span>.</span></div>
-      <h1 class="report-title">Autoresearch Loop &mdash; Paper-Research Top 10</h1>
-      <div class="report-subtitle">Net-new strategy discovery from Exa/arXiv paper hypotheses</div>
-      <div class="report-meta">
-        <span>Generated: <strong>2026-03-18</strong></span>
-        <span>Candidates: <strong>10</strong></span>
-        <span>Seeded in top: <strong>10</strong></span>
-        <span>Framework: <strong>RAF-2800</strong></span>
+        <nav class="sidenav-nav">
+          <a class="nav-link is-active" href="#hero">Strategy Frontier</a>
+          <button class="nav-link" id="nav-windows" type="button">Audited Ledgers</button>
+          <button class="nav-link" id="nav-config" type="button">Data Warehouse</button>
+          <a class="nav-link" href="#candidate-briefing">Strategy Registry</a>
+        </nav>
       </div>
+
+      <div class="sidenav-footer">
+        <button class="nav-footer-link" id="footer-settings" type="button">Settings</button>
+        <a class="nav-footer-link" href="#evidence-links">Documentation</a>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="brandmark">DOOB</div>
+          <nav class="topnav" aria-label="Top navigation">
+            <a class="topnav-link" href="#hero">Research Hub</a>
+            <a class="topnav-link is-active" href="#candidate-briefing">Strategy Frontier</a>
+          </nav>
+        </div>
+        <button class="primary-cta" id="copy-command-button" type="button">Run Autoresearch</button>
+      </header>
+
+      <main class="canvas">
+        <section class="hero-section" id="hero">
+          <div class="hero-copy">
+            <h1 class="hero-title">The Strategy Frontier</h1>
+            <p class="hero-lede">
+              An autonomous laboratory for candidate-discovery and large-scale web-driven exploration.
+              Utilizing high-fidelity market data to simulate and rank quantitative paradigms.
+            </p>
+            <div class="hero-meta" id="hero-meta"></div>
+          </div>
+          <div class="phase-badge" id="phase-badge">Phase: Autonomous Discovery</div>
+        </section>
+
+        <section class="metrics-row" id="metrics-row" aria-label="Frontier metrics"></section>
+
+        <div class="content-grid">
+          <div class="main-column">
+            <section class="vector-section" aria-labelledby="alpha-vector-title">
+              <div class="section-heading">
+                <h2 class="section-display" id="alpha-vector-title">Primary Alpha Vector</h2>
+                <div class="vector-legend" id="vector-legend"></div>
+              </div>
+
+              <div class="vector-panel">
+                <div class="vector-tag" id="vector-tag">Normalized return profile</div>
+                <svg class="vector-chart" viewBox="0 0 760 384" preserveAspectRatio="none" aria-labelledby="alpha-vector-title">
+                  <defs>
+                    <linearGradient id="selected-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#003434" />
+                      <stop offset="100%" stop-color="#004d4d" />
+                    </linearGradient>
+                    <linearGradient id="selected-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="rgba(0, 52, 52, 0.12)" />
+                      <stop offset="100%" stop-color="rgba(0, 52, 52, 0)" />
+                    </linearGradient>
+                  </defs>
+                  <path id="selected-area" fill="url(#selected-fill)" opacity="1"></path>
+                  <path id="baseline-path" fill="none" stroke="#6f7978" stroke-opacity="0.72" stroke-width="2" stroke-dasharray="3 5"></path>
+                  <path id="selected-path" fill="none" stroke="url(#selected-stroke)" stroke-width="3"></path>
+                  <circle id="selected-focus" r="14" fill="rgba(191, 200, 200, 0.4)"></circle>
+                </svg>
+              </div>
+            </section>
+
+            <section class="filter-strip" aria-labelledby="filter-strip-title">
+              <div class="filter-strip-main">
+                <div class="filter-strip-label">
+                  <p class="mini-kicker" id="filter-strip-title">Active Filters</p>
+                </div>
+                <div class="filter-pill-track" id="active-filter-chips"></div>
+              </div>
+              <button class="configure-button" id="toggle-config" type="button" aria-expanded="false" aria-controls="configuration-panel">Configure Grid</button>
+            </section>
+
+            <section class="configuration-panel" id="configuration-panel" hidden>
+              <div class="configuration-grid">
+                <div class="config-field">
+                  <label class="config-label" for="search">Search</label>
+                  <input class="config-input" id="search" type="search" placeholder="Candidate id, rule, asset, source, rationale" />
+                </div>
+                <div class="config-field">
+                  <label class="config-label" for="asset-filter">Asset</label>
+                  <select class="config-select" id="asset-filter"></select>
+                </div>
+                <div class="config-field">
+                  <label class="config-label" for="rule-filter">Rule</label>
+                  <select class="config-select" id="rule-filter"></select>
+                </div>
+                <div class="config-field">
+                  <label class="config-label" for="seed-filter">Origin</label>
+                  <select class="config-select" id="seed-filter">
+                    <option value="all">All Candidates</option>
+                    <option value="seeded">Seeded Leads</option>
+                    <option value="derived">Derived Variants</option>
+                  </select>
+                </div>
+                <div class="config-field">
+                  <label class="config-label" for="sort-by">Sort</label>
+                  <select class="config-select" id="sort-by">
+                    <option value="combined">Combined Score</option>
+                    <option value="testSharpe">Test Sharpe</option>
+                    <option value="testCagr">Test CAGR</option>
+                    <option value="endingEquity">Test Ending Equity</option>
+                    <option value="trades">Audited Trades</option>
+                    <option value="lowestDrawdown">Lowest Test Drawdown</option>
+                  </select>
+                </div>
+              </div>
+              <p class="config-note">
+                The grid stays editorial by default. Open configuration only when you need to reshape the frontier,
+                then return to the briefing view once the field is narrowed.
+              </p>
+            </section>
+
+            <section class="candidate-section" id="candidate-briefing" aria-labelledby="candidate-briefing-title">
+              <div class="section-heading">
+                <h2 class="section-display" id="candidate-briefing-title">Candidate Briefing</h2>
+                <div class="results-meta" id="results-meta"></div>
+              </div>
+              <div class="candidate-grid" id="results-grid"></div>
+              <div class="empty-state" id="results-empty" hidden>No candidates match the current filters. Adjust the grid configuration to restore the frontier.</div>
+            </section>
+          </div>
+
+          <aside class="audit-panel" id="audit-rail" aria-live="polite"></aside>
+        </div>
+      </main>
     </div>
   </div>
-</div>
 
-<div class="container" style="padding-top: 28px;">
-  <div class="kpi-bar">
-    <div class="kpi">
-      <div class="kpi-label">Candidates Evaluated</div>
-      <div class="kpi-value" id="kpi-candidates">&mdash;</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Top Shown</div>
-      <div class="kpi-value" id="kpi-top">&mdash;</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Best CAGR (Train)</div>
-      <div class="kpi-value positive" id="kpi-cagr">&mdash;</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Best Sharpe (Train)</div>
-      <div class="kpi-value positive" id="kpi-sharpe">&mdash;</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Seeded in Top</div>
-      <div class="kpi-value" id="kpi-seeded">&mdash;</div>
-    </div>
-  </div>
-
-  <div class="controls">
-    <input id="search" placeholder="Search strategy, rule, asset, source..." />
-    <select id="cat">
-      <option value="All">All Categories</option>
-    </select>
-    <select id="src">
-      <option value="All">All Sources</option>
-    </select>
-    <select id="seeded">
-      <option value="All">All Origins</option>
-      <option value="Seeded">Seeded</option>
-      <option value="Fallback">Fallback</option>
-    </select>
-  </div>
-
-  <div class="table-wrap">
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:50px;">#</th>
-            <th class="sortable" data-col="candidate_id">Candidate</th>
-            <th class="sortable" data-col="rule">Rule</th>
-            <th class="sortable" data-col="focus_asset">Asset</th>
-            <th class="sortable" data-col="category">Category</th>
-            <th class="sortable" data-col="combined_score">Score</th>
-            <th class="sortable" data-col="train_cagr">Train CAGR</th>
-            <th class="sortable" data-col="test_cagr">Test CAGR</th>
-            <th>Source</th>
-            <th style="width:36px;"></th>
-          </tr>
-        </thead>
-        <tbody id="body"></tbody>
-      </table>
-    </div>
-  </div>
-  <div id="details"></div>
-</div>
-
-<div class="report-footer">
-  <div class="report-footer-inner">
-    <div class="brand">doob<span style="color:var(--doob-lime);">.</span></div>
-    <div class="meta">Quantitative Strategy Research &middot; Autoresearch Report</div>
-  </div>
-</div>
-
-<script>
-const rows = [
+  <script>
+    const REPORT_META = {
+  "generated_date": "2026-03-19T13:35:07.184385+00:00",
+  "total_ranked": 259,
+  "round_count": 9,
+  "train_start": "2020-01-01",
+  "train_end": "2024-12-31",
+  "test_start": "2025-01-01",
+  "test_end": "2026-03-11",
+  "framework_tag": "5-step Research Analysis Framework"
+};
+    const REPORT_ROWS = [
   {
     "rank": 1,
-    "candidate_id": "seed-001-vol_spread-v0",
+    "candidate_id": "seed-075-vol_spread-v1",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/html/2603.10857v1",
+    "source": "https://arxiv.org/html/2309.08175v2",
     "rule": "vol_spread",
     "focus_asset": "QQQ",
     "args": [
@@ -507,59 +1365,65 @@ const rows = [
       "--rsi-overbought",
       "70",
       "--vol-window",
-      "18",
+      "24",
       "--vol-cap",
-      "0.10",
+      "0.25",
       "--hypothesis-id",
-      "seed-1-0"
+      "seed-75-1"
     ],
-    "combined_score": 3.694868075655579,
-    "train_score": 3.2143331821372607,
-    "test_score": 4.587290020761028,
+    "combined_score": 3.611179640602927,
+    "train_score": 3.0492139054997636,
+    "test_score": 4.6548302915088025,
     "train_details": {
       "beginning_equity": 1000000.0,
-      "cagr": 0.14915539524964827,
-      "final_equity": 2057115.7509999964,
-      "max_drawdown": 0.15413293377039125,
+      "cagr": 0.12495101911278096,
+      "capital": 1000000.0,
+      "final_equity": 1800914.405999999,
+      "max_drawdown": 0.10063355482184116,
       "name": "PaperResearch [QQQ|vol_spread]",
-      "sharpe": 0.8450623059726396,
-      "var_95": -0.010261926629430792
+      "period_end": "2024-12-31",
+      "period_start": "2020-01-02",
+      "sharpe": 0.8134649225245518,
+      "var_95": -0.0029581594563908185
     },
     "test_details": {
       "beginning_equity": 1000000.0,
-      "cagr": 0.22187040380504897,
-      "final_equity": 1283539.2319999954,
-      "max_drawdown": 0.08371089047313741,
+      "cagr": 0.21052986329092227,
+      "capital": 1000000.0,
+      "final_equity": 1254199.387000003,
+      "max_drawdown": 0.05517971995367513,
       "name": "PaperResearch [QQQ|vol_spread]",
-      "sharpe": 1.124420948197709,
-      "var_95": -0.011927762162239522
+      "period_end": "2026-03-11",
+      "period_start": "2025-01-02",
+      "sharpe": 1.156300906566138,
+      "var_95": -0.005456481844345917
     },
     "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-001-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
-      "trade_count": 401,
+      "artifact_path": "autoresearch-audits/seed-075-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 236,
       "actual_period_start": "2020-01-02",
       "actual_period_end": "2024-12-31"
     },
     "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-001-vol_spread-v0-test-2025-01-01-to-2026-03-11.json",
-      "trade_count": 134,
+      "artifact_path": "autoresearch-audits/seed-075-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 86,
       "actual_period_start": "2025-01-02",
       "actual_period_end": "2026-03-11"
     },
-    "why": "Why it works: VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 18-day realized volatility by more than 10%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 14.9%, Sharpe 0.845, max drawdown 15.4%. Test: CAGR 22.2%, Sharpe 1.124, max drawdown 8.4%. Strongly consistent equity growth across both windows.",
+    "why": "Why it works: VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 12.5%, Sharpe 0.813, max drawdown 10.1%. Test: CAGR 21.1%, Sharpe 1.156, max drawdown 5.5%. Strongly consistent equity growth across both windows.",
     "is_seeded": true,
-    "rationale": "Seeded from the paper \"SPX–VIX Risk Computations Via Perturbed Optimal ...\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on QQQ. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.10 controls the minimum spread magnitude required to trigger entry.",
-    "strategy_description": "VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 18-day realized volatility by more than 10%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
-    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 18-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 18-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "rationale": "Seeded from the paper \"Closed-form solutions for VIX derivatives in a Legendre empirical model\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on QQQ. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.25 controls the minimum spread magnitude required to trigger entry.",
+    "strategy_description": "VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
+    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 24-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 24-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
     "investment_rationale": "The Variance Risk Premium (VRP) on QQQ exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
-    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 18) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 24) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
   },
   {
     "rank": 2,
-    "candidate_id": "seed-121-vol_spread-v0",
+    "candidate_id": "seed-120-vol_spread-v1",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/abs/2111.03477",
+    "source": "https://arxiv.org/pdf/2101.00299",
     "rule": "vol_spread",
     "focus_asset": "QQQ",
     "args": [
@@ -582,7 +1446,7 @@ const rows = [
       "--vol-cap",
       "0.10",
       "--hypothesis-id",
-      "seed-121-0"
+      "seed-120-1"
     ],
     "combined_score": 3.416023349245542,
     "train_score": 3.1682016519923812,
@@ -606,20 +1470,20 @@ const rows = [
       "var_95": -0.010713216248830228
     },
     "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-121-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
+      "artifact_path": "autoresearch-audits/seed-120-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
       "trade_count": 367,
       "actual_period_start": "2020-01-02",
       "actual_period_end": "2024-12-31"
     },
     "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-121-vol_spread-v0-test-2025-01-01-to-2026-03-11.json",
+      "artifact_path": "autoresearch-audits/seed-120-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
       "trade_count": 139,
       "actual_period_start": "2025-01-02",
       "actual_period_end": "2026-03-11"
     },
     "why": "Why it works: VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 10%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 15.3%, Sharpe 0.816, max drawdown 14.3%. Test: CAGR 18.9%, Sharpe 0.945, max drawdown 6.7%. Strongly consistent equity growth across both windows.",
     "is_seeded": true,
-    "rationale": "Seeded from the paper \"Data-driven Hedging of Stock Index Options via Deep Learning\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on QQQ. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.10 controls the minimum spread magnitude required to trigger entry.",
+    "rationale": "Seeded from the paper \"arXiv:2101.00299v2 [q-fin.PR] 2 Mar 2021\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on QQQ. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.10 controls the minimum spread magnitude required to trigger entry.",
     "strategy_description": "VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 10%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
     "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 24-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 24-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
     "investment_rationale": "The Variance Risk Premium (VRP) on QQQ exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
@@ -627,19 +1491,19 @@ const rows = [
   },
   {
     "rank": 3,
-    "candidate_id": "seed-037-volatility_regime-v0",
+    "candidate_id": "seed-136-volatility_regime-v0",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/html/2510.03236v1",
+    "source": "https://arxiv.org/pdf/2512.12250",
     "rule": "volatility_regime",
-    "focus_asset": "SPXL",
+    "focus_asset": "QQQ",
     "args": [
       "--asset",
-      "SPXL",
+      "QQQ",
       "--rule",
       "volatility_regime",
       "--fast-window",
-      "24",
+      "20",
       "--slow-window",
       "35",
       "--rsi-window",
@@ -651,57 +1515,63 @@ const rows = [
       "--vol-window",
       "18",
       "--vol-cap",
-      "0.80",
+      "0.70",
       "--hypothesis-id",
-      "seed-37-0"
+      "seed-136-0"
     ],
-    "combined_score": 2.7621948527321756,
-    "train_score": 4.244606112246697,
-    "test_score": 0.009145370776635076,
+    "combined_score": 2.4030595570076785,
+    "train_score": 3.1946342014654494,
+    "test_score": 0.9329923601575324,
     "train_details": {
       "beginning_equity": 1000000.0,
-      "cagr": 0.35180931097949464,
-      "final_equity": 4777701.561999991,
-      "max_drawdown": 0.3798969520988893,
-      "name": "PaperResearch [SPXL|volatility_regime]",
-      "sharpe": 0.888535326436058,
-      "var_95": -0.040142553735625565
+      "cagr": 0.16706000602730509,
+      "capital": 1000000.0,
+      "final_equity": 2163895.6729999986,
+      "max_drawdown": 0.18763428234725385,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "period_end": "2024-12-31",
+      "period_start": "2020-01-02",
+      "sharpe": 0.8183207201959248,
+      "var_95": -0.016416319348460367
     },
     "test_details": {
       "beginning_equity": 1000000.0,
-      "cagr": 0.01618904222356754,
-      "final_equity": 1020206.9980000012,
-      "max_drawdown": 0.2890192899999996,
-      "name": "PaperResearch [SPXL|volatility_regime]",
-      "sharpe": 0.1055460411450764,
-      "var_95": -0.03995790913798074
+      "cagr": 0.06349190828767126,
+      "capital": 1000000.0,
+      "final_equity": 1075704.78,
+      "max_drawdown": 0.09826614801448864,
+      "name": "PaperResearch [QQQ|volatility_regime]",
+      "period_end": "2026-03-11",
+      "period_start": "2025-01-02",
+      "sharpe": 0.22987117255059636,
+      "var_95": -0.015318405411550148
     },
     "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-037-volatility_regime-v0-train-2020-01-01-to-2024-12-31.json",
-      "trade_count": 990,
+      "artifact_path": "autoresearch-audits/seed-136-volatility_regime-v0-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 850,
       "actual_period_start": "2020-01-02",
       "actual_period_end": "2024-12-31"
     },
     "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-037-volatility_regime-v0-test-2025-01-01-to-2026-03-11.json",
-      "trade_count": 227,
+      "artifact_path": "autoresearch-audits/seed-136-volatility_regime-v0-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 215,
       "actual_period_start": "2025-01-02",
       "actual_period_end": "2026-03-11"
     },
-    "why": "Why it works: Volatility regime on SPXL: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 80% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 35.2%, Sharpe 0.889 (drawdown 38.0%). Test: CAGR 1.6%, Sharpe 0.106 (drawdown 28.9%). Risk-adjusted edge is present in both windows but less stable than ideal.",
+    "why": "Why it works: Volatility regime on QQQ: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 70% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 16.7%, Sharpe 0.818, max drawdown 18.8%. Test: CAGR 6.3%, Sharpe 0.230, max drawdown 9.8%. Strongly consistent equity growth across both windows.",
     "is_seeded": true,
-    "rationale": "Seeded from the paper \"Improving S&P 500 Volatility Forecasting through Regime-Switching Methods\", this candidate uses the source as a research cue for a volatility-regime filter on SPXL. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 18-day realized volatility filter to SPXL, restricting exposure to periods when volatility remains below the 80th percentile (vol_cap = 0.80). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
-    "strategy_description": "Volatility regime on SPXL: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 80% regime (vol_cap).",
-    "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 18-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (SPXL) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
-    "investment_rationale": "Volatility-regime filtering on SPXL restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
-    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"SPXL\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Feature engineering: 18-day rolling standard deviation of log returns, annualized via sqrt(365.25). Percentile rank computed across all valid volatility observations. Signal: long when current vol <= vol_cap percentile threshold. Single data input: asset close prices."
+    "rationale": "Seeded from the paper \"Stochastic Volatility Modelling with LSTM Networks: A Hybrid Approach for S&P 500 Index Volatility Forecasting\", this candidate uses the source as a research cue for a volatility-regime filter on QQQ. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 18-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
+    "strategy_description": "Volatility regime on QQQ: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 70% regime (vol_cap).",
+    "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 18-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "Volatility-regime filtering on QQQ restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Feature engineering: 18-day rolling standard deviation of log returns, annualized via sqrt(365.25). Percentile rank computed across all valid volatility observations. Signal: long when current vol <= vol_cap percentile threshold. Single data input: asset close prices."
   },
   {
     "rank": 4,
-    "candidate_id": "seed-038-vol_spread-v2",
+    "candidate_id": "seed-075-vol_spread-v0",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/abs/2112.05302",
+    "source": "https://arxiv.org/html/2309.08175v2",
     "rule": "vol_spread",
     "focus_asset": "SPY",
     "args": [
@@ -720,59 +1590,59 @@ const rows = [
       "--rsi-overbought",
       "70",
       "--vol-window",
-      "24",
+      "22",
       "--vol-cap",
-      "0.25",
+      "0.20",
       "--hypothesis-id",
-      "seed-38-2"
+      "seed-75-0"
     ],
-    "combined_score": 2.3678857502366357,
-    "train_score": 2.452931331028791,
-    "test_score": 2.209943957336919,
+    "combined_score": 2.3538035234270422,
+    "train_score": 2.503450874445779,
+    "test_score": 2.075887014392246,
     "train_details": {
       "beginning_equity": 1000000.0,
-      "cagr": 0.12005784873601644,
-      "final_equity": 1800821.4840000055,
-      "max_drawdown": 0.14385131512819205,
+      "cagr": 0.12689879342684263,
+      "final_equity": 1858620.503000005,
+      "max_drawdown": 0.12096732461287796,
       "name": "PaperResearch [SPY|vol_spread]",
-      "sharpe": 0.6446586932640537,
-      "var_95": -0.011998487848590825
+      "sharpe": 0.6371374561142507,
+      "var_95": -0.013401416957325848
     },
     "test_details": {
       "beginning_equity": 1000000.0,
-      "cagr": 0.1138712533486932,
-      "final_equity": 1143782.3479999984,
-      "max_drawdown": 0.10063889482449484,
+      "cagr": 0.10960168780282054,
+      "final_equity": 1138323.406000004,
+      "max_drawdown": 0.10065541929267544,
       "name": "PaperResearch [SPY|vol_spread]",
-      "sharpe": 0.5558702966663508,
-      "var_95": -0.012185870813250965
+      "sharpe": 0.5197314915283561,
+      "var_95": -0.012813179031989756
     },
     "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-038-vol_spread-v2-train-2020-01-01-to-2024-12-31.json",
-      "trade_count": 666,
+      "artifact_path": "autoresearch-audits/seed-075-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 766,
       "actual_period_start": "2020-01-02",
       "actual_period_end": "2024-12-31"
     },
     "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-038-vol_spread-v2-test-2025-01-01-to-2026-03-11.json",
-      "trade_count": 195,
+      "artifact_path": "autoresearch-audits/seed-075-vol_spread-v0-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 212,
       "actual_period_start": "2025-01-02",
       "actual_period_end": "2026-03-11"
     },
-    "why": "Why it works: VRP harvest on SPY: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 12.0%, Sharpe 0.645, max drawdown 14.4%. Test: CAGR 11.4%, Sharpe 0.556, max drawdown 10.1%. Strongly consistent equity growth across both windows.",
+    "why": "Why it works: VRP harvest on SPY: goes long when VIX-implied volatility exceeds 22-day realized volatility by more than 20%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 12.7%, Sharpe 0.637, max drawdown 12.1%. Test: CAGR 11.0%, Sharpe 0.520, max drawdown 10.1%. Strongly consistent equity growth across both windows.",
     "is_seeded": true,
-    "rationale": "Seeded from the paper \"Realized GARCH, CBOE VIX, and the Volatility Risk Premium\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on SPY. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.25 controls the minimum spread magnitude required to trigger entry.",
-    "strategy_description": "VRP harvest on SPY: goes long when VIX-implied volatility exceeds 24-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
-    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 24-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 24-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (SPY) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "rationale": "Seeded from the paper \"Closed-form solutions for VIX derivatives in a Legendre empirical model\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on SPY. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.20 controls the minimum spread magnitude required to trigger entry.",
+    "strategy_description": "VRP harvest on SPY: goes long when VIX-implied volatility exceeds 22-day realized volatility by more than 20%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
+    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 22-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 22-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (SPY) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
     "investment_rationale": "The Variance Risk Premium (VRP) on SPY exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
-    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"SPY\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 24) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"SPY\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 22) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
   },
   {
     "rank": 5,
-    "candidate_id": "seed-135-volatility_regime-v1",
+    "candidate_id": "seed-134-volatility_regime-v2",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/pdf/2512.12250",
+    "source": "https://arxiv.org/html/2502.00980v1",
     "rule": "volatility_regime",
     "focus_asset": "QQQ",
     "args": [
@@ -783,7 +1653,7 @@ const rows = [
       "--fast-window",
       "20",
       "--slow-window",
-      "50",
+      "70",
       "--rsi-window",
       "14",
       "--rsi-oversold",
@@ -795,7 +1665,7 @@ const rows = [
       "--vol-cap",
       "0.70",
       "--hypothesis-id",
-      "seed-135-1"
+      "seed-134-2"
     ],
     "combined_score": 2.339488800934742,
     "train_score": 3.510643614373283,
@@ -819,20 +1689,20 @@ const rows = [
       "var_95": -0.018595582262397704
     },
     "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-135-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
-      "trade_count": 835,
+      "artifact_path": "autoresearch-audits/seed-134-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 859,
       "actual_period_start": "2020-01-02",
       "actual_period_end": "2024-12-31"
     },
     "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-135-volatility_regime-v1-test-2025-01-01-to-2026-03-11.json",
-      "trade_count": 204,
+      "artifact_path": "autoresearch-audits/seed-134-volatility_regime-v2-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 196,
       "actual_period_start": "2025-01-02",
       "actual_period_end": "2026-03-11"
     },
     "why": "Why it works: Volatility regime on QQQ: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 70% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 15.8%, Sharpe 0.907 (drawdown 11.1%). Test: CAGR 3.6%, Sharpe 0.049 (drawdown 14.1%). Risk-adjusted edge is present in both windows but less stable than ideal.",
     "is_seeded": true,
-    "rationale": "Seeded from the paper \"Stochastic Volatility Modelling with LSTM Networks: A Hybrid Approach for S&P 500 Index Volatility Forecasting\", this candidate uses the source as a research cue for a volatility-regime filter on QQQ. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 18-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
+    "rationale": "Seeded from the paper \"Forecasting VIX using interpretable Kolmogorov-Arnold networks\", this candidate uses the source as a research cue for a volatility-regime filter on QQQ. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 18-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
     "strategy_description": "Volatility regime on QQQ: holds through calmer market states, only trading when realized 18-day volatility stays within the lowest 70% regime (vol_cap).",
     "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 18-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
     "investment_rationale": "Volatility-regime filtering on QQQ restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
@@ -840,7 +1710,7 @@ const rows = [
   },
   {
     "rank": 6,
-    "candidate_id": "seed-006-vol_spread-v0",
+    "candidate_id": "seed-005-vol_spread-v1",
     "strategy": "paper-research",
     "category": "Research",
     "source": "https://arxiv.org/abs/2102.02119",
@@ -866,7 +1736,7 @@ const rows = [
       "--vol-cap",
       "0.40",
       "--hypothesis-id",
-      "seed-6-0"
+      "seed-5-1"
     ],
     "combined_score": 2.253214389784162,
     "train_score": 1.2189867251445134,
@@ -890,13 +1760,13 @@ const rows = [
       "var_95": -0.0004945716205401028
     },
     "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-006-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
+      "artifact_path": "autoresearch-audits/seed-005-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
       "trade_count": 130,
       "actual_period_start": "2020-01-02",
       "actual_period_end": "2024-12-31"
     },
     "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-006-vol_spread-v0-test-2025-01-01-to-2026-03-11.json",
+      "artifact_path": "autoresearch-audits/seed-005-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
       "trade_count": 44,
       "actual_period_start": "2025-01-02",
       "actual_period_end": "2026-03-11"
@@ -911,10 +1781,10 @@ const rows = [
   },
   {
     "rank": 7,
-    "candidate_id": "seed-145-volatility_regime-v1",
+    "candidate_id": "seed-144-volatility_regime-v2",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/abs/2409.15320",
+    "source": "https://arxiv.org/abs/2601.13014",
     "rule": "volatility_regime",
     "focus_asset": "QQQ",
     "args": [
@@ -925,7 +1795,7 @@ const rows = [
       "--fast-window",
       "20",
       "--slow-window",
-      "70",
+      "90",
       "--rsi-window",
       "14",
       "--rsi-oversold",
@@ -937,7 +1807,7 @@ const rows = [
       "--vol-cap",
       "0.70",
       "--hypothesis-id",
-      "seed-145-1"
+      "seed-144-2"
     ],
     "combined_score": 2.192768968568866,
     "train_score": 3.414189476126157,
@@ -961,20 +1831,20 @@ const rows = [
       "var_95": -0.018599020857437996
     },
     "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-145-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
-      "trade_count": 858,
+      "artifact_path": "autoresearch-audits/seed-144-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 847,
       "actual_period_start": "2020-01-02",
       "actual_period_end": "2024-12-31"
     },
     "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-145-volatility_regime-v1-test-2025-01-01-to-2026-03-11.json",
-      "trade_count": 195,
+      "artifact_path": "autoresearch-audits/seed-144-volatility_regime-v2-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 185,
       "actual_period_start": "2025-01-02",
       "actual_period_end": "2026-03-11"
     },
     "why": "paper-research Train: CAGR 15.3%, Sharpe 0.891 (12.4% max drawdown). Test: CAGR 2.7%, Sharpe -0.011 (14.5% max drawdown). This candidate is not yet clearly robust and should be treated as exploratory.",
     "is_seeded": true,
-    "rationale": "Seeded from the paper \"Global Stock Market Volatility Forecasting Incorporating Dynamic Graphs and All Trading Days\", this candidate uses the source as a research cue for a volatility-regime filter on QQQ. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 20-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
+    "rationale": "Seeded from the paper \"A machine learning approach to volatility forecasting\", this candidate uses the source as a research cue for a volatility-regime filter on QQQ. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 20-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
     "strategy_description": "Volatility regime on QQQ: holds through calmer market states, only trading when realized 20-day volatility stays within the lowest 70% regime (vol_cap).",
     "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 20-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
     "investment_rationale": "Volatility-regime filtering on QQQ restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
@@ -982,21 +1852,21 @@ const rows = [
   },
   {
     "rank": 8,
-    "candidate_id": "seed-084-volatility_regime-v2",
+    "candidate_id": "seed-153-volatility_regime-v2",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/html/2402.05272v3",
+    "source": "https://arxiv.org/html/2511.10365v1",
     "rule": "volatility_regime",
-    "focus_asset": "QQQ",
+    "focus_asset": "SPY",
     "args": [
       "--asset",
-      "QQQ",
+      "SPY",
       "--rule",
       "volatility_regime",
       "--fast-window",
-      "20",
+      "16",
       "--slow-window",
-      "220",
+      "90",
       "--rsi-window",
       "14",
       "--rsi-oversold",
@@ -1004,59 +1874,136 @@ const rows = [
       "--rsi-overbought",
       "70",
       "--vol-window",
-      "30",
+      "20",
       "--vol-cap",
-      "0.70",
+      "0.60",
       "--hypothesis-id",
-      "seed-84-2"
+      "seed-153-2"
     ],
-    "combined_score": 1.9332057975044177,
-    "train_score": 2.4711386518208265,
-    "test_score": 0.9341876394882298,
+    "combined_score": 2.0612216406738013,
+    "train_score": 1.653114344335044,
+    "test_score": 2.8191351910172076,
     "train_details": {
       "beginning_equity": 1000000.0,
-      "cagr": 0.122303587083602,
-      "final_equity": 1819633.351,
-      "max_drawdown": 0.19576970695770596,
-      "name": "PaperResearch [QQQ|volatility_regime]",
-      "sharpe": 0.6704649063533342,
-      "var_95": -0.0133214374442468
+      "cagr": 0.08049909431582658,
+      "capital": 1000000.0,
+      "final_equity": 1472336.107000001,
+      "max_drawdown": 0.11429167103815424,
+      "name": "PaperResearch [SPY|volatility_regime]",
+      "period_end": "2024-12-31",
+      "period_start": "2020-01-02",
+      "sharpe": 0.4433760392978335,
+      "var_95": -0.010347664582297252
     },
     "test_details": {
       "beginning_equity": 1000000.0,
-      "cagr": 0.066816061151586,
-      "final_equity": 1083906.3679999951,
-      "max_drawdown": 0.13224869930699776,
-      "name": "PaperResearch [QQQ|volatility_regime]",
-      "sharpe": 0.23947981720283693,
-      "var_95": -0.018594759235964924
+      "cagr": 0.1008275222521533,
+      "capital": 1000000.0,
+      "final_equity": 1120618.4349999991,
+      "max_drawdown": 0.04559922016156152,
+      "name": "PaperResearch [SPY|volatility_regime]",
+      "period_end": "2026-03-11",
+      "period_start": "2025-01-02",
+      "sharpe": 0.759336321910158,
+      "var_95": -0.005653436695910779
     },
     "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
-      "trade_count": 754,
+      "artifact_path": "autoresearch-audits/seed-153-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 708,
       "actual_period_start": "2020-01-02",
       "actual_period_end": "2024-12-31"
     },
     "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-test-2025-01-01-to-2026-03-11.json",
-      "trade_count": 249,
+      "artifact_path": "autoresearch-audits/seed-153-volatility_regime-v2-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 148,
       "actual_period_start": "2025-01-02",
       "actual_period_end": "2026-03-11"
     },
-    "why": "Why it works: Volatility regime on QQQ: holds through calmer market states, only trading when realized 30-day volatility stays within the lowest 70% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 12.2%, Sharpe 0.670, max drawdown 19.6%. Test: CAGR 6.7%, Sharpe 0.239, max drawdown 13.2%. Strongly consistent equity growth across both windows.",
+    "why": "Why it works: Volatility regime on SPY: holds through calmer market states, only trading when realized 20-day volatility stays within the lowest 60% regime (vol_cap). This strategy is run through `paper-research` in `doob`. Train: CAGR 8.0%, Sharpe 0.443, max drawdown 11.4%. Test: CAGR 10.1%, Sharpe 0.759, max drawdown 4.6%. Strongly consistent equity growth across both windows.",
     "is_seeded": true,
-    "rationale": "Seeded from the paper \"Downside Risk Reduction Using Regime-Switching Signals: A Statistical Jump Model Approach1footnote 11footnote 1 This article was previously titled “Regime-Aware Asset Allocation: a Statistical Jump Model Approach”. The authors are grateful for the thoughtful comments from the editor and the anonymous reviewer, which have significantly improved the article.\", this candidate uses the source as a research cue for a volatility-regime filter on QQQ. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 30-day realized volatility filter to QQQ, restricting exposure to periods when volatility remains below the 70th percentile (vol_cap = 0.70). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
-    "strategy_description": "Volatility regime on QQQ: holds through calmer market states, only trading when realized 30-day volatility stays within the lowest 70% regime (vol_cap).",
-    "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 30-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
-    "investment_rationale": "Volatility-regime filtering on QQQ restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
-    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Feature engineering: 30-day rolling standard deviation of log returns, annualized via sqrt(365.25). Percentile rank computed across all valid volatility observations. Signal: long when current vol <= vol_cap percentile threshold. Single data input: asset close prices."
+    "rationale": "Seeded from the paper \"FCOC: A Fractal-Chaotic Co-driven Framework for Financial Volatility Forecasting\", this candidate uses the source as a research cue for a volatility-regime filter on SPY. The report is describing the exact rule under test, not claiming that the paper itself used this exact specification. The candidate applies a 20-day realized volatility filter to SPY, restricting exposure to periods when volatility remains below the 60th percentile (vol_cap = 0.60). The source link captures the paper that inspired the hypothesis, while the narrative here explains the concrete doob implementation.",
+    "strategy_description": "Volatility regime on SPY: holds through calmer market states, only trading when realized 20-day volatility stays within the lowest 60% regime (vol_cap).",
+    "critical_evaluation": "Volatility-regime strategies depend on the assumption that low-vol periods offer superior risk-adjusted returns. This is regime-dependent by design: the 20-day realized vol filter may miss sudden volatility spikes (gap risk) since it relies on trailing data. The percentile-based threshold adds a non-parametric layer that is relatively robust to distributional assumptions but may be slow to adapt to structural market changes. Overfitting risk is moderate given two free parameters (vol_window, vol_cap). Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (SPY) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "Volatility-regime filtering on SPY restricts exposure to periods of low realized volatility, avoiding the fat-tailed losses that occur during high-volatility regimes. The premise is that returns are more favorable and predictable in calm markets. By stepping aside when volatility spikes, the strategy sacrifices some upside participation in exchange for dramatically reduced drawdowns — a trade-off valued by risk-conscious portfolio managers.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"SPY\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Feature engineering: 20-day rolling standard deviation of log returns, annualized via sqrt(365.25). Percentile rank computed across all valid volatility observations. Signal: long when current vol <= vol_cap percentile threshold. Single data input: asset close prices."
   },
   {
     "rank": 9,
-    "candidate_id": "seed-004-vol_spread-v1",
+    "candidate_id": "seed-113-rsi_reversion-v1",
     "strategy": "paper-research",
     "category": "Research",
-    "source": "https://arxiv.org/abs/1907.00293",
+    "source": "https://arxiv.org/pdf/1602.05858",
+    "rule": "rsi_reversion",
+    "focus_asset": "TQQQ",
+    "args": [
+      "--asset",
+      "TQQQ",
+      "--rule",
+      "rsi_reversion",
+      "--fast-window",
+      "14",
+      "--slow-window",
+      "35",
+      "--rsi-window",
+      "12",
+      "--rsi-oversold",
+      "32",
+      "--rsi-overbought",
+      "78",
+      "--vol-window",
+      "20",
+      "--vol-cap",
+      "0.40",
+      "--hypothesis-id",
+      "seed-113-1"
+    ],
+    "combined_score": 1.8293677181836152,
+    "train_score": 0.2169187554837323,
+    "test_score": 4.823915791769112,
+    "train_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.04108946271846614,
+      "final_equity": 1232344.076000003,
+      "max_drawdown": 0.39778755942650207,
+      "name": "PaperResearch [TQQQ|rsi_reversion]",
+      "sharpe": 0.17576152079001275,
+      "var_95": -0.0013374429217294411
+    },
+    "test_details": {
+      "beginning_equity": 1000000.0,
+      "cagr": 0.3883346626821831,
+      "final_equity": 1504901.7040000004,
+      "max_drawdown": 0.1994670560232211,
+      "name": "PaperResearch [TQQQ|rsi_reversion]",
+      "sharpe": 0.9243872313695076,
+      "var_95": 0.0
+    },
+    "train_audit": {
+      "artifact_path": "autoresearch-audits/seed-113-rsi_reversion-v1-train-2020-01-01-to-2024-12-31.json",
+      "trade_count": 151,
+      "actual_period_start": "2020-01-02",
+      "actual_period_end": "2024-12-31"
+    },
+    "test_audit": {
+      "artifact_path": "autoresearch-audits/seed-113-rsi_reversion-v1-test-2025-01-01-to-2026-03-11.json",
+      "trade_count": 26,
+      "actual_period_start": "2025-01-02",
+      "actual_period_end": "2026-03-11"
+    },
+    "why": "Why it works: RSI reversion on TQQQ: enters positions when RSI(12) falls below 32, targeting mean-reversion from oversold conditions. This strategy is run through `paper-research` in `doob`. Train: CAGR 4.1%, Sharpe 0.176 (drawdown 39.8%). Test: CAGR 38.8%, Sharpe 0.924 (drawdown 19.9%). Risk-adjusted edge is present in both windows but less stable than ideal.",
+    "is_seeded": true,
+    "rationale": "Seeded from the paper \"On the Profitability of Optimal Mean Reversion Trading Strategies\", this candidate maps the source into an RSI mean-reversion hypothesis on TQQQ. It is not a direct replication of the paper's model or claims; the paper serves as the research lead, while the rule below is the concrete strategy under test. The candidate triggers entries when RSI(12) drops below 32, targeting the reflexive bounce that typically follows exhaustive selling pressure. In leveraged instruments like TQQQ, these oversold conditions can be amplified by daily rebalancing effects, which is why the report highlights the implemented signal separately from the source paper.",
+    "strategy_description": "RSI reversion on TQQQ: enters positions when RSI(12) falls below 32, targeting mean-reversion from oversold conditions.",
+    "critical_evaluation": "Mean-reversion via RSI(12) < 32 carries significant regime risk: oversold conditions in bear markets often precede further declines rather than bounces. The strategy's edge is strongest in range-bound or mildly trending markets. Parameter sensitivity is high — small changes in RSI window or threshold can materially alter signal frequency and performance. Authors of RSI-based strategies typically ignore the impact of leverage decay in instruments like TQQQ, which compounds daily and can erode edge over multi-day holding periods. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (TQQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
+    "investment_rationale": "Mean-reversion via RSI on TQQQ exploits the tendency for oversold conditions to precede short-term bounces. When RSI drops to extreme lows, selling pressure is typically exhausted and a reflexive recovery follows. This strategy is particularly effective in liquid, large-cap instruments where panic selling creates predictable snap-back opportunities. It provides diversification from trend-following approaches by profiting from the opposite market dynamic.",
+    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"TQQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Feature engineering: rolling RSI(12) computed from close-to-close price changes (Wilder's smoothed average gain/loss). Signal: binary long trigger when RSI < 32. Single data input: asset close prices."
+  },
+  {
+    "rank": 10,
+    "candidate_id": "seed-005-vol_spread-v0",
+    "strategy": "paper-research",
+    "category": "Research",
+    "source": "https://arxiv.org/abs/2102.02119",
     "rule": "vol_spread",
     "focus_asset": "SPY",
     "args": [
@@ -1079,7 +2026,7 @@ const rows = [
       "--vol-cap",
       "0.30",
       "--hypothesis-id",
-      "seed-4-1"
+      "seed-5-0"
     ],
     "combined_score": 1.8195546781681553,
     "train_score": 1.0364137387711427,
@@ -1103,293 +2050,807 @@ const rows = [
       "var_95": -0.011861491340489534
     },
     "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-004-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
+      "artifact_path": "autoresearch-audits/seed-005-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
       "trade_count": 572,
       "actual_period_start": "2020-01-02",
       "actual_period_end": "2024-12-31"
     },
     "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-004-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
+      "artifact_path": "autoresearch-audits/seed-005-vol_spread-v0-test-2025-01-01-to-2026-03-11.json",
       "trade_count": 185,
       "actual_period_start": "2025-01-02",
       "actual_period_end": "2026-03-11"
     },
     "why": "Why it works: VRP harvest on SPY: goes long when VIX-implied volatility exceeds 30-day realized volatility by more than 30%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 6.9%, Sharpe 0.275, max drawdown 14.4%. Test: CAGR 15.5%, Sharpe 0.820, max drawdown 8.1%. Strongly consistent equity growth across both windows.",
     "is_seeded": true,
-    "rationale": "Seeded from the paper \"Tracking VIX with VIX Futures: Portfolio Construction and Performance\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on SPY. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.30 controls the minimum spread magnitude required to trigger entry.",
+    "rationale": "Seeded from the paper \"The VIX index under scrutiny of machine learning techniques and neural networks\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on SPY. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.30 controls the minimum spread magnitude required to trigger entry.",
     "strategy_description": "VRP harvest on SPY: goes long when VIX-implied volatility exceeds 30-day realized volatility by more than 30%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
     "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 30-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 30-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (SPY) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
     "investment_rationale": "The Variance Risk Premium (VRP) on SPY exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
     "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"SPY\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 30) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
-  },
-  {
-    "rank": 10,
-    "candidate_id": "seed-015-vol_spread-v1",
-    "strategy": "paper-research",
-    "category": "Research",
-    "source": "https://arxiv.org/abs/2012.08353",
-    "rule": "vol_spread",
-    "focus_asset": "QQQ",
-    "args": [
-      "--asset",
-      "QQQ",
-      "--rule",
-      "vol_spread",
-      "--fast-window",
-      "12",
-      "--slow-window",
-      "50",
-      "--rsi-window",
-      "14",
-      "--rsi-oversold",
-      "30",
-      "--rsi-overbought",
-      "70",
-      "--vol-window",
-      "40",
-      "--vol-cap",
-      "0.25",
-      "--hypothesis-id",
-      "seed-15-1"
-    ],
-    "combined_score": 1.690913133440711,
-    "train_score": 1.0043615972658664,
-    "test_score": 2.9659374149082796,
-    "train_details": {
-      "beginning_equity": 1000000.0,
-      "cagr": 0.06603716087382439,
-      "final_equity": 1393443.074999999,
-      "max_drawdown": 0.1369486763373273,
-      "name": "PaperResearch [QQQ|vol_spread]",
-      "sharpe": 0.2666222596317261,
-      "var_95": -0.0017371912964677116
-    },
-    "test_details": {
-      "beginning_equity": 1000000.0,
-      "cagr": 0.14057214021329667,
-      "final_equity": 1178037.4149999996,
-      "max_drawdown": 0.06580261609823969,
-      "name": "PaperResearch [QQQ|vol_spread]",
-      "sharpe": 0.738209412055345,
-      "var_95": -0.006671750933208782
-    },
-    "train_audit": {
-      "artifact_path": "autoresearch-audits/seed-015-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
-      "trade_count": 184,
-      "actual_period_start": "2020-01-02",
-      "actual_period_end": "2024-12-31"
-    },
-    "test_audit": {
-      "artifact_path": "autoresearch-audits/seed-015-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
-      "trade_count": 90,
-      "actual_period_start": "2025-01-02",
-      "actual_period_end": "2026-03-11"
-    },
-    "why": "Why it works: VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 40-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized. This strategy is run through `paper-research` in `doob`. Train: CAGR 6.6%, Sharpe 0.267, max drawdown 13.7%. Test: CAGR 14.1%, Sharpe 0.738, max drawdown 6.6%. Strongly consistent equity growth across both windows.",
-    "is_seeded": true,
-    "rationale": "Seeded from the paper \"A general framework for a joint calibration of VIX and VXX options\", this candidate turns the source into an implied-vs-realized volatility spread hypothesis on QQQ. The paper is the inspiration source, while the rule below is the specific doob translation being backtested. When VIX overstates subsequent realized vol (positive spread), the strategy enters long positions to harvest the premium. In the negative-threshold variant, it targets snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions. The vol_cap threshold of 0.25 controls the minimum spread magnitude required to trigger entry.",
-    "strategy_description": "VRP harvest on QQQ: goes long when VIX-implied volatility exceeds 40-day realized volatility by more than 25%, capturing the variance risk premium as implied vol mean-reverts toward realized.",
-    "critical_evaluation": "The Variance Risk Premium (VRP) is one of the most well-documented anomalies in finance, reducing overfitting concerns relative to purely technical signals. However, the spread between VIX-implied and 40-day realized vol is noisy at short horizons and can produce false signals during volatility regime transitions. Key risks: (1) VIX reflects 30-day implied vol while realized vol is computed over a 40-day window — this horizon mismatch can introduce systematic bias; (2) the VRP compresses during crisis periods when both implied and realized vol spike, reducing signal effectiveness precisely when risk management matters most; (3) negative-threshold snap-back entries assume mean-reversion in volatility, which can fail during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking model selection that would constitute lookahead bias in a live trading context. Transaction costs are modeled using the IBKR Tiered fee schedule with per-share commissions and exchange fees. Slippage is not explicitly modeled but is mitigated by trading highly liquid instruments (QQQ) at daily close prices. The train/test split (2020–2024 train, 2025+ test) guards against in-sample overfitting, though the test window remains short.",
-    "investment_rationale": "The Variance Risk Premium (VRP) on QQQ exploits the well-documented tendency for VIX-implied volatility to overstate subsequently realized volatility. Carr & Wu (2009) established that this spread is persistently positive and represents compensation for bearing volatility risk. Recent GARCH-LSTM hybrid forecasting models (arXiv 2407.16780) demonstrate that the spread is predictable and tradeable. This strategy enters long positions when the implied-vs-realized spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to calmer conditions.",
-    "backtest_architecture": "Data ingestion: load_ticker_ohlcv(\"QQQ\") reads daily OHLCV from ~/market-warehouse bronze parquet via polars LazyFrame::scan_parquet(). PnL simulation: daily mark-to-market with IBKR tiered fee model (ibkr_roundtrip_cost per rebalance). Signal → binary long/flat mask; equity curve tracks shares × close + cash remainder. Data ingestion (additional): load_vix_ohlcv() reads VIX from asset_class=volatility/symbol=VIX parquet — no HTTP download. Date alignment via HashMap<NaiveDate, f64> lookup, NaN fill for missing VIX dates. Feature engineering: realized_vol = std(log_returns, 40) × sqrt(252); implied_vol = VIX_close / 100. Spread = (implied - realized) / max(realized, 0.01). Signal: long when spread > threshold (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + VIX OHLCV, both from local warehouse parquet."
   }
 ];
-const tbody = document.getElementById('body');
-const searchEl = document.getElementById('search');
-const catEl = document.getElementById('cat');
-const srcEl = document.getElementById('src');
-const seededEl = document.getElementById('seeded');
 
-const cats = [...new Set(rows.map(r => r.category))];
-cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catEl.appendChild(o); });
-const srcs = [...new Set(rows.map(r => { try { return new URL(r.source).hostname; } catch { return r.source; } }))];
-srcs.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; srcEl.appendChild(o); });
+    const state = {
+      query: "",
+      asset: "all",
+      rule: "all",
+      origin: "all",
+      sort: "combined",
+      selectedId: REPORT_ROWS[0]?.candidate_id ?? null,
+      configOpen: false,
+    };
 
-document.getElementById('kpi-candidates').textContent = rows.length;
-document.getElementById('kpi-top').textContent = rows.length;
-if (rows.length) {
-  const bestCagr = Math.max(...rows.map(r => r.train_details?.cagr ?? 0));
-  const bestSharpe = Math.max(...rows.map(r => r.train_details?.sharpe ?? 0));
-  document.getElementById('kpi-cagr').textContent = (bestCagr * 100).toFixed(1) + '%';
-  document.getElementById('kpi-sharpe').textContent = bestSharpe.toFixed(3);
-  document.getElementById('kpi-seeded').textContent = rows.filter(r => r.is_seeded).length;
-}
+    const els = {
+      heroMeta: document.getElementById("hero-meta"),
+      phaseBadge: document.getElementById("phase-badge"),
+      metricsRow: document.getElementById("metrics-row"),
+      vectorLegend: document.getElementById("vector-legend"),
+      vectorTag: document.getElementById("vector-tag"),
+      selectedArea: document.getElementById("selected-area"),
+      selectedPath: document.getElementById("selected-path"),
+      baselinePath: document.getElementById("baseline-path"),
+      selectedFocus: document.getElementById("selected-focus"),
+      activeFilterChips: document.getElementById("active-filter-chips"),
+      toggleConfig: document.getElementById("toggle-config"),
+      configurationPanel: document.getElementById("configuration-panel"),
+      search: document.getElementById("search"),
+      assetFilter: document.getElementById("asset-filter"),
+      ruleFilter: document.getElementById("rule-filter"),
+      seedFilter: document.getElementById("seed-filter"),
+      sortBy: document.getElementById("sort-by"),
+      resultsMeta: document.getElementById("results-meta"),
+      resultsGrid: document.getElementById("results-grid"),
+      resultsEmpty: document.getElementById("results-empty"),
+      auditRail: document.getElementById("audit-rail"),
+      copyCommandButton: document.getElementById("copy-command-button"),
+      navWindows: document.getElementById("nav-windows"),
+      navConfig: document.getElementById("nav-config"),
+      footerSettings: document.getElementById("footer-settings"),
+    };
 
-function fmt(v, pct) {
-  if (v == null || v === undefined) return '\u2014';
-  return pct ? (v * 100).toFixed(1) + '%' : v.toFixed(3);
-}
-function fmtMoney(v) {
-  if (v == null || v === undefined) return '\u2014';
-  return '$' + Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
-}
-function fmtWindow(meta, details) {
-  const start = meta?.actual_period_start || details?.period_start;
-  const end = meta?.actual_period_end || details?.period_end;
-  if (!start && !end) return '\u2014';
-  return `${start || '\u2014'} \u2192 ${end || '\u2014'}`;
-}
-function fmtAuditLink(meta) {
-  if (!meta?.artifact_path) return '\u2014';
-  return `<a class="source-link" href="${meta.artifact_path}" target="_blank" rel="noopener">Open JSON</a>`;
-}
-function cagrClass(v) {
-  if (v == null) return '';
-  return v >= 0 ? 'pos' : 'neg';
-}
-
-function renderRows(data) {
-  tbody.innerHTML = '';
-  data.forEach(r => {
-    let srcHost, isUrl = false;
-    try { const u = new URL(r.source); srcHost = u.hostname.replace('www.', ''); isUrl = true; } catch { srcHost = r.source || '\u2014'; }
-    const srcCell = isUrl
-      ? `<a class="source-link" href="${r.source}" target="_blank" rel="noopener">${srcHost}</a>`
-      : `<span style="font-family:var(--doob-font-mono);font-size:11px;color:var(--doob-slate);">${srcHost}</span>`;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="rank">${r.rank}</td>
-      <td style="font-size:12px;">${r.candidate_id || '\u2014'}</td>
-      <td><span class="pill pill-sky">${r.rule || '\u2014'}</span></td>
-      <td><span class="pill pill-teal">${r.focus_asset || '\u2014'}</span></td>
-      <td>${r.category || '\u2014'}</td>
-      <td class="mono" style="font-weight:500;">${fmt(r.combined_score, false)}</td>
-      <td class="mono ${cagrClass(r.train_details?.cagr)}">${fmt(r.train_details?.cagr, true)}</td>
-      <td class="mono ${cagrClass(r.test_details?.cagr)}">${fmt(r.test_details?.cagr, true)}</td>
-      <td>${srcCell}</td>
-      <td><button class="toggle-btn" data-rank="${r.rank}">+</button></td>
-    `;
-    tbody.appendChild(tr);
-
-    const detailTr = document.createElement('tr');
-    detailTr.id = 'detail-' + r.rank;
-    detailTr.style.display = 'none';
-    detailTr.innerHTML = `<td colspan="10">
-      <div class="row-details">
-        <div class="detail-grid">
-          <div>
-            <h4 style="display:flex;align-items:center;">Train Window<span class="info-bubble">i<span class="info-tip">The in-sample period used to fit and calibrate the strategy. Strong train metrics confirm the signal exists historically, but high train scores alone can indicate overfitting. Compare against the test window and the linked audit trail.</span></span></h4>
-            <div class="detail-row"><span class="label">CAGR</span><span class="value ${cagrClass(r.train_details?.cagr)}">${fmt(r.train_details?.cagr, true)}</span></div>
-            <div class="detail-row"><span class="label">Sharpe</span><span class="value">${fmt(r.train_details?.sharpe, false)}</span></div>
-            <div class="detail-row"><span class="label">Max Drawdown</span><span class="value neg">${fmt(r.train_details?.max_drawdown, true)}</span></div>
-            <div class="detail-row"><span class="label">Actual Period</span><span class="value">${fmtWindow(r.train_audit, r.train_details)}</span></div>
-            <div class="detail-row"><span class="label">Beginning Equity</span><span class="value">${fmtMoney(r.train_details?.beginning_equity)}</span></div>
-            <div class="detail-row"><span class="label">Final Equity</span><span class="value">${fmtMoney(r.train_details?.final_equity)}</span></div>
-            <div class="detail-row"><span class="label">Executed Trades</span><span class="value">${r.train_audit?.trade_count ?? '\u2014'}</span></div>
-            <div class="detail-row"><span class="label">Audit Trail</span><span class="value">${fmtAuditLink(r.train_audit)}</span></div>
-            <div class="detail-row"><span class="label">VaR 95</span><span class="value">${fmt(r.train_details?.var_95, true)}</span></div>
-          </div>
-          <div>
-            <h4 style="display:flex;align-items:center;">Test Window<span class="info-bubble">i<span class="info-tip">The out-of-sample period the strategy has never seen during calibration. Test performance is the most reliable indicator of real-world viability. Use the linked audit trail to inspect the concrete trades and equity path.</span></span></h4>
-            <div class="detail-row"><span class="label">CAGR</span><span class="value ${cagrClass(r.test_details?.cagr)}">${fmt(r.test_details?.cagr, true)}</span></div>
-            <div class="detail-row"><span class="label">Sharpe</span><span class="value">${fmt(r.test_details?.sharpe, false)}</span></div>
-            <div class="detail-row"><span class="label">Max Drawdown</span><span class="value neg">${fmt(r.test_details?.max_drawdown, true)}</span></div>
-            <div class="detail-row"><span class="label">Actual Period</span><span class="value">${fmtWindow(r.test_audit, r.test_details)}</span></div>
-            <div class="detail-row"><span class="label">Beginning Equity</span><span class="value">${fmtMoney(r.test_details?.beginning_equity)}</span></div>
-            <div class="detail-row"><span class="label">Final Equity</span><span class="value">${fmtMoney(r.test_details?.final_equity)}</span></div>
-            <div class="detail-row"><span class="label">Executed Trades</span><span class="value">${r.test_audit?.trade_count ?? '\u2014'}</span></div>
-            <div class="detail-row"><span class="label">Audit Trail</span><span class="value">${fmtAuditLink(r.test_audit)}</span></div>
-            <div class="detail-row"><span class="label">VaR 95</span><span class="value">${fmt(r.test_details?.var_95, true)}</span></div>
-          </div>
-        </div>
-        <div class="analysis-section">
-          <div class="analysis-header">Research Analysis Framework</div>
-          <div class="analysis-body">
-            <div class="analysis-block">
-              <div class="analysis-block-label">1. Mental Model Synthesis</div>
-              <div class="analysis-block-text">${r.rationale || ''}${isUrl ? ` <a href="${r.source}" target="_blank" rel="noopener">View source \u2192</a>` : ''}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">2. Critical Evaluation</div>
-              <div class="analysis-block-text">${r.critical_evaluation || ''}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">3. Trading Strategy</div>
-              <div class="analysis-block-text">${r.strategy_description || ''}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">4. Asset Universe &amp; Investment Case</div>
-              <div class="analysis-block-text">${r.investment_rationale || ''}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">5. Backtest Architecture</div>
-              <div class="analysis-block-text">${r.backtest_architecture || ''}</div>
-            </div>
-            <div class="analysis-block">
-              <div class="analysis-block-label">Performance Summary</div>
-              <div class="analysis-block-text">${r.why || ''}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </td>`;
-    tbody.appendChild(detailTr);
-  });
-}
-
-renderRows(rows);
-
-function applyFilters() {
-  const q = searchEl.value.toLowerCase();
-  const cat = catEl.value;
-  const src = srcEl.value;
-  const seed = seededEl.value;
-  const filtered = rows.filter(r => {
-    if (q) {
-      const haystack = [r.candidate_id, r.rule, r.focus_asset, r.source, r.why, r.category].join(' ').toLowerCase();
-      if (!haystack.includes(q)) return false;
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
     }
-    if (cat !== 'All' && r.category !== cat) return false;
-    if (src !== 'All') {
-      let h; try { h = new URL(r.source).hostname; } catch { h = r.source; }
-      if (h !== src) return false;
+
+    function safeHref(value) {
+      const href = String(value ?? "").trim();
+      if (!href) return "#";
+      if (
+        href.startsWith("http://") ||
+        href.startsWith("https://") ||
+        href.startsWith("autoresearch-audits/")
+      ) {
+        return encodeURI(href);
+      }
+      return "#";
     }
-    if (seed === 'Seeded' && !r.is_seeded) return false;
-    if (seed === 'Fallback' && r.is_seeded) return false;
-    return true;
-  });
-  renderRows(filtered);
-}
 
-searchEl.addEventListener('input', applyFilters);
-catEl.addEventListener('change', applyFilters);
-srcEl.addEventListener('change', applyFilters);
-seededEl.addEventListener('change', applyFilters);
+    function number(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
 
-document.addEventListener('click', e => {
-  const btn = e.target.closest('.toggle-btn');
-  if (!btn) return;
-  const rank = btn.dataset.rank;
-  const row = document.getElementById('detail-' + rank);
-  if (!row) return;
-  const open = row.style.display !== 'none';
-  row.style.display = open ? 'none' : '';
-  btn.textContent = open ? '+' : '\u2212';
-  btn.classList.toggle('open', !open);
-  btn.closest('tr').classList.toggle('expanded', !open);
-});
+    function detail(row, key, stage = "test") {
+      const bucket = stage === "train" ? row.train_details : row.test_details;
+      return number(bucket?.[key]);
+    }
 
-let sortCol = null, sortDir = 'desc';
-document.querySelectorAll('th.sortable').forEach(th => {
-  th.addEventListener('click', () => {
-    const col = th.dataset.col;
-    if (sortCol === col) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
-    else { sortCol = col; sortDir = 'desc'; }
-    document.querySelectorAll('th.sortable').forEach(t => t.classList.remove('sorted-asc', 'sorted-desc'));
-    th.classList.add(sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
-    rows.sort((a, b) => {
-      let va, vb;
-      if (col === 'train_cagr') { va = a.train_details?.cagr ?? 0; vb = b.train_details?.cagr ?? 0; }
-      else if (col === 'test_cagr') { va = a.test_details?.cagr ?? 0; vb = b.test_details?.cagr ?? 0; }
-      else { va = a[col] ?? ''; vb = b[col] ?? ''; }
-      if (typeof va === 'string') { return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va); }
-      return sortDir === 'asc' ? va - vb : vb - va;
-    });
-    rows.forEach((r, i) => r.rank = i + 1);
-    applyFilters();
-  });
-});
-</script>
+    function totalTrades(row) {
+      return number(row.train_audit?.trade_count) + number(row.test_audit?.trade_count);
+    }
+
+    function pct(value, fractionDigits = 1) {
+      return `${(number(value) * 100).toFixed(fractionDigits)}%`;
+    }
+
+    function signedPct(value, fractionDigits = 1) {
+      const amount = number(value) * 100;
+      const sign = amount > 0 ? "+" : "";
+      return `${sign}${amount.toFixed(fractionDigits)}%`;
+    }
+
+    function fmt(value, fractionDigits = 2) {
+      return number(value).toFixed(fractionDigits);
+    }
+
+    function currency(value, fractionDigits = 0) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: fractionDigits,
+        minimumFractionDigits: fractionDigits,
+      }).format(number(value));
+    }
+
+    function formatDateTime(value) {
+      const date = value ? new Date(value) : null;
+      if (!date || Number.isNaN(date.getTime())) return "Unknown";
+      return new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(date);
+    }
+
+    function formatTime(value) {
+      const date = value ? new Date(value) : null;
+      if (!date || Number.isNaN(date.getTime())) return "Unknown";
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short",
+      }).format(date);
+    }
+
+    function domainLabel(url) {
+      try {
+        return new URL(url).hostname.replace(/^www\./, "");
+      } catch {
+        return "local";
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function compactText(value, maxLength = 180) {
+      const text = String(value ?? "").replace(/\s+/g, " ").trim();
+      if (text.length <= maxLength) return text;
+      return `${text.slice(0, maxLength - 1).trimEnd()}…`;
+    }
+
+    function metricToneClass(value, positiveClass, negativeClass) {
+      return number(value) >= 0 ? positiveClass : negativeClass;
+    }
+
+    function originLabel(row) {
+      return row.is_seeded ? "Seeded Lead" : "Derived Variant";
+    }
+
+    function humanizeRule(rule) {
+      const raw = String(rule ?? "").replaceAll("_", " ").replaceAll("-", " ").trim();
+      if (!raw) return "Adaptive Rule";
+      return raw.replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function hypothesisHeadline(row) {
+      switch (row?.rule) {
+        case "vol_spread":
+          return "The Variance Premium Thesis";
+        case "volatility_regime":
+          return "The Regime Filter Thesis";
+        case "rsi_reversion":
+          return "The Mean Reversion Thesis";
+        case "trend_momentum":
+          return "The Trend Persistence Thesis";
+        case "trend_pullback":
+          return "The Pullback Re-entry Thesis";
+        default:
+          return "The Strategy Thesis";
+      }
+    }
+
+    function confidenceLabel(row) {
+      const sharpe = detail(row, "sharpe", "test");
+      const drawdown = Math.abs(detail(row, "max_drawdown", "test"));
+      if (sharpe >= 1.0 && drawdown <= 0.12) {
+        return { label: "HIGH", tone: "high" };
+      }
+      if (sharpe >= 0.55 && drawdown <= 0.2) {
+        return { label: "MODERATE", tone: "moderate" };
+      }
+      return { label: "WATCH", tone: "watch" };
+    }
+
+    function actualCommand(row) {
+      return ["doob", row.strategy, ...row.args, "--output", "json"].join(" ");
+    }
+
+    function equityRatio(details) {
+      const start = number(details?.beginning_equity);
+      const end = number(details?.final_equity);
+      if (start <= 0 || end <= 0) return 1;
+      return end / start;
+    }
+
+    function buildProfileSeries(row) {
+      const trainRatio = clamp(equityRatio(row.train_details), 0.72, 3.5);
+      const testRatio = clamp(equityRatio(row.test_details), 0.72, 3.0);
+      const trainDrawdown = clamp(Math.abs(detail(row, "max_drawdown", "train")), 0, 0.35);
+      const testDrawdown = clamp(Math.abs(detail(row, "max_drawdown", "test")), 0, 0.35);
+      return [
+        1.0,
+        1.0 + (trainRatio - 1) * 0.22,
+        1.0 + (trainRatio - 1) * 0.58 - trainDrawdown * 0.18,
+        trainRatio - trainDrawdown * 0.08,
+        trainRatio * (1 + (testRatio - 1) * 0.38) - testDrawdown * 0.12,
+        trainRatio * (1 + (testRatio - 1) * 0.74) - testDrawdown * 0.04,
+        trainRatio * testRatio,
+      ].map((value) => clamp(value, 0.58, 4.2));
+    }
+
+    function averageProfileSeries(rows) {
+      if (!rows.length) return [1, 1, 1, 1, 1, 1, 1];
+      const profiles = rows.map(buildProfileSeries);
+      return profiles[0].map((_, index) => (
+        profiles.reduce((sum, profile) => sum + number(profile[index]), 0) / profiles.length
+      ));
+    }
+
+    function buildPoints(series, width, height, padding, minValue, maxValue) {
+      const span = Math.max(maxValue - minValue, 0.001);
+      const usableWidth = width - padding * 2;
+      const usableHeight = height - padding * 2;
+      return series.map((value, index) => {
+        const x = padding + (usableWidth * index) / Math.max(series.length - 1, 1);
+        const normalized = (value - minValue) / span;
+        const y = height - padding - normalized * usableHeight;
+        return [Number(x.toFixed(2)), Number(y.toFixed(2))];
+      });
+    }
+
+    function linePath(points) {
+      return points.map(([x, y], index) => `${index === 0 ? "M" : "L"} ${x} ${y}`).join(" ");
+    }
+
+    function areaPath(points, height, padding) {
+      if (!points.length) return "";
+      const first = points[0];
+      const last = points[points.length - 1];
+      return `${linePath(points)} L ${last[0]} ${height - padding} L ${first[0]} ${height - padding} Z`;
+    }
+
+    function sparklineSvg(row) {
+      const series = buildProfileSeries(row);
+      const minValue = Math.min(...series) - 0.08;
+      const maxValue = Math.max(...series) + 0.08;
+      const points = buildPoints(series, 128, 32, 2, minValue, maxValue);
+      const path = linePath(points);
+      return `
+        <svg class="sparkline" viewBox="0 0 128 32" preserveAspectRatio="none" aria-hidden="true">
+          <path d="${path}" fill="none" stroke="${escapeHtml(row.rank === 1 || row.candidate_id === state.selectedId ? "#003434" : "#9aa6a3")}" stroke-width="2"></path>
+        </svg>
+      `;
+    }
+
+    function filteredRows() {
+      const query = state.query.trim().toLowerCase();
+      return REPORT_ROWS.filter((row) => {
+        if (state.asset !== "all" && row.focus_asset !== state.asset) return false;
+        if (state.rule !== "all" && row.rule !== state.rule) return false;
+        if (state.origin === "seeded" && !row.is_seeded) return false;
+        if (state.origin === "derived" && row.is_seeded) return false;
+        if (!query) return true;
+        const haystack = [
+          row.candidate_id,
+          row.rule,
+          row.focus_asset,
+          row.source,
+          row.rationale,
+          row.why,
+          row.strategy_description,
+          row.critical_evaluation,
+          row.investment_rationale,
+          row.backtest_architecture,
+          row.args.join(" "),
+        ].join(" ").toLowerCase();
+        return haystack.includes(query);
+      }).sort((a, b) => {
+        const primary = sortAccessor(b, state.sort) - sortAccessor(a, state.sort);
+        if (Math.abs(primary) > 1e-9) return primary;
+        return number(b.combined_score) - number(a.combined_score);
+      });
+    }
+
+    function sortAccessor(row, mode) {
+      switch (mode) {
+        case "testSharpe":
+          return detail(row, "sharpe", "test");
+        case "testCagr":
+          return detail(row, "cagr", "test");
+        case "endingEquity":
+          return detail(row, "final_equity", "test");
+        case "trades":
+          return totalTrades(row);
+        case "lowestDrawdown":
+          return -Math.abs(detail(row, "max_drawdown", "test"));
+        case "combined":
+        default:
+          return number(row.combined_score);
+      }
+    }
+
+    function selectedRow(rows) {
+      if (!rows.length) return null;
+      const selected = rows.find((row) => row.candidate_id === state.selectedId);
+      if (selected) return selected;
+      state.selectedId = rows[0].candidate_id;
+      return rows[0];
+    }
+
+    function selectedPosition(rows, row) {
+      const index = rows.findIndex((candidate) => candidate.candidate_id === row.candidate_id);
+      return index >= 0 ? index + 1 : 1;
+    }
+
+    function heroContextRows(rows) {
+      return rows.length ? rows : REPORT_ROWS;
+    }
+
+    function renderHero(rows, selected) {
+      const contextRows = heroContextRows(rows);
+      const leader = selected || contextRows[0] || null;
+      const representedAssets = new Set(contextRows.map((row) => row.focus_asset)).size;
+      const heroChips = [
+        `Generated ${formatDateTime(REPORT_META.generated_date)}`,
+        `${REPORT_META.framework_tag}`,
+        `Train ${REPORT_META.train_start} to ${REPORT_META.train_end}`,
+        `Test ${REPORT_META.test_start} to ${REPORT_META.test_end}`,
+        `${representedAssets} assets represented`,
+      ];
+      if (leader) {
+        heroChips.unshift(`Lead ${leader.candidate_id}`);
+      }
+      els.heroMeta.innerHTML = heroChips
+        .map((item, index) => `<span class="pill ${index === 0 ? "primary" : ""}">${escapeHtml(item)}</span>`)
+        .join("");
+
+      if (state.origin === "seeded") {
+        els.phaseBadge.textContent = "Phase: Seeded Discovery";
+      } else if (state.origin === "derived") {
+        els.phaseBadge.textContent = "Phase: Derived Validation";
+      } else {
+        els.phaseBadge.textContent = "Phase: Autonomous Discovery";
+      }
+    }
+
+    function metricCardHtml(label, value, tone) {
+      return `
+        <article class="metric-card">
+          <p class="metric-card-label">${escapeHtml(label)}</p>
+          <div class="metric-card-value">${escapeHtml(value)}</div>
+          <div class="metric-bar ${escapeHtml(tone)}"></div>
+        </article>
+      `;
+    }
+
+    function renderMetrics(rows, selected) {
+      const contextRows = heroContextRows(rows);
+      const audited = contextRows.filter((row) => row.train_audit || row.test_audit).length;
+      const leader = selected || contextRows[0] || null;
+      const metrics = [
+        metricCardHtml("Ranked Candidates", String(REPORT_META.total_ranked), "primary"),
+        metricCardHtml("Refinement Rounds", String(REPORT_META.round_count), "secondary"),
+        metricCardHtml("Audited Trails", `${audited}/${contextRows.length}`, "lime"),
+        metricCardHtml("Lead Test Sharpe", leader ? fmt(detail(leader, "sharpe", "test"), 2) : "0.00", "deep"),
+      ];
+      els.metricsRow.innerHTML = metrics.join("");
+    }
+
+    function renderVector(rows, selected) {
+      if (!selected) {
+        els.vectorLegend.innerHTML = "";
+        els.vectorTag.textContent = "Normalized return profile";
+        els.selectedPath.setAttribute("d", "");
+        els.selectedArea.setAttribute("d", "");
+        els.baselinePath.setAttribute("d", "");
+        els.selectedFocus.setAttribute("cx", "0");
+        els.selectedFocus.setAttribute("cy", "0");
+        return;
+      }
+
+      const selectedSeries = buildProfileSeries(selected);
+      const baselineSeries = averageProfileSeries(heroContextRows(rows));
+      const allValues = [...selectedSeries, ...baselineSeries];
+      const minValue = Math.min(...allValues) - 0.12;
+      const maxValue = Math.max(...allValues) + 0.12;
+      const selectedPoints = buildPoints(selectedSeries, 760, 384, 18, minValue, maxValue);
+      const baselinePoints = buildPoints(baselineSeries, 760, 384, 18, minValue, maxValue);
+      const focusPoint = selectedPoints[Math.min(3, selectedPoints.length - 1)] || [0, 0];
+      els.selectedPath.setAttribute("d", linePath(selectedPoints));
+      els.selectedArea.setAttribute("d", areaPath(selectedPoints, 384, 18));
+      els.baselinePath.setAttribute("d", linePath(baselinePoints));
+      els.selectedFocus.setAttribute("cx", String(focusPoint[0]));
+      els.selectedFocus.setAttribute("cy", String(focusPoint[1]));
+
+      els.vectorLegend.innerHTML = `
+        <span class="legend-item"><span class="legend-swatch" style="background:#003434;"></span>${escapeHtml(selected.candidate_id)}</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#6f7978;"></span>Frontier Median</span>
+      `;
+
+      els.vectorTag.textContent = `Out-of-sample ending equity ${currency(detail(selected, "final_equity", "test"))} · CAGR ${signedPct(detail(selected, "cagr", "test"))}`;
+    }
+
+    function renderFilterStrip(rows, selected) {
+      const filters = [
+        `Asset: ${state.asset === "all" ? "All" : state.asset}`,
+        `Rule: ${state.rule === "all" ? "All" : humanizeRule(state.rule)}`,
+        `Origin: ${state.origin === "all" ? "All" : state.origin === "seeded" ? "Seeded" : "Derived"}`,
+      ];
+      if (state.query) {
+        filters.push(`Query: ${compactText(state.query, 24)}`);
+      }
+      if (selected) {
+        filters.push(`Lead: #${selectedPosition(rows, selected)}`);
+      }
+
+      els.activeFilterChips.innerHTML = filters
+        .map((item) => `<span class="filter-pill">${escapeHtml(item)}</span>`)
+        .join("");
+
+      els.configurationPanel.hidden = !state.configOpen;
+      els.toggleConfig.setAttribute("aria-expanded", String(state.configOpen));
+      els.toggleConfig.textContent = state.configOpen ? "Hide Grid" : "Configure Grid";
+    }
+
+    function renderResultsMeta(rows, selected) {
+      const sortLabel = {
+        combined: "Combined Score",
+        testSharpe: "Test Sharpe",
+        testCagr: "Test CAGR",
+        endingEquity: "Ending Equity",
+        trades: "Audited Trades",
+        lowestDrawdown: "Lowest Drawdown",
+      }[state.sort] || "Combined Score";
+
+      const items = [
+        `${rows.length} visible`,
+        `Sorted by ${sortLabel}`,
+      ];
+      if (selected) {
+        items.push(`Selected #${selectedPosition(rows, selected)}`);
+      }
+
+      els.resultsMeta.innerHTML = items
+        .map((item, index) => `<span class="pill ${index === 0 ? "secondary" : ""}">${escapeHtml(item)}</span>`)
+        .join("");
+    }
+
+    function candidateCardHtml(row, selected) {
+      const isActive = selected && selected.candidate_id === row.candidate_id;
+      const scoreLabel = row.rank === 1 ? "Lead Score" : "Combined Score";
+      return `
+        <article class="candidate-card ${isActive ? "is-active" : ""}" data-rank="${escapeHtml(String(row.rank))}">
+          <div class="candidate-header">
+            <div class="candidate-header-left">
+              <div class="candidate-meta-line">
+                <span class="rank-badge">#${escapeHtml(String(row.rank))}</span>
+                <span class="candidate-code">${escapeHtml(row.candidate_id)}</span>
+              </div>
+              <h3 class="candidate-title">${escapeHtml(row.rule)}</h3>
+            </div>
+            <div class="candidate-score">
+              <span class="candidate-score-label">${escapeHtml(scoreLabel)}</span>
+              <span class="candidate-score-value">${escapeHtml(fmt(row.combined_score, 2))}</span>
+            </div>
+          </div>
+
+          <div class="candidate-stat-grid">
+            <div class="candidate-stat">
+              <p class="candidate-stat-label">Primary Asset</p>
+              <p class="candidate-stat-value">${escapeHtml(row.focus_asset)}</p>
+            </div>
+            <div class="candidate-stat">
+              <p class="candidate-stat-label">Origin</p>
+              <p class="candidate-stat-value">${escapeHtml(originLabel(row))}</p>
+            </div>
+          </div>
+
+          <p class="candidate-description">${escapeHtml(compactText(row.why, 210))}</p>
+
+          <div class="candidate-footer">
+            ${sparklineSvg(row)}
+            <button class="candidate-select" type="button" data-candidate-id="${escapeHtml(row.candidate_id)}">Inspect</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderResults(rows) {
+      if (!rows.length) {
+        els.resultsGrid.innerHTML = "";
+        els.resultsEmpty.hidden = false;
+        return;
+      }
+
+      els.resultsEmpty.hidden = true;
+      const selected = selectedRow(rows);
+      els.resultsGrid.innerHTML = rows
+        .map((row) => candidateCardHtml(row, selected))
+        .join("");
+    }
+
+    function windowCard(label, details, audit, requestedStart, requestedEnd) {
+      const startEquity = number(details?.beginning_equity);
+      const finalEquity = number(details?.final_equity);
+      const equityDelta = finalEquity - startEquity;
+      return `
+        <article class="window-card">
+          <p class="section-label">${escapeHtml(label)}</p>
+          <div class="window-period">Requested ${escapeHtml(requestedStart)} to ${escapeHtml(requestedEnd)}</div>
+          <div class="window-period">Actual ${audit?.actual_period_start ? escapeHtml(`${audit.actual_period_start} to ${audit.actual_period_end}`) : "window unavailable"}</div>
+          <div class="window-grid">
+            <div class="window-metric">
+              <p class="section-label">Beginning Equity</p>
+              <p class="window-value">${escapeHtml(currency(startEquity, 2))}</p>
+            </div>
+            <div class="window-metric">
+              <p class="section-label">Ending Equity</p>
+              <p class="window-value ${metricToneClass(equityDelta, "positive", "negative")}">${escapeHtml(currency(finalEquity, 2))}</p>
+            </div>
+            <div class="window-metric">
+              <p class="section-label">Sharpe</p>
+              <p class="window-value">${escapeHtml(fmt(number(details?.sharpe), 3))}</p>
+            </div>
+            <div class="window-metric">
+              <p class="section-label">Max Drawdown</p>
+              <p class="window-value">${escapeHtml(pct(Math.abs(number(details?.max_drawdown))))}</p>
+            </div>
+            <div class="window-metric">
+              <p class="section-label">CAGR</p>
+              <p class="window-value ${metricToneClass(number(details?.cagr), "positive", "negative")}">${escapeHtml(signedPct(number(details?.cagr)))}</p>
+            </div>
+            <div class="window-metric">
+              <p class="section-label">Executed Trades</p>
+              <p class="window-value">${escapeHtml(String(number(audit?.trade_count)))}</p>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function evidenceCard(label, copy, href) {
+      return `
+        <article class="evidence-card">
+          <p class="section-label">${escapeHtml(label)}</p>
+          <p class="framework-copy">${escapeHtml(copy)}</p>
+          ${href ? `<a class="evidence-link" href="${safeHref(href)}" target="_blank" rel="noreferrer">Open Artifact</a>` : `<span class="evidence-link" style="opacity:0.56;border-color:transparent;">Artifact Unavailable</span>`}
+        </article>
+      `;
+    }
+
+    function frameworkCard(label, copy) {
+      return `
+        <article class="framework-card">
+          <h3 class="framework-title">${escapeHtml(label)}</h3>
+          <p class="framework-copy">${escapeHtml(copy)}</p>
+        </article>
+      `;
+    }
+
+    function renderAuditRail(row) {
+      if (!row) {
+        els.auditRail.innerHTML = `
+          <section class="audit-section">
+            <h2 class="audit-heading">Audit Rail</h2>
+            <p class="framework-copy">No visible candidate. Adjust the grid configuration to restore proof surfaces.</p>
+          </section>
+        `;
+        return;
+      }
+
+      const confidence = confidenceLabel(row);
+      const command = actualCommand(row);
+      els.auditRail.innerHTML = `
+        <section class="audit-section">
+          <h2 class="audit-heading">Audit Rail</h2>
+          <article class="command-card" id="reproducible-command">
+            <p class="command-label">// Reproducible Command</p>
+            <pre class="command-shell">${escapeHtml(command)}</pre>
+            <div class="command-links">
+              <a class="evidence-link" href="${safeHref(row.source)}" target="_blank" rel="noreferrer">View Source</a>
+              ${row.train_audit ? `<a class="evidence-link" href="${safeHref(row.train_audit.artifact_path)}" target="_blank" rel="noreferrer">Train Audit</a>` : ""}
+              ${row.test_audit ? `<a class="evidence-link" href="${safeHref(row.test_audit.artifact_path)}" target="_blank" rel="noreferrer">Test Audit</a>` : ""}
+            </div>
+          </article>
+        </section>
+
+        <section class="audit-section">
+          <article class="mental-model-card">
+            <p class="section-label">Mental Model Synthesis</p>
+            <h3 class="mental-model-subhead">${escapeHtml(hypothesisHeadline(row))}</h3>
+            <p class="mental-model-copy">${escapeHtml(row.rationale)}</p>
+            <h3 class="mental-model-subhead">Structural Integrity</h3>
+            <p class="mental-model-copy">${escapeHtml(row.critical_evaluation)}</p>
+          </article>
+        </section>
+
+        <section class="audit-section" id="system-telemetry">
+          <p class="section-label">System Telemetry</p>
+          <div class="telemetry-stack">
+            <div class="telemetry-row">
+              <span class="telemetry-key">Last Discovery Sync</span>
+              <span class="telemetry-value">${escapeHtml(formatTime(REPORT_META.generated_date))}</span>
+            </div>
+            <div class="telemetry-row">
+              <span class="telemetry-key">Train Trades</span>
+              <span class="telemetry-value">${escapeHtml(String(number(row.train_audit?.trade_count)))}</span>
+            </div>
+            <div class="telemetry-row">
+              <span class="telemetry-key">Test Trades</span>
+              <span class="telemetry-value">${escapeHtml(String(number(row.test_audit?.trade_count)))}</span>
+            </div>
+            <div class="telemetry-row">
+              <span class="telemetry-key">Curator Confidence</span>
+              <span class="telemetry-value ${escapeHtml(confidence.tone)}">${escapeHtml(confidence.label)}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="audit-section" id="execution-windows">
+          <p class="section-label">Execution Windows</p>
+          <div class="window-stack">
+            ${windowCard("Train Window", row.train_details, row.train_audit, REPORT_META.train_start, REPORT_META.train_end)}
+            ${windowCard("Test Window", row.test_details, row.test_audit, REPORT_META.test_start, REPORT_META.test_end)}
+          </div>
+        </section>
+
+        <section class="audit-section" id="evidence-links">
+          <p class="section-label">Evidence Links</p>
+          <div class="evidence-stack">
+            ${evidenceCard("Research Source", `Original lead from ${domainLabel(row.source)}.`, row.source)}
+            ${evidenceCard("Train Audit", row.train_audit ? `${row.train_audit.trade_count} trades with saved JSON execution trail.` : "Train audit artifact not available.", row.train_audit?.artifact_path)}
+            ${evidenceCard("Test Audit", row.test_audit ? `${row.test_audit.trade_count} trades with saved JSON execution trail.` : "Test audit artifact not available.", row.test_audit?.artifact_path)}
+          </div>
+        </section>
+
+        <section class="audit-section">
+          <p class="section-label">Research Analysis Framework</p>
+          <div class="framework-stack">
+            ${frameworkCard("Trading Strategy", row.strategy_description)}
+            ${frameworkCard("Asset Universe & Inputs / Outputs", row.investment_rationale)}
+            ${frameworkCard("Rust Backtest Architecture", row.backtest_architecture)}
+          </div>
+        </section>
+      `;
+    }
+
+    function populateFilterOptions() {
+      const assets = [...new Set(REPORT_ROWS.map((row) => row.focus_asset))].sort();
+      const rules = [...new Set(REPORT_ROWS.map((row) => row.rule))].sort();
+      els.assetFilter.innerHTML = ['<option value="all">All Assets</option>', ...assets.map((asset) => `<option value="${escapeHtml(asset)}">${escapeHtml(asset)}</option>`)].join("");
+      els.ruleFilter.innerHTML = ['<option value="all">All Rules</option>', ...rules.map((rule) => `<option value="${escapeHtml(rule)}">${escapeHtml(humanizeRule(rule))}</option>`)].join("");
+    }
+
+    function scrollToId(id) {
+      const node = document.getElementById(id);
+      if (!node) return;
+      node.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function toggleConfig(open = !state.configOpen) {
+      state.configOpen = open;
+      render();
+      if (open) {
+        requestAnimationFrame(() => {
+          els.search.focus();
+        });
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+      } finally {
+        textarea.remove();
+      }
+    }
+
+    async function copyCurrentCommand() {
+      const rows = filteredRows();
+      const selected = selectedRow(rows);
+      const fallbackRow = REPORT_ROWS[0] || null;
+      const row = selected || fallbackRow;
+      if (!row) return;
+      const command = actualCommand(row);
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(command);
+        } else {
+          fallbackCopy(command);
+        }
+      } catch {
+        fallbackCopy(command);
+      }
+
+      const original = els.copyCommandButton.textContent;
+      els.copyCommandButton.textContent = "Command Copied";
+      els.copyCommandButton.classList.add("is-copied");
+      window.setTimeout(() => {
+        els.copyCommandButton.textContent = original;
+        els.copyCommandButton.classList.remove("is-copied");
+      }, 1600);
+    }
+
+    function bindEvents() {
+      els.search.addEventListener("input", () => {
+        state.query = els.search.value;
+        render();
+      });
+
+      els.assetFilter.addEventListener("change", () => {
+        state.asset = els.assetFilter.value;
+        render();
+      });
+
+      els.ruleFilter.addEventListener("change", () => {
+        state.rule = els.ruleFilter.value;
+        render();
+      });
+
+      els.seedFilter.addEventListener("change", () => {
+        state.origin = els.seedFilter.value;
+        render();
+      });
+
+      els.sortBy.addEventListener("change", () => {
+        state.sort = els.sortBy.value;
+        render();
+      });
+
+      els.toggleConfig.addEventListener("click", () => {
+        toggleConfig();
+      });
+
+      els.copyCommandButton.addEventListener("click", () => {
+        copyCurrentCommand();
+      });
+
+      els.resultsGrid.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-candidate-id]");
+        if (!button) return;
+        state.selectedId = button.dataset.candidateId;
+        render();
+      });
+
+      els.navWindows.addEventListener("click", () => {
+        scrollToId("execution-windows");
+      });
+
+      els.navConfig.addEventListener("click", () => {
+        toggleConfig(true);
+        scrollToId("configuration-panel");
+      });
+
+      els.footerSettings.addEventListener("click", () => {
+        toggleConfig(true);
+        scrollToId("configuration-panel");
+      });
+    }
+
+    function render() {
+      const rows = filteredRows();
+      const selected = selectedRow(rows);
+      renderHero(rows, selected);
+      renderMetrics(rows, selected);
+      renderVector(rows, selected || REPORT_ROWS[0] || null);
+      renderFilterStrip(rows, selected);
+      renderResultsMeta(rows, selected);
+      renderResults(rows);
+      renderAuditRail(selected);
+      document.title = `doob Strategy Frontier · ${rows.length} visible`;
+    }
+
+    populateFilterOptions();
+    bindEvents();
+    render();
+  </script>
 </body>
 </html>
