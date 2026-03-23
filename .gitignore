@@ -10,6 +10,7 @@ Cargo.lock
 
 # Output artifacts
 output/
+reports/
 
 # Environment
 .env
