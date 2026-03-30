@@ -64,6 +64,8 @@ const RULE_TREND_PULLBACK: &str = "trend_pullback";
 const RULE_RSI_REVERSION: &str = "rsi_reversion";
 const RULE_VOL_REGIME: &str = "volatility_regime";
 const RULE_VOL_SPREAD: &str = "vol_spread";
+const RULE_MEAN_REVERSION: &str = "mean_reversion_filter";
+const RULE_VVIX_REGIME: &str = "vvix_regime";
 
 const SEED_QUERIES: &[&str] = &[
     "site:arxiv.org VIX trading strategy options volatility",
@@ -89,6 +91,10 @@ const VOL_CAP_SET: &[f64] = &[0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60, 0.
 const VOL_CAP_SPREAD_SET: &[f64] = &[
     -0.30, -0.20, -0.10, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60, 0.80,
 ];
+const MR_ENTRY_THRESHOLD_SET: &[f64] = &[0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05];
+const MR_SCALE_SET: &[f64] = &[50.0, 100.0, 150.0, 200.0, 300.0, 500.0];
+const VVIX_WINDOW_SET: &[u32] = &[21, 42, 63, 126, 189, 252];
+const VVIX_THRESHOLD_SET: &[f64] = &[0.50, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90];
 const RESEARCH_ASSETS: &[&str] = &["SPY", "QQQ", "SPXL", "IWM", "TQQQ"];
 const INTERACTIVE_REPORT_TEMPLATE: &str = include_str!("../../design/report-template.html");
 
@@ -605,6 +611,10 @@ fn arg_f64(args: &[String], flag: &str) -> Option<f64> {
     arg_value(args, flag).and_then(|value: &str| value.parse::<f64>().ok())
 }
 
+fn arg_str(args: &[String], flag: &str) -> Option<String> {
+    arg_value(args, flag).map(|v| v.to_string())
+}
+
 fn fmt_pct(v: f64) -> String {
     format!("{:.1}%", v.abs() * 100.0)
 }
@@ -662,6 +672,30 @@ fn rule_description(rule: &str, args: &[String], asset: &str) -> String {
                 )
             }
         }
+        RULE_MEAN_REVERSION => {
+            let slow = arg_u32(args, "--slow-window").unwrap_or(40);
+            let mr_threshold = arg_f64(args, "--mr-entry-threshold").unwrap_or(0.02);
+            format!(
+                "Mean reversion filter on {asset}: computes fair value as {slow}-day SMA, then goes long when price drops more than {:.1}% below fair value, capturing reversion to the filtered mean.",
+                mr_threshold * 100.0
+            )
+        }
+        RULE_VVIX_REGIME => {
+            let vvix_window = arg_u32(args, "--vvix-window").unwrap_or(63);
+            let vvix_threshold = arg_f64(args, "--vvix-threshold").unwrap_or(0.75);
+            let mode = arg_str(args, "--vvix-mode").unwrap_or("risk_off".to_string());
+            if mode == "contrarian" {
+                format!(
+                    "VVIX regime (contrarian) on {asset}: goes long when VVIX exceeds its {:.0}th percentile over {vvix_window} days, betting that elevated vol-of-vol signals underpriced variance and a subsequent equity bounce.",
+                    vvix_threshold * 100.0
+                )
+            } else {
+                format!(
+                    "VVIX regime (risk-off) on {asset}: goes long when VVIX is below its {:.0}th percentile over {vvix_window} days, capturing equity premium during calm vol-of-vol conditions.",
+                    vvix_threshold * 100.0
+                )
+            }
+        }
         _ => format!("Paper-research candidate on {asset} with adaptive research-rule logic."),
     }
 }
@@ -704,6 +738,22 @@ fn investment_case(rule: &str, asset: &str) -> String {
             spread exceeds a threshold, harvesting the premium as implied vol mean-reverts toward realized. The negative-threshold \
             variant captures snap-back opportunities when realized volatility overshoots implied, signaling an imminent return to \
             calmer conditions."
+        ),
+        RULE_MEAN_REVERSION => format!(
+            "Mean reversion filter on {asset} implements the fair-value deviation framework from Xu et al. (2026, SSRN 6225198). \
+            The strategy treats a smoothed price (SMA) as a proxy for latent fair value, then computes the relative mispricing \
+            δ = (spot − fair_value) / fair_value. When price drops significantly below fair value (δ < −threshold), the strategy \
+            enters long, expecting reversion. This exploits the empirically documented tendency for short-term price deviations \
+            from moving averages to revert, particularly in liquid, large-cap instruments. The approach is grounded in weak-form \
+            efficiency: prices contain transient deviations that create predictable snap-back opportunities."
+        ),
+        RULE_VVIX_REGIME => format!(
+            "VVIX regime filter on {asset} implements findings from Bevilacqua & Hizmeri (2026, SSRN 6212458). \
+            The paper documents that morning VVIX (volatility-of-volatility) strongly predicts next-day variance asset \
+            returns with t-stats up to 6.1. The mechanism is limited attention and slow-moving beliefs: investors fail \
+            to promptly incorporate VVIX uncertainty into prices. In risk-off mode, the strategy avoids equity exposure \
+            during elevated VVIX (when uncertainty is high and variance is underpriced). In contrarian mode, it enters \
+            long when VVIX is high, targeting the delayed price adjustment documented in the paper."
         ),
         _ => format!(
             "This paper-research candidate on {asset} applies an adaptive signal derived from academic research to identify \
@@ -778,6 +828,35 @@ fn critical_evaluation(rule: &str, asset: &str, args: &[String]) -> String {
             during structural breaks. The GARCH-LSTM hybrid approach cited in the literature uses forward-looking \
             model selection that would constitute lookahead bias in a live trading context. {common_tail}"
         ),
+        RULE_MEAN_REVERSION => {
+            let mr_threshold = arg_f64(args, "--mr-entry-threshold").unwrap_or(0.02);
+            format!(
+                "Mean reversion filter carries regime risk: in sustained bear markets, price can remain \
+                below the SMA for extended periods, turning every entry into a losing trade. The {slow}-day \
+                SMA window is the primary degree of freedom — too short amplifies whipsaw, too long delays \
+                entry past the reversion window. The entry threshold ({:.1}%) adds a second parameter; \
+                combined with window length this creates moderate overfitting risk. The strategy implicitly \
+                assumes stationarity of the deviation process, which breaks during structural shifts. \
+                The original Xu et al. (2026) paper uses neural filters (CNN, WaveNet, DKF) rather than \
+                simple SMA, so this implementation is a simplified proxy — the SMA approximation loses \
+                the adaptive regime-switching capability of the neural filters. {common_tail}",
+                mr_threshold * 100.0
+            )
+        }
+        RULE_VVIX_REGIME => {
+            let vvix_window = arg_u32(args, "--vvix-window").unwrap_or(63);
+            format!(
+                "The VVIX regime filter carries several risks. (1) The paper's alpha is in variance assets \
+                (VIX futures, SPX straddles), not equities; applying the signal to equity ETFs is an indirect \
+                adaptation with likely lower Sharpes. (2) The paper specifically uses 10:00 EST VVIX; daily \
+                close VVIX may capture less alpha since predictive power dissipates by midday. (3) The \
+                {vvix_window}-day percentile window is a non-parametric threshold that can be slow to adapt \
+                to structural changes in the VVIX distribution. (4) VVIX data availability is sparser than \
+                VIX, and missing data points produce NaN gaps that reduce signal coverage. The paper's Sharpe \
+                ratios (2.0-3.2) are for variance assets; equity adaptation will be materially lower. \
+                {common_tail}"
+            )
+        }
         _ => format!(
             "This candidate uses an adaptive research-derived signal on {asset}. Standard risks apply: \
             parameter overfitting to the training window, regime-dependency of the underlying signal, \
@@ -835,6 +914,26 @@ fn backtest_architecture(rule: &str, asset: &str, args: &[String]) -> String {
             (VRP harvest) or spread < negative threshold (snap-back). Two data inputs: asset OHLCV + \
             VIX OHLCV, both from local warehouse parquet."
         ),
+        RULE_MEAN_REVERSION => {
+            let mr_threshold = arg_f64(args, "--mr-entry-threshold").unwrap_or(0.02);
+            format!(
+                "{common_pipeline} Feature engineering: rolling SMA over {slow} day window on close prices \
+                (moving_average helper) to compute fair value. Signal: relative mispricing \
+                δ = (close − SMA) / SMA; long trigger when δ < −{:.3}. Single data input: asset close prices.",
+                mr_threshold
+            )
+        }
+        RULE_VVIX_REGIME => {
+            let vvix_window = arg_u32(args, "--vvix-window").unwrap_or(63);
+            format!(
+                "{common_pipeline} Data ingestion (additional): load_volatility_index_ohlcv(\"VVIX\") reads \
+                VVIX from asset_class=volatility/symbol=VVIX parquet. Date alignment via HashMap<NaiveDate, f64> \
+                lookup, NaN fill for missing dates. Feature engineering: rolling percentile rank of VVIX close \
+                over {vvix_window}-day window. Signal: long when VVIX percentile rank is below threshold \
+                (risk_off mode) or above threshold (contrarian mode). Two data inputs: asset OHLCV + VVIX OHLCV, \
+                both from local warehouse parquet."
+            )
+        }
         _ => format!(
             "{common_pipeline} Feature engineering and signal generation follow the rule-specific \
             logic defined in paper_research.rs::build_signal_mask()."
@@ -869,6 +968,8 @@ fn research_basis(
             RULE_RSI_REVERSION => "RSI mean-reversion",
             RULE_VOL_REGIME => "volatility-regime filtering",
             RULE_VOL_SPREAD => "implied-vs-realized vol spread (VRP harvest)",
+            RULE_MEAN_REVERSION => "mean-reversion fair-value filter",
+            RULE_VVIX_REGIME => "VVIX vol-of-vol regime filter",
             _ => "adaptive signal",
         };
         return format!(
@@ -935,6 +1036,35 @@ fn research_basis(
             when realized volatility overshoots implied, signaling an imminent return to calmer conditions. \
             The vol_cap threshold of {vol_cap:.2} controls the minimum spread magnitude required to trigger entry."
         ),
+        RULE_MEAN_REVERSION => {
+            let mr_threshold = arg_f64(args, "--mr-entry-threshold").unwrap_or(0.02);
+            format!(
+                "Seeded from the paper \"{paper_title}\", this candidate implements a mean reversion \
+                filter hypothesis on {asset} inspired by Xu et al. (2026, SSRN 6225198). The paper proposes \
+                regime-aware neural signal filters (CNN, WaveNet, DKF, S4) to extract fair value from noisy \
+                price data and trade the spot-filter spread. This doob translation uses a {slow}-day SMA as \
+                the fair value proxy, entering long when relative mispricing δ = (spot − SMA) / SMA drops \
+                below −{:.1}%. The SMA is a simplified stand-in for the paper's LAFO-trained neural filter; \
+                the trading logic (threshold entry on the spread) follows the paper's Section 5 formulation.",
+                mr_threshold * 100.0
+            )
+        }
+        RULE_VVIX_REGIME => {
+            let vvix_window = arg_u32(args, "--vvix-window").unwrap_or(63);
+            let vvix_threshold = arg_f64(args, "--vvix-threshold").unwrap_or(0.75);
+            let mode = arg_str(args, "--vvix-mode").unwrap_or("risk_off".to_string());
+            format!(
+                "Seeded from the paper \"{paper_title}\", this candidate implements a VVIX regime \
+                filter on {asset} inspired by Bevilacqua & Hizmeri (2026, SSRN 6212458). The paper \
+                documents that morning VVIX strongly predicts next-day variance asset returns (Sharpe \
+                2.0-3.2 for VIX futures). This doob adaptation uses the VVIX percentile rank over \
+                {vvix_window} days as a regime filter: in {mode} mode, it goes long when VVIX percentile \
+                is {} the {:.0}th threshold. The paper's alpha is in variance assets; this equity \
+                adaptation captures the information content of VVIX as a regime signal.",
+                if mode == "contrarian" { "above" } else { "below" },
+                vvix_threshold * 100.0
+            )
+        }
         _ => format!(
             "This candidate draws on the research paper \"{paper_title}\" to construct an adaptive \
             trading signal for {asset}. The paper's findings on market dynamics and price behavior \
@@ -1367,6 +1497,44 @@ fn classify_seed_rule_family(seed: &ExaSeed) -> SeedRuleFamily {
                     ("term structure", 3),
                     ("contango", 4),
                     ("backwardation", 4),
+                ],
+            ),
+        ),
+        (
+            RULE_MEAN_REVERSION,
+            keyword_score(
+                &blob,
+                &[
+                    ("mean reversion filter", 8),
+                    ("signal filtering", 6),
+                    ("fair value", 5),
+                    ("mispricing", 6),
+                    ("filtered mean reversion", 7),
+                    ("sma reversion", 5),
+                    ("ema reversion", 5),
+                    ("price deviation", 4),
+                    ("equilibrium price", 4),
+                    ("low-pass filter", 5),
+                    ("lafo", 7),
+                    ("kalman filter trading", 5),
+                    ("spot filter spread", 6),
+                ],
+            ),
+        ),
+        (
+            RULE_VVIX_REGIME,
+            keyword_score(
+                &blob,
+                &[
+                    ("vvix", 8),
+                    ("volatility of volatility", 7),
+                    ("vol of vol", 7),
+                    ("volatility uncertainty", 6),
+                    ("limited attention", 5),
+                    ("slow moving beliefs", 5),
+                    ("morning volatility", 6),
+                    ("variance risk premium vvix", 8),
+                    ("vix options", 4),
                 ],
             ),
         ),
@@ -1829,6 +1997,52 @@ fn build_seed_candidates(seed: &ExaSeed, idx: usize, assets: &[&str]) -> Vec<Can
                         variant,
                     ));
                 }
+                RULE_MEAN_REVERSION => {
+                    // Fair value SMA window = slow; fast is unused
+                    let slow = sample_or_default(&SLOW_WINDOW_SET, idx + 1, variant * 2);
+                    let mr_threshold = sample_or_default(&MR_ENTRY_THRESHOLD_SET, idx, variant + 1);
+                    let mr_scale = sample_or_default(&MR_SCALE_SET, idx, variant + 2);
+                    let mut c = seed_candidate(
+                        idx,
+                        seed,
+                        rule,
+                        &focus_asset,
+                        12, // fixed default — unused by this rule
+                        slow,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        variant,
+                    );
+                    c.args.push("--mr-entry-threshold".to_string());
+                    c.args.push(format!("{:.3}", mr_threshold));
+                    c.args.push("--mr-scale".to_string());
+                    c.args.push(format!("{:.1}", mr_scale));
+                    out.push(c);
+                }
+                RULE_VVIX_REGIME => {
+                    let vvix_window = sample_or_default(&VVIX_WINDOW_SET, idx, variant + 1);
+                    let vvix_threshold = sample_or_default(&VVIX_THRESHOLD_SET, idx, variant + 2);
+                    let mode = if variant % 2 == 0 { "risk_off" } else { "contrarian" };
+                    let mut c = seed_candidate(
+                        idx,
+                        seed,
+                        rule,
+                        &focus_asset,
+                        12, 50, // fixed defaults — unused
+                        None, None, None, None, None,
+                        variant,
+                    );
+                    c.args.push("--vvix-window".to_string());
+                    c.args.push(vvix_window.to_string());
+                    c.args.push("--vvix-threshold".to_string());
+                    c.args.push(format!("{:.2}", vvix_threshold));
+                    c.args.push("--vvix-mode".to_string());
+                    c.args.push(mode.to_string());
+                    out.push(c);
+                }
                 _ => {}
             }
         }
@@ -1993,6 +2207,94 @@ fn build_deterministic_grid_candidates(min_candidates: usize, assets: &[&str]) -
                     _min_signals: 10,
                 });
                 id = id.saturating_add(1);
+            }
+        }
+    }
+
+    // Separate grid loop for mean_reversion_filter: SLOW_WINDOW_SET × MR_ENTRY_THRESHOLD_SET × assets
+    for asset_idx in 0..assets.len() {
+        for si in 0..SLOW_WINDOW_SET.len() {
+            for ti in 0..MR_ENTRY_THRESHOLD_SET.len() {
+                if out.len() >= min_candidates.saturating_mul(2) {
+                    return out;
+                }
+                let slow = SLOW_WINDOW_SET[si];
+                let mr_threshold = MR_ENTRY_THRESHOLD_SET[ti];
+                let mut args = vec![
+                    "--asset".to_string(),
+                    assets[asset_idx].to_string(),
+                    "--rule".to_string(),
+                    RULE_MEAN_REVERSION.to_string(),
+                    "--slow-window".to_string(),
+                    slow.to_string(),
+                    "--fast-window".to_string(),
+                    "12".to_string(),
+                    "--mr-entry-threshold".to_string(),
+                    format!("{:.3}", mr_threshold),
+                    "--mr-scale".to_string(),
+                    "200.0".to_string(),
+                ];
+                args.extend(vec!["--hypothesis-id".to_string(), format!("grid-{id}")]);
+                out.push(Candidate {
+                    candidate_id: format!("grid-mr-{id}"),
+                    strategy: RESEARCH_STRATEGY.to_string(),
+                    rule: RULE_MEAN_REVERSION.to_string(),
+                    args,
+                    rationale: "Deterministic paper-research mean-reversion-filter variant (grid fallback)"
+                        .to_string(),
+                    source: "deterministic-grid".to_string(),
+                    focus_asset: assets[asset_idx].to_string(),
+                    is_seeded: false,
+                    _min_observations: 20,
+                    _min_signals: 10,
+                });
+                id = id.saturating_add(1);
+            }
+        }
+    }
+
+    // Separate grid loop for vvix_regime: VVIX_WINDOW_SET × VVIX_THRESHOLD_SET × modes × assets
+    for asset_idx in 0..assets.len() {
+        for wi in 0..VVIX_WINDOW_SET.len() {
+            for ti in 0..VVIX_THRESHOLD_SET.len() {
+                for mode in &["risk_off", "contrarian"] {
+                    if out.len() >= min_candidates.saturating_mul(2) {
+                        return out;
+                    }
+                    let vvix_window = VVIX_WINDOW_SET[wi];
+                    let vvix_threshold = VVIX_THRESHOLD_SET[ti];
+                    let mut args = vec![
+                        "--asset".to_string(),
+                        assets[asset_idx].to_string(),
+                        "--rule".to_string(),
+                        RULE_VVIX_REGIME.to_string(),
+                        "--fast-window".to_string(),
+                        "12".to_string(),
+                        "--slow-window".to_string(),
+                        "50".to_string(),
+                        "--vvix-window".to_string(),
+                        vvix_window.to_string(),
+                        "--vvix-threshold".to_string(),
+                        format!("{:.2}", vvix_threshold),
+                        "--vvix-mode".to_string(),
+                        mode.to_string(),
+                    ];
+                    args.extend(vec!["--hypothesis-id".to_string(), format!("grid-{id}")]);
+                    out.push(Candidate {
+                        candidate_id: format!("grid-vvix-{id}"),
+                        strategy: RESEARCH_STRATEGY.to_string(),
+                        rule: RULE_VVIX_REGIME.to_string(),
+                        args,
+                        rationale: "Deterministic paper-research vvix-regime variant (grid fallback)"
+                            .to_string(),
+                        source: "deterministic-grid".to_string(),
+                        focus_asset: assets[asset_idx].to_string(),
+                        is_seeded: false,
+                        _min_observations: 20,
+                        _min_signals: 10,
+                    });
+                    id = id.saturating_add(1);
+                }
             }
         }
     }
@@ -3347,6 +3649,75 @@ fn refine_around_winner(
                 variant_idx += 1;
             }
         }
+        RULE_MEAN_REVERSION => {
+            let mr_threshold = arg_f64(args, "--mr-entry-threshold").unwrap_or(0.02);
+            let mr_scale = arg_f64(args, "--mr-scale").unwrap_or(200.0);
+            // Perturb slow window (SMA period)
+            for adj_slow in adjacent_values_u32(SLOW_WINDOW_SET, slow) {
+                let mut c = make_refined_candidate(
+                    rule, asset, fast, adj_slow, rsi_window, rsi_oversold,
+                    rsi_overbought, vol_window, vol_cap,
+                    round, winner_idx, variant_idx,
+                );
+                c.args.push("--mr-entry-threshold".to_string());
+                c.args.push(format!("{:.3}", mr_threshold));
+                c.args.push("--mr-scale".to_string());
+                c.args.push(format!("{:.1}", mr_scale));
+                candidates.push(c);
+                variant_idx += 1;
+            }
+            // Perturb entry threshold
+            for adj in adjacent_values_f64(MR_ENTRY_THRESHOLD_SET, mr_threshold) {
+                let mut c = make_refined_candidate(
+                    rule, asset, fast, slow, rsi_window, rsi_oversold,
+                    rsi_overbought, vol_window, vol_cap,
+                    round, winner_idx, variant_idx,
+                );
+                c.args.push("--mr-entry-threshold".to_string());
+                c.args.push(format!("{:.3}", adj));
+                c.args.push("--mr-scale".to_string());
+                c.args.push(format!("{:.1}", mr_scale));
+                candidates.push(c);
+                variant_idx += 1;
+            }
+        }
+        RULE_VVIX_REGIME => {
+            let vvix_window = arg_u32(args, "--vvix-window").unwrap_or(63);
+            let vvix_threshold = arg_f64(args, "--vvix-threshold").unwrap_or(0.75);
+            let vvix_mode = arg_str(args, "--vvix-mode").unwrap_or("risk_off".to_string());
+            // Perturb VVIX window
+            for adj in adjacent_values_u32(VVIX_WINDOW_SET, vvix_window) {
+                let mut c = make_refined_candidate(
+                    rule, asset, fast, slow, rsi_window, rsi_oversold,
+                    rsi_overbought, vol_window, vol_cap,
+                    round, winner_idx, variant_idx,
+                );
+                c.args.push("--vvix-window".to_string());
+                c.args.push(adj.to_string());
+                c.args.push("--vvix-threshold".to_string());
+                c.args.push(format!("{:.2}", vvix_threshold));
+                c.args.push("--vvix-mode".to_string());
+                c.args.push(vvix_mode.clone());
+                candidates.push(c);
+                variant_idx += 1;
+            }
+            // Perturb threshold
+            for adj in adjacent_values_f64(VVIX_THRESHOLD_SET, vvix_threshold) {
+                let mut c = make_refined_candidate(
+                    rule, asset, fast, slow, rsi_window, rsi_oversold,
+                    rsi_overbought, vol_window, vol_cap,
+                    round, winner_idx, variant_idx,
+                );
+                c.args.push("--vvix-window".to_string());
+                c.args.push(vvix_window.to_string());
+                c.args.push("--vvix-threshold".to_string());
+                c.args.push(format!("{:.2}", adj));
+                c.args.push("--vvix-mode".to_string());
+                c.args.push(vvix_mode.clone());
+                candidates.push(c);
+                variant_idx += 1;
+            }
+        }
         _ => {
             if verbose {
                 println!("  [refine] unsupported rule for refinement: {}", rule);
@@ -3366,7 +3737,7 @@ fn refine_around_winner(
         .wrapping_add(winner_idx as u64 + 0xA5A5);
     let sampled_assets = deterministic_sample(&swap_pool, max_asset_swaps, swap_seed);
     for alt_asset in &sampled_assets {
-        candidates.push(make_refined_candidate(
+        let mut c = make_refined_candidate(
             rule,
             alt_asset,
             fast,
@@ -3379,7 +3750,27 @@ fn refine_around_winner(
             round,
             winner_idx,
             variant_idx,
-        ));
+        );
+        // Carry forward rule-specific args for asset swaps
+        if rule == RULE_MEAN_REVERSION {
+            let mr_threshold = arg_f64(args, "--mr-entry-threshold").unwrap_or(0.02);
+            let mr_scale = arg_f64(args, "--mr-scale").unwrap_or(200.0);
+            c.args.push("--mr-entry-threshold".to_string());
+            c.args.push(format!("{:.3}", mr_threshold));
+            c.args.push("--mr-scale".to_string());
+            c.args.push(format!("{:.1}", mr_scale));
+        } else if rule == RULE_VVIX_REGIME {
+            let vvix_window = arg_u32(args, "--vvix-window").unwrap_or(63);
+            let vvix_threshold = arg_f64(args, "--vvix-threshold").unwrap_or(0.75);
+            let vvix_mode = arg_str(args, "--vvix-mode").unwrap_or("risk_off".to_string());
+            c.args.push("--vvix-window".to_string());
+            c.args.push(vvix_window.to_string());
+            c.args.push("--vvix-threshold".to_string());
+            c.args.push(format!("{:.2}", vvix_threshold));
+            c.args.push("--vvix-mode".to_string());
+            c.args.push(vvix_mode);
+        }
+        candidates.push(c);
         variant_idx += 1;
     }
 

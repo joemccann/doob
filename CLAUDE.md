@@ -57,7 +57,7 @@ src/
 │   ├── mod.rs
 │   ├── paths.rs                     # Parquet path resolution helpers
 │   ├── discovery.rs                 # Symbol discovery from bronze layer
-│   ├── readers.rs                   # Parquet (polars) data loaders, load_price_panel(), load_vix_ohlcv(), CBOE VIX cache
+│   ├── readers.rs                   # Parquet (polars) data loaders, load_price_panel(), load_vix_ohlcv(), load_volatility_index_ohlcv(), CBOE VIX cache
 │   └── presets.rs                   # Preset loading + validation
 ├── metrics/
 │   ├── mod.rs
@@ -81,6 +81,7 @@ src/
 
 - Price data: `~/market-warehouse/data-lake/bronze/asset_class=equity/symbol=<TICKER>/data.parquet`
 - VIX data (parquet): `~/market-warehouse/data-lake/bronze/asset_class=volatility/symbol=VIX/data.parquet`
+- VVIX data (parquet): `~/market-warehouse/data-lake/bronze/asset_class=volatility/symbol=VVIX/data.parquet`
 - VIX data (CBOE CSV): cached locally for 24h (only external HTTP call, used by overnight-drift)
 - Universe membership: `presets/<universe>.json` (e.g. `presets/ndx100.json`, `presets/sp500.json`)
 
@@ -107,6 +108,8 @@ doob run overnight-drift --no-vix-filter --no-plots
 doob run intraday-drift --ticker SPY --short
 doob run paper-research --output json --asset TQQQ --rule rsi_reversion --fast-window 16 --slow-window 18 --rsi-window 16 --rsi-oversold 28 --rsi-overbought 76 --vol-window 20 --vol-cap 0.40
 doob run paper-research --asset SPY --rule vol_spread --vol-window 22 --vol-cap 0.20
+doob run paper-research --asset QQQ --rule mean_reversion_filter --slow-window 50 --mr-entry-threshold 0.02
+doob run paper-research --asset SPXL --rule vvix_regime --vvix-window 42 --vvix-threshold 0.50 --vvix-mode risk_off
 doob run breadth-washout --universe ndx100 --signal-mode oversold
 doob run breadth-washout --universe ndx100 --lookback 50 --signal-mode oversold --threshold 80
 doob run ndx100-sma-breadth --end-date 2026-03-11
@@ -161,11 +164,25 @@ a buy-and-hold baseline. Rules:
 | `rsi_reversion` | Long when RSI < oversold threshold | `--rsi-window`, `--rsi-oversold` |
 | `volatility_regime` | Long when realized vol below percentile cap | `--vol-window`, `--vol-cap [0,1]` |
 | `vol_spread` | Long when VIX-implied vs realized vol spread exceeds threshold | `--vol-window`, `--vol-cap` (negative = snap-back) |
+| `mean_reversion_filter` | Long when price drops below fair-value SMA by threshold | `--slow-window`, `--mr-entry-threshold`, `--mr-scale` |
+| `vvix_regime` | Long based on VVIX percentile rank (risk_off or contrarian) | `--vvix-window`, `--vvix-threshold`, `--vvix-mode` |
 
 The `vol_spread` rule is the first multi-source signal — it loads VIX from local
 parquet (`asset_class=volatility/symbol=VIX`) and compares implied vol against
 realized vol annualized with `sqrt(252)`. Positive `--vol-cap` = VRP harvest
 (VIX overstates realized); negative = snap-back (realized overshoots implied).
+
+The `mean_reversion_filter` rule implements Xu et al. (2026, SSRN 6225198) —
+computes fair value as SMA(close, slow_window), then relative mispricing
+δ = (close − SMA) / SMA. Goes long when δ < −mr_entry_threshold. The SMA is a
+simplified proxy for the paper's LAFO-trained neural signal filters.
+
+The `vvix_regime` rule implements Bevilacqua & Hizmeri (2026, SSRN 6212458) —
+loads VVIX from local parquet (`asset_class=volatility/symbol=VVIX`) via
+`load_volatility_index_ohlcv()` and computes rolling percentile rank. In
+`risk_off` mode: long when VVIX is below threshold (calm conditions). In
+`contrarian` mode: long when VVIX is above threshold (buy cheap vol uncertainty).
+The paper documents Sharpe 2.0–3.2 for variance assets; equity adaptation is indirect.
 
 ## Research Analysis Framework
 
@@ -237,7 +254,7 @@ cargo build --release && cp target/release/doob ~/.cargo/bin/doob
 ## Testing
 
 ```bash
-# Unit tests (198 tests: 156 lib + 42 bin, < 0.1s, no external dependencies)
+# Unit tests (226 tests: 167 lib + 59 bin, < 0.1s, no external dependencies)
 cargo test
 
 # CLI integration tests (106 tests, requires ~/market-warehouse)
@@ -246,7 +263,7 @@ cargo test
 
 ### Test Rules
 
-1. 198 unit tests covering all modules (mock all I/O, use `tempfile`)
+1. 226 unit tests covering all modules (mock all I/O, use `tempfile`)
 2. 106 CLI integration tests covering every command, flag combination, output format (text/json/md), and error case
 3. Tests run with `set -euo pipefail` — any unexpected failure stops the suite
 4. Edge cases tested: future dates, 0 sessions, missing tickers, invalid modes, invalid output formats

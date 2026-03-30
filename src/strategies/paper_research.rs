@@ -13,7 +13,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::cli::OutputFormat;
-use crate::data::readers::{load_ticker_ohlcv, load_vix_ohlcv};
+use crate::data::readers::{load_ticker_ohlcv, load_vix_ohlcv, load_volatility_index_ohlcv};
 use crate::metrics::fees::ibkr_roundtrip_cost;
 use crate::strategies::common::{
     JsonOutput, StrategyResult, build_json_annual_returns, buy_and_hold_equity,
@@ -36,6 +36,8 @@ enum ResearchRule {
     RsiReversion,
     VolatilityRegime,
     VolSpread,
+    MeanReversionFilter,
+    VvixRegime,
 }
 
 impl ResearchRule {
@@ -46,6 +48,8 @@ impl ResearchRule {
             "rsi_reversion" => Some(Self::RsiReversion),
             "volatility_regime" => Some(Self::VolatilityRegime),
             "vol_spread" => Some(Self::VolSpread),
+            "mean_reversion_filter" => Some(Self::MeanReversionFilter),
+            "vvix_regime" => Some(Self::VvixRegime),
             _ => None,
         }
     }
@@ -57,6 +61,8 @@ impl ResearchRule {
             Self::RsiReversion => "rsi_reversion",
             Self::VolatilityRegime => "volatility_regime",
             Self::VolSpread => "vol_spread",
+            Self::MeanReversionFilter => "mean_reversion_filter",
+            Self::VvixRegime => "vvix_regime",
         }
     }
 }
@@ -85,7 +91,7 @@ pub struct PaperResearchArgs {
     #[arg(
         long,
         default_value = "trend_momentum",
-        help = "Research rule: trend_momentum|trend_pullback|rsi_reversion|volatility_regime|vol_spread"
+        help = "Research rule: trend_momentum|trend_pullback|rsi_reversion|volatility_regime|vol_spread|mean_reversion_filter|vvix_regime"
     )]
     pub rule: String,
 
@@ -121,6 +127,41 @@ pub struct PaperResearchArgs {
         help = "Volatility percentile cap [0,1] for volatility_regime; spread threshold for vol_spread (negative = snap-back)"
     )]
     pub vol_cap: f64,
+
+    #[arg(
+        long,
+        default_value_t = 0.02,
+        help = "Mean reversion entry threshold: go long when price is this fraction below fair value SMA"
+    )]
+    pub mr_entry_threshold: f64,
+
+    #[arg(
+        long,
+        default_value_t = 200.0,
+        help = "Mean reversion position scaling factor (reserved for fractional sizing)"
+    )]
+    pub mr_scale: f64,
+
+    #[arg(
+        long,
+        default_value_t = 63,
+        help = "VVIX rolling percentile lookback window (trading days)"
+    )]
+    pub vvix_window: usize,
+
+    #[arg(
+        long,
+        default_value_t = 0.75,
+        help = "VVIX percentile threshold; risk_off: long when below, contrarian: long when above"
+    )]
+    pub vvix_threshold: f64,
+
+    #[arg(
+        long,
+        default_value = "risk_off",
+        help = "VVIX mode: risk_off (long when VVIX low) | contrarian (long when VVIX high)"
+    )]
+    pub vvix_mode: String,
 
     #[arg(long, help = "Optional hypothesis id")]
     pub hypothesis_id: Option<String>,
@@ -290,6 +331,11 @@ fn build_signal_mask(
     vol_window: usize,
     vol_cap: f64,
     vix_closes: Option<&[f64]>,
+    mr_entry_threshold: f64,
+    vvix_closes: Option<&[f64]>,
+    vvix_window: usize,
+    vvix_threshold: f64,
+    vvix_contrarian: bool,
 ) -> Vec<bool> {
     let n = closes.len();
 
@@ -303,10 +349,27 @@ fn build_signal_mask(
             n
         );
     }
+    if let Some(vvix) = vvix_closes {
+        assert_eq!(
+            vvix.len(),
+            n,
+            "vvix_closes length ({}) must match closes length ({})",
+            vvix.len(),
+            n
+        );
+    }
 
     // Rule-specific minimum lookback gate
     if matches!(rule, ResearchRule::VolSpread) {
         if n < vol_window + 1 {
+            return vec![false; n];
+        }
+    } else if matches!(rule, ResearchRule::MeanReversionFilter) {
+        if n < slow.saturating_add(1) {
+            return vec![false; n];
+        }
+    } else if matches!(rule, ResearchRule::VvixRegime) {
+        if n < vvix_window + 1 {
             return vec![false; n];
         }
     } else if n < slow.saturating_add(4) {
@@ -391,6 +454,57 @@ fn build_signal_mask(
                     } else {
                         // Snap-back: go long when realized overshoots implied
                         spread < vol_cap
+                    }
+                }
+                ResearchRule::MeanReversionFilter => {
+                    // Fair value = SMA(close, slow_window)
+                    // Relative mispricing δ = (close - fair_value) / fair_value
+                    // Go long when δ < -mr_entry_threshold (price below fair value)
+                    let fair_value = moving_average(closes, idx, slow);
+                    match fair_value {
+                        Some(fv) if fv > 0.0 => {
+                            let delta = (closes[idx] - fv) / fv;
+                            delta < -mr_entry_threshold
+                        }
+                        _ => false,
+                    }
+                }
+                ResearchRule::VvixRegime => {
+                    // Compute rolling percentile rank of VVIX within lookback window
+                    if idx < vvix_window {
+                        return false;
+                    }
+                    let vvix_val = match vvix_closes {
+                        Some(vvix) => {
+                            let v = vvix.get(idx).copied().unwrap_or(f64::NAN);
+                            if !v.is_finite() { return false; }
+                            v
+                        }
+                        None => return false,
+                    };
+                    let vvix = vvix_closes.unwrap();
+                    let window_start = idx.saturating_sub(vvix_window);
+                    let mut count_below = 0usize;
+                    let mut count_valid = 0usize;
+                    for i in window_start..idx {
+                        let v = vvix[i];
+                        if v.is_finite() {
+                            count_valid += 1;
+                            if v <= vvix_val {
+                                count_below += 1;
+                            }
+                        }
+                    }
+                    if count_valid < 2 {
+                        return false;
+                    }
+                    let percentile_rank = count_below as f64 / count_valid as f64;
+                    if vvix_contrarian {
+                        // Paper's direct signal: long when VVIX is high (buy cheap vol uncertainty)
+                        percentile_rank >= vvix_threshold
+                    } else {
+                        // Risk-off: long equity when VVIX is low (calm conditions)
+                        percentile_rank < vvix_threshold
                     }
                 }
             };
@@ -611,7 +725,7 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
     let asset = args.asset.to_uppercase();
     let rule = ResearchRule::from_str(&args.rule).ok_or_else(|| {
         anyhow::anyhow!(
-            "unsupported rule '{}'; expected trend_momentum, trend_pullback, rsi_reversion, volatility_regime, vol_spread",
+            "unsupported rule '{}'; expected trend_momentum, trend_pullback, rsi_reversion, volatility_regime, vol_spread, mean_reversion_filter, vvix_regime",
             args.rule
         )
     })?;
@@ -631,6 +745,40 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
                 bail!(
                     "vol_spread requires a finite --vol-cap threshold, got {}",
                     args.vol_cap
+                );
+            }
+        }
+        ResearchRule::MeanReversionFilter => {
+            if !args.mr_entry_threshold.is_finite() || args.mr_entry_threshold <= 0.0 {
+                bail!(
+                    "mean_reversion_filter requires --mr-entry-threshold > 0, got {}",
+                    args.mr_entry_threshold
+                );
+            }
+            if !args.mr_scale.is_finite() || args.mr_scale <= 0.0 {
+                bail!(
+                    "mean_reversion_filter requires --mr-scale > 0, got {}",
+                    args.mr_scale
+                );
+            }
+        }
+        ResearchRule::VvixRegime => {
+            if !(0.0..=1.0).contains(&args.vvix_threshold) {
+                bail!(
+                    "vvix_regime requires --vvix-threshold in [0.0, 1.0], got {}",
+                    args.vvix_threshold
+                );
+            }
+            if args.vvix_window < 2 {
+                bail!(
+                    "vvix_regime requires --vvix-window >= 2, got {}",
+                    args.vvix_window
+                );
+            }
+            if args.vvix_mode != "risk_off" && args.vvix_mode != "contrarian" {
+                bail!(
+                    "vvix_regime requires --vvix-mode risk_off|contrarian, got '{}'",
+                    args.vvix_mode
                 );
             }
         }
@@ -662,7 +810,8 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
     let max_lookback = args
         .slow_window
         .max(args.vol_window)
-        .max(args.rsi_window.max(2));
+        .max(args.rsi_window.max(2))
+        .max(args.vvix_window);
     let load_start_date = if let Some(start_date) = requested_start_date {
         start_date - chrono::Duration::days(indicator_buffer_days(max_lookback))
     } else {
@@ -709,6 +858,21 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
         None
     };
 
+    // Load VVIX data when needed (vvix_regime rule)
+    let vvix_aligned: Option<Vec<f64>> = if matches!(rule, ResearchRule::VvixRegime) {
+        let vvix_bars = load_volatility_index_ohlcv("VVIX", None)?;
+        let vvix_map: HashMap<NaiveDate, f64> =
+            vvix_bars.iter().map(|r| (r.trade_date, r.close)).collect();
+        Some(
+            dates
+                .iter()
+                .map(|d| *vvix_map.get(d).unwrap_or(&f64::NAN))
+                .collect(),
+        )
+    } else {
+        None
+    };
+
     let masks = build_signal_mask(
         &closes,
         rule,
@@ -719,6 +883,11 @@ pub fn run(args: &PaperResearchArgs, fmt: OutputFormat) -> Result<()> {
         args.vol_window,
         args.vol_cap,
         vix_aligned.as_deref(),
+        args.mr_entry_threshold,
+        vvix_aligned.as_deref(),
+        args.vvix_window,
+        args.vvix_threshold,
+        args.vvix_mode == "contrarian",
     );
     let start_idx = evaluation_start_index(&dates, requested_start_date, args.sessions)?;
     let eval_dates = &dates[start_idx..];
@@ -866,6 +1035,8 @@ mod tests {
             3,
             0.5,
             None,
+            0.02,
+            None, 63, 0.75, false,
         );
         assert_eq!(mask.len(), closes.len());
     }
@@ -888,6 +1059,8 @@ mod tests {
             20,   // vol_window
             0.20, // positive threshold → VRP harvest
             Some(&vix),
+            0.02,
+            None, 63, 0.75, false,
         );
         assert_eq!(mask.len(), n);
         // After warmup, signals should fire because VIX >> realized
@@ -913,6 +1086,8 @@ mod tests {
             20,
             0.20,
             None, // no VIX
+            0.02,
+            None, 63, 0.75, false,
         );
         assert_eq!(mask.len(), n);
         assert!(
@@ -942,6 +1117,8 @@ mod tests {
             20,
             -0.10, // negative threshold → snap-back
             Some(&vix),
+            0.02,
+            None, 63, 0.75, false,
         );
         assert_eq!(mask.len(), n);
         // With high realized vol and low VIX, spread is very negative → should trigger
@@ -1003,5 +1180,184 @@ mod tests {
             (audit.ending_equity - *equity.last().unwrap()).abs() < 1e-9,
             "audit ending equity should match simulated ending equity"
         );
+    }
+
+    #[test]
+    fn test_mean_reversion_filter_triggers_below_fair_value() {
+        // Price dips 3% below its 5-bar SMA → signal should fire
+        let closes = vec![100.0, 101.0, 102.0, 103.0, 104.0, 97.0];
+        // SMA(5) at idx=5 = (101+102+103+104+97)/5 = 101.4
+        // delta = (97 - 101.4) / 101.4 ≈ -0.0434 < -0.02 → true
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::MeanReversionFilter,
+            12,
+            5, // slow_window = SMA period
+            14,
+            30.0,
+            20,
+            0.45,
+            None,
+            0.02, // entry threshold
+            None, 63, 0.75, false,
+        );
+        assert_eq!(mask.len(), closes.len());
+        assert!(mask[5], "expected signal when price is 3%+ below fair value SMA");
+    }
+
+    #[test]
+    fn test_mean_reversion_filter_no_signal_above_fair_value() {
+        // Steadily rising prices — never below SMA
+        let closes = vec![100.0, 102.0, 104.0, 106.0, 108.0, 110.0, 112.0, 114.0];
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::MeanReversionFilter,
+            12,
+            5,
+            14,
+            30.0,
+            20,
+            0.45,
+            None,
+            0.02,
+            None, 63, 0.75, false,
+        );
+        assert_eq!(mask.len(), closes.len());
+        assert!(
+            mask.iter().all(|&b| !b),
+            "expected no signals for steadily rising prices"
+        );
+    }
+
+    #[test]
+    fn test_mean_reversion_filter_threshold_sensitivity() {
+        // Same series: tight threshold triggers, wide threshold doesn't
+        let closes = vec![100.0, 101.0, 102.0, 103.0, 104.0, 102.5];
+        // SMA(5) at idx=5 = (101+102+103+104+102.5)/5 = 102.5
+        // delta = (102.5 - 102.5) / 102.5 = 0.0 → neither fires
+
+        // Use a price that's about 1.5% below SMA
+        let closes2 = vec![100.0, 101.0, 102.0, 103.0, 104.0, 100.5];
+        // SMA(5) at idx=5 = (101+102+103+104+100.5)/5 = 102.1
+        // delta = (100.5 - 102.1) / 102.1 ≈ -0.0157
+
+        let mask_tight = build_signal_mask(
+            &closes2,
+            ResearchRule::MeanReversionFilter,
+            12, 5, 14, 30.0, 20, 0.45, None,
+            0.01, // tight threshold: 1% → fires
+            None, 63, 0.75, false,
+        );
+        let mask_wide = build_signal_mask(
+            &closes2,
+            ResearchRule::MeanReversionFilter,
+            12, 5, 14, 30.0, 20, 0.45, None,
+            0.05, // wide threshold: 5% → doesn't fire
+            None, 63, 0.75, false,
+        );
+        let tight_count = mask_tight.iter().filter(|&&b| b).count();
+        let wide_count = mask_wide.iter().filter(|&&b| b).count();
+        assert!(
+            tight_count > wide_count,
+            "tighter threshold should produce more signals: tight={tight_count} wide={wide_count}"
+        );
+    }
+
+    #[test]
+    fn test_mean_reversion_filter_insufficient_lookback() {
+        // Fewer bars than slow_window → all false
+        let closes = vec![100.0, 101.0, 102.0];
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::MeanReversionFilter,
+            12,
+            10, // slow_window=10 but only 3 bars
+            14,
+            30.0,
+            20,
+            0.45,
+            None,
+            0.02,
+            None, 63, 0.75, false,
+        );
+        assert!(mask.iter().all(|&b| !b), "expected all-false with insufficient data");
+    }
+
+    #[test]
+    fn test_vvix_regime_risk_off_long_when_low() {
+        // VVIX low → percentile rank low → risk_off mode should go long
+        let n = 80;
+        let closes: Vec<f64> = (0..n).map(|i| 100.0 + (i as f64) * 0.1).collect();
+        // VVIX: mostly high (90-110), but drops to 70 at the end
+        let mut vvix: Vec<f64> = (0..n).map(|i| 90.0 + (i % 10) as f64 * 2.0).collect();
+        vvix[n - 1] = 70.0; // very low VVIX
+
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::VvixRegime,
+            12, 40, 14, 30.0, 20, 0.45,
+            None, 0.02,
+            Some(&vvix),
+            20, // vvix_window
+            0.75, // threshold
+            false, // risk_off mode
+        );
+        assert_eq!(mask.len(), n);
+        assert!(mask[n - 1], "expected long signal when VVIX is at low percentile in risk_off mode");
+    }
+
+    #[test]
+    fn test_vvix_regime_contrarian_long_when_high() {
+        // VVIX high → percentile rank high → contrarian mode should go long
+        let n = 80;
+        let closes: Vec<f64> = (0..n).map(|i| 100.0 + (i as f64) * 0.1).collect();
+        // VVIX: mostly low (80-90), spikes to 130 at the end
+        let mut vvix: Vec<f64> = (0..n).map(|_| 85.0).collect();
+        vvix[n - 1] = 130.0; // very high VVIX
+
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::VvixRegime,
+            12, 40, 14, 30.0, 20, 0.45,
+            None, 0.02,
+            Some(&vvix),
+            20,
+            0.75,
+            true, // contrarian mode
+        );
+        assert_eq!(mask.len(), n);
+        assert!(mask[n - 1], "expected long signal when VVIX is at high percentile in contrarian mode");
+    }
+
+    #[test]
+    fn test_vvix_regime_no_signal_without_data() {
+        let n = 80;
+        let closes: Vec<f64> = (0..n).map(|i| 100.0 + (i as f64) * 0.1).collect();
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::VvixRegime,
+            12, 40, 14, 30.0, 20, 0.45,
+            None, 0.02,
+            None, // no VVIX data
+            20, 0.75, false,
+        );
+        assert!(mask.iter().all(|&b| !b), "expected all-false with no VVIX data");
+    }
+
+    #[test]
+    fn test_vvix_regime_insufficient_lookback() {
+        let n = 5;
+        let closes: Vec<f64> = vec![100.0; n];
+        let vvix: Vec<f64> = vec![90.0; n];
+        let mask = build_signal_mask(
+            &closes,
+            ResearchRule::VvixRegime,
+            12, 40, 14, 30.0, 20, 0.45,
+            None, 0.02,
+            Some(&vvix),
+            20, // vvix_window=20 but only 5 bars
+            0.75, false,
+        );
+        assert!(mask.iter().all(|&b| !b), "expected all-false with insufficient VVIX data");
     }
 }

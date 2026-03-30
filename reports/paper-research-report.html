@@ -1,0 +1,1438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paper-Derived Strategy Research Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --surface: #f3fbf8;
+      --surface-container-low: #edf5f2;
+      --surface-container: #e8f0ed;
+      --surface-container-high: #dce4e1;
+      --surface-container-lowest: #ffffff;
+      --on-surface: #151d1c;
+      --on-surface-muted: #4e635c;
+      --on-surface-soft: #6f7978;
+      --primary: #003434;
+      --primary-container: #004d4d;
+      --secondary: #4e635c;
+      --secondary-container: #cee5dc;
+      --outline: #6f7978;
+      --outline-variant: #bfc8c8;
+      --accent-lime: #c3f400;
+      --accent-lime-deep: #abd600;
+      --ink-dark: #161e00;
+      --shadow: 0 24px 48px -12px rgba(21, 29, 28, 0.04);
+      --glass: rgba(243, 251, 248, 0.8);
+      --ghost-line: rgba(191, 200, 200, 0.2);
+      --ghost-line-strong: rgba(191, 200, 200, 0.3);
+      --transition: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      --positive: #3d5a00;
+      --negative: #6b2f2f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-container-low) 100%);
+      color: var(--on-surface);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background:
+        radial-gradient(circle at top left, rgba(206, 229, 220, 0.42) 0%, transparent 24%),
+        radial-gradient(circle at top right, rgba(195, 244, 0, 0.12) 0%, transparent 18%);
+    }
+
+    .page { max-width: 1540px; margin: 0 auto; padding: 0 clamp(20px, calc(12px + 1.8vw), 40px); }
+
+    /* --- Hero --- */
+    .hero {
+      padding: 80px 0 48px;
+      border-bottom: 1px solid var(--ghost-line);
+    }
+    .hero-eyebrow {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.05rem;
+      text-transform: uppercase;
+      color: var(--on-surface-muted);
+      margin-bottom: 12px;
+    }
+    .hero h1 {
+      font-family: "Newsreader", Georgia, serif;
+      font-size: clamp(2rem, 4vw, 2.625rem);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+    .hero-meta {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.8125rem;
+      color: var(--on-surface-muted);
+    }
+    .hero-meta span { margin-right: 24px; }
+
+    /* --- Stats bar --- */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1px;
+      background: var(--ghost-line);
+      margin: 32px 0;
+    }
+    .stat {
+      background: var(--surface-container-lowest);
+      padding: 20px 24px;
+    }
+    .stat-label {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.05rem;
+      text-transform: uppercase;
+      color: var(--on-surface-muted);
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1.0;
+    }
+    .stat-value.positive { color: var(--positive); }
+    .stat-value.negative { color: var(--negative); }
+
+    /* --- Section --- */
+    .section {
+      padding: 48px 0 32px;
+      border-bottom: 1px solid var(--ghost-line);
+    }
+    .section:last-child { border-bottom: none; }
+    .section-eyebrow {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.05rem;
+      text-transform: uppercase;
+      color: var(--on-surface-muted);
+      margin-bottom: 8px;
+    }
+    .section h2 {
+      font-family: "Newsreader", Georgia, serif;
+      font-size: 1.75rem;
+      font-weight: 400;
+      color: var(--primary);
+      margin-bottom: 24px;
+      line-height: 1.2;
+    }
+    .section h3 {
+      font-family: "Newsreader", Georgia, serif;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--primary);
+      margin-bottom: 16px;
+      margin-top: 32px;
+    }
+
+    /* --- Paper cards --- */
+    .paper-card {
+      background: var(--surface-container-lowest);
+      padding: 28px 32px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      border-left: 3px solid var(--primary);
+    }
+    .paper-card h4 {
+      font-family: "Newsreader", Georgia, serif;
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+    .paper-card .authors {
+      font-size: 0.8125rem;
+      color: var(--on-surface-muted);
+      margin-bottom: 12px;
+    }
+    .paper-card p {
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--on-surface);
+    }
+    .paper-card .tag {
+      display: inline-block;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      background: var(--secondary-container);
+      color: var(--primary);
+      padding: 2px 10px;
+      margin-right: 6px;
+      margin-top: 10px;
+    }
+
+    /* --- Tables --- */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+    thead th {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--on-surface-muted);
+      background: var(--surface-container-low);
+      padding: 10px 14px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    thead th.num { text-align: right; }
+    tbody td {
+      font-family: "Space Grotesk", sans-serif;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--ghost-line);
+      vertical-align: middle;
+    }
+    tbody td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    tbody tr:hover { background: var(--surface-container-low); }
+    tbody tr.highlight {
+      background: rgba(195, 244, 0, 0.06);
+    }
+    .positive-val { color: var(--positive); font-weight: 600; }
+    .negative-val { color: var(--negative); font-weight: 600; }
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      background: var(--primary);
+      color: var(--accent-lime);
+    }
+    .rank-badge.top3 {
+      background: var(--accent-lime);
+      color: var(--ink-dark);
+    }
+
+    /* --- Heatmap --- */
+    .heatmap {
+      margin: 16px 0;
+    }
+    .heatmap table {
+      font-size: 0.75rem;
+    }
+    .heatmap td {
+      text-align: center;
+      padding: 8px 12px;
+      font-family: "DM Mono", monospace;
+      font-weight: 400;
+      min-width: 72px;
+    }
+    .heatmap td.asset-label {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      text-align: left;
+      color: var(--primary);
+    }
+    .heat-strong { background: rgba(61, 90, 0, 0.15); color: var(--positive); font-weight: 600; }
+    .heat-good { background: rgba(61, 90, 0, 0.08); color: var(--positive); }
+    .heat-neutral { background: transparent; }
+    .heat-weak { background: rgba(107, 47, 47, 0.06); color: var(--on-surface-muted); }
+    .heat-bad { background: rgba(107, 47, 47, 0.12); color: var(--negative); font-weight: 600; }
+
+    /* --- Charts --- */
+    .chart-container {
+      background: var(--surface-container-lowest);
+      padding: 24px;
+      margin: 16px 0;
+      box-shadow: var(--shadow);
+    }
+    .chart-title {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+    canvas { width: 100% !important; height: 200px !important; }
+
+    /* --- Methodology --- */
+    .methodology {
+      background: var(--surface-container-lowest);
+      padding: 28px 32px;
+      margin: 16px 0;
+      box-shadow: var(--shadow);
+    }
+    .methodology h4 {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    .methodology ul {
+      list-style: none;
+      padding: 0;
+    }
+    .methodology li {
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      color: var(--on-surface-muted);
+      padding-left: 16px;
+      position: relative;
+    }
+    .methodology li::before {
+      content: "\2014";
+      position: absolute;
+      left: 0;
+      color: var(--outline-variant);
+    }
+
+    /* --- Footer --- */
+    .footer {
+      padding: 48px 0 32px;
+      text-align: center;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.6875rem;
+      color: var(--on-surface-soft);
+      letter-spacing: 0.03em;
+    }
+
+    /* --- Collapsible --- */
+    details { margin: 12px 0; }
+    summary {
+      cursor: pointer;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--primary);
+      padding: 8px 0;
+    }
+    summary:hover { color: var(--primary-container); }
+
+    /* --- Tabs --- */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--outline-variant);
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--on-surface-muted);
+      background: none;
+      border: none;
+      padding: 10px 20px;
+      border-bottom: 2px solid transparent;
+      transition: var(--transition);
+    }
+    .tab-btn:hover { color: var(--primary); }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--accent-lime);
+      font-weight: 600;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">doob Research</div>
+    <h1>Paper-Derived Strategy Research Report</h1>
+    <div class="hero-meta">
+      <span>Generated 2026-03-29 19:08</span>
+      <span>Train: 2020-01-01 to 2024-12-31</span>
+      <span>Test: 2025-01-01 to 2026-03-29</span>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-label">Total Backtests</div>
+      <div class="stat-value">510</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Mean Reversion</div>
+      <div class="stat-value">210</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">VVIX Regime</div>
+      <div class="stat-value">300</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Best Test Sharpe</div>
+      <div class="stat-value positive">1.69</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Best Test CAGR</div>
+      <div class="stat-value positive">44.16%</div>
+    </div>
+  </div>
+
+  <!-- Paper Summaries -->
+  <div class="section">
+    <div class="section-eyebrow">Source Literature</div>
+    <h2>Academic Papers</h2>
+
+    <div class="paper-card">
+      <h4>Advanced Signal Filtering for Mean Reversion Trading</h4>
+      <div class="authors">Xu, Firoozye, Koukorinis, Treleaven, Zhu (UCL, 2026) &mdash; SSRN 6225198</div>
+      <p>Develops a regime-aware mean-reversion framework using adaptive signal filters (LAFO) to determine latent fair price. The spot-filter spread yields buy/sell signals when price deviates beyond a threshold from the SMA-estimated fair value. Neural network filters (RNN, CNN, S4) approximate solutions within this framework. Our doob implementation uses the simplified SMA-based spread: &delta; = (close &minus; SMA) / SMA; go long when &delta; &lt; &minus;threshold.</p>
+      <span class="tag">Mean Reversion</span>
+      <span class="tag">Signal Filtering</span>
+      <span class="tag">Regime Switching</span>
+    </div>
+
+    <div class="paper-card">
+      <h4>Early Birds Get the Vol: Morning Volatility Uncertainty and Variance Risk Premium</h4>
+      <div class="authors">Bevilacqua, Hizmeri (U. Liverpool, 2026) &mdash; SSRN 6212458</div>
+      <p>Morning VVIX (10:00 EST) strongly predicts next-day variance asset returns due to limited attention and slow-moving beliefs. The signal achieves Sharpe ratios of 2.09&ndash;3.24 on VIX futures (long-only, 75th percentile threshold). Our doob adaptation uses daily VVIX close as a proxy, computing a rolling percentile to generate risk_off (long when VVIX low, calm regime) or contrarian (long when VVIX high, elevated uncertainty) signals on equity assets.</p>
+      <span class="tag">Volatility of Volatility</span>
+      <span class="tag">Variance Risk Premium</span>
+      <span class="tag">Limited Attention</span>
+    </div>
+  </div>
+
+  <!-- Combined Leaderboard -->
+  <div class="section">
+    <div class="section-eyebrow">Combined Rankings</div>
+    <h2>Top 20 Strategy Leaderboard</h2>
+    <p style="font-size: 0.8125rem; color: var(--on-surface-muted); margin-bottom: 16px;">
+      Score = 0.6 &times; Test Sharpe + 0.4 &times; Train Sharpe. Ranked by blended score favoring out-of-sample performance.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Rule</th>
+            <th>Asset</th>
+            <th>Parameters</th>
+            <th class="num">Train Sharpe</th>
+            <th class="num">Test Sharpe</th>
+            <th class="num">Test CAGR</th>
+            <th class="num">Test Drawdown</th>
+            <th class="num">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="highlight">
+            <td><span class="rank-badge top3">1</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPXL</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=42, thr=0.5, mode=risk_off</td>
+            <td class="num">0.779</td>
+            <td class="num positive-val">1.687</td>
+            <td class="num positive-val">44.16%</td>
+            <td class="num ">10.18%</td>
+            <td class="num" style="font-weight:700">1.324</td>
+          </tr>
+          <tr class="highlight">
+            <td><span class="rank-badge top3">2</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPXL</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=42, thr=0.6, mode=risk_off</td>
+            <td class="num">0.795</td>
+            <td class="num positive-val">1.385</td>
+            <td class="num positive-val">41.51%</td>
+            <td class="num ">13.85%</td>
+            <td class="num" style="font-weight:700">1.149</td>
+          </tr>
+          <tr class="highlight">
+            <td><span class="rank-badge top3">3</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPXL</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=21, thr=0.5, mode=risk_off</td>
+            <td class="num">0.779</td>
+            <td class="num positive-val">1.358</td>
+            <td class="num positive-val">39.26%</td>
+            <td class="num ">13.70%</td>
+            <td class="num" style="font-weight:700">1.127</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">4</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">TQQQ</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=42, thr=0.5, mode=risk_off</td>
+            <td class="num">0.561</td>
+            <td class="num positive-val">1.481</td>
+            <td class="num positive-val">49.51%</td>
+            <td class="num ">14.93%</td>
+            <td class="num" style="font-weight:700">1.113</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">5</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">QQQ</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=42, thr=0.5, mode=risk_off</td>
+            <td class="num">0.611</td>
+            <td class="num positive-val">1.415</td>
+            <td class="num positive-val">17.69%</td>
+            <td class="num ">4.98%</td>
+            <td class="num" style="font-weight:700">1.093</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">6</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPY</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=42, thr=0.5, mode=risk_off</td>
+            <td class="num">0.617</td>
+            <td class="num positive-val">1.404</td>
+            <td class="num positive-val">14.41%</td>
+            <td class="num ">3.45%</td>
+            <td class="num" style="font-weight:700">1.089</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">7</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPXL</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=126, thr=0.5, mode=risk_off</td>
+            <td class="num">0.597</td>
+            <td class="num positive-val">1.328</td>
+            <td class="num positive-val">33.89%</td>
+            <td class="num ">12.37%</td>
+            <td class="num" style="font-weight:700">1.035</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">8</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPXL</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=63, thr=0.6, mode=risk_off</td>
+            <td class="num">0.408</td>
+            <td class="num positive-val">1.452</td>
+            <td class="num positive-val">39.23%</td>
+            <td class="num ">14.57%</td>
+            <td class="num" style="font-weight:700">1.034</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">9</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPY</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=42, thr=0.6, mode=risk_off</td>
+            <td class="num">0.663</td>
+            <td class="num positive-val">1.187</td>
+            <td class="num positive-val">14.26%</td>
+            <td class="num ">4.56%</td>
+            <td class="num" style="font-weight:700">0.977</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">10</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPXL</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=63, thr=0.7, mode=risk_off</td>
+            <td class="num">0.493</td>
+            <td class="num positive-val">1.235</td>
+            <td class="num positive-val">40.00%</td>
+            <td class="num ">13.48%</td>
+            <td class="num" style="font-weight:700">0.938</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">11</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPY</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=21, thr=0.5, mode=risk_off</td>
+            <td class="num">0.612</td>
+            <td class="num positive-val">1.132</td>
+            <td class="num positive-val">13.43%</td>
+            <td class="num ">4.46%</td>
+            <td class="num" style="font-weight:700">0.924</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">12</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">QQQ</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=42, thr=0.6, mode=risk_off</td>
+            <td class="num">0.595</td>
+            <td class="num positive-val">1.143</td>
+            <td class="num positive-val">17.20%</td>
+            <td class="num ">6.70%</td>
+            <td class="num" style="font-weight:700">0.924</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">13</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPXL</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=63, thr=0.75, mode=risk_off</td>
+            <td class="num">0.612</td>
+            <td class="num positive-val">1.111</td>
+            <td class="num positive-val">37.87%</td>
+            <td class="num negative-val">16.07%</td>
+            <td class="num" style="font-weight:700">0.912</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">14</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPXL</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=126, thr=0.7, mode=risk_off</td>
+            <td class="num">0.310</td>
+            <td class="num positive-val">1.313</td>
+            <td class="num positive-val">43.79%</td>
+            <td class="num negative-val">18.49%</td>
+            <td class="num" style="font-weight:700">0.911</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">15</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">TQQQ</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=42, thr=0.6, mode=risk_off</td>
+            <td class="num">0.510</td>
+            <td class="num positive-val">1.147</td>
+            <td class="num positive-val">43.51%</td>
+            <td class="num negative-val">21.34%</td>
+            <td class="num" style="font-weight:700">0.892</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">16</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPXL</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=63, thr=0.5, mode=risk_off</td>
+            <td class="num">0.683</td>
+            <td class="num positive-val">1.008</td>
+            <td class="num positive-val">25.16%</td>
+            <td class="num ">11.38%</td>
+            <td class="num" style="font-weight:700">0.878</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">17</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPY</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=63, thr=0.6, mode=risk_off</td>
+            <td class="num">0.288</td>
+            <td class="num positive-val">1.241</td>
+            <td class="num positive-val">13.61%</td>
+            <td class="num ">4.85%</td>
+            <td class="num" style="font-weight:700">0.860</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">18</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">QQQ</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=126, thr=0.5, mode=risk_off</td>
+            <td class="num">0.477</td>
+            <td class="num positive-val">1.087</td>
+            <td class="num positive-val">14.63%</td>
+            <td class="num ">5.89%</td>
+            <td class="num" style="font-weight:700">0.843</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">19</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">TQQQ</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=126, thr=0.5, mode=risk_off</td>
+            <td class="num">0.413</td>
+            <td class="num positive-val">1.112</td>
+            <td class="num positive-val">36.38%</td>
+            <td class="num negative-val">19.17%</td>
+            <td class="num" style="font-weight:700">0.832</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge">20</span></td>
+            <td>vvix_regime</td>
+            <td style="font-weight:600">SPY</td>
+            <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=126, thr=0.5, mode=risk_off</td>
+            <td class="num">0.434</td>
+            <td class="num positive-val">1.077</td>
+            <td class="num positive-val">11.85%</td>
+            <td class="num ">3.95%</td>
+            <td class="num" style="font-weight:700">0.820</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Per-Rule Analysis -->
+  <div class="section">
+    <div class="section-eyebrow">Detailed Analysis</div>
+    <h2>Per-Rule Breakdown</h2>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('mr')">mean_reversion_filter</button>
+      <button class="tab-btn" onclick="switchTab('vvix')">vvix_regime</button>
+    </div>
+
+    <!-- Mean Reversion Tab -->
+    <div class="tab-panel active" id="tab-mr">
+      <h3>Parameter Sensitivity: Test Sharpe by Asset and Entry Threshold</h3>
+      <p style="font-size:0.8125rem;color:var(--on-surface-muted);margin-bottom:12px">
+        Best Sharpe across all SMA window sizes for each asset/threshold combination.
+      </p>
+      <div class="heatmap">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th class="num">thr=0.01</th>
+                <th class="num">thr=0.015</th>
+                <th class="num">thr=0.02</th>
+                <th class="num">thr=0.025</th>
+                <th class="num">thr=0.03</th>
+                <th class="num">thr=0.04</th>
+                <th class="num">thr=0.05</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="asset-label">SPY</td>
+                <td class="num heat-neutral">0.13</td>
+                <td class="num heat-neutral">0.39</td>
+                <td class="num heat-neutral">0.49</td>
+                <td class="num heat-neutral">0.41</td>
+                <td class="num heat-good">0.50</td>
+                <td class="num heat-neutral">0.45</td>
+                <td class="num heat-neutral">0.20</td>
+              </tr>
+              <tr>
+                <td class="asset-label">QQQ</td>
+                <td class="num heat-neutral">0.27</td>
+                <td class="num heat-neutral">0.30</td>
+                <td class="num heat-good">0.59</td>
+                <td class="num heat-good">0.58</td>
+                <td class="num heat-good">0.53</td>
+                <td class="num heat-neutral">0.19</td>
+                <td class="num heat-neutral">0.35</td>
+              </tr>
+              <tr>
+                <td class="asset-label">TQQQ</td>
+                <td class="num heat-neutral">0.34</td>
+                <td class="num heat-neutral">0.29</td>
+                <td class="num heat-neutral">0.36</td>
+                <td class="num heat-good">0.51</td>
+                <td class="num heat-neutral">0.49</td>
+                <td class="num heat-neutral">0.46</td>
+                <td class="num heat-neutral">0.43</td>
+              </tr>
+              <tr>
+                <td class="asset-label">IWM</td>
+                <td class="num heat-weak">-0.08</td>
+                <td class="num heat-neutral">0.36</td>
+                <td class="num heat-neutral">0.05</td>
+                <td class="num heat-weak">-0.09</td>
+                <td class="num heat-weak">-0.15</td>
+                <td class="num heat-neutral">0.08</td>
+                <td class="num heat-good">0.51</td>
+              </tr>
+              <tr>
+                <td class="asset-label">SPXL</td>
+                <td class="num heat-neutral">0.21</td>
+                <td class="num heat-neutral">0.12</td>
+                <td class="num heat-neutral">0.16</td>
+                <td class="num heat-neutral">0.16</td>
+                <td class="num heat-neutral">0.15</td>
+                <td class="num heat-neutral">0.29</td>
+                <td class="num heat-neutral">0.28</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3>Top 10 mean_reversion_filter Candidates</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Asset</th>
+              <th>SMA Window</th>
+              <th>Entry Threshold</th>
+              <th class="num">Train Sharpe</th>
+              <th class="num">Train CAGR</th>
+              <th class="num">Test Sharpe</th>
+              <th class="num">Test CAGR</th>
+              <th class="num">Test Drawdown</th>
+              <th class="num">Test Final Equity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rank-badge top3">1</span></td>
+              <td style="font-weight:600">QQQ</td>
+              <td class="num">25</td>
+              <td class="num">0.02</td>
+              <td class="num">0.224</td>
+              <td class="num">6.62%</td>
+              <td class="num positive-val">0.587</td>
+              <td class="num positive-val">12.72%</td>
+              <td class="num">10.67%</td>
+              <td class="num">$1,157,848</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge top3">2</span></td>
+              <td style="font-weight:600">QQQ</td>
+              <td class="num">25</td>
+              <td class="num">0.025</td>
+              <td class="num">0.209</td>
+              <td class="num">6.32%</td>
+              <td class="num positive-val">0.581</td>
+              <td class="num positive-val">12.45%</td>
+              <td class="num">9.54%</td>
+              <td class="num">$1,154,478</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge top3">3</span></td>
+              <td style="font-weight:600">QQQ</td>
+              <td class="num">25</td>
+              <td class="num">0.03</td>
+              <td class="num">0.088</td>
+              <td class="num">4.15%</td>
+              <td class="num positive-val">0.530</td>
+              <td class="num positive-val">11.41%</td>
+              <td class="num">10.19%</td>
+              <td class="num">$1,141,424</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">4</span></td>
+              <td style="font-weight:600">SPXL</td>
+              <td class="num">160</td>
+              <td class="num">0.05</td>
+              <td class="num">0.322</td>
+              <td class="num">7.15%</td>
+              <td class="num positive-val">0.271</td>
+              <td class="num positive-val">6.97%</td>
+              <td class="num">38.00%</td>
+              <td class="num">$1,085,951</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">5</span></td>
+              <td style="font-weight:600">TQQQ</td>
+              <td class="num">160</td>
+              <td class="num">0.025</td>
+              <td class="num">-0.038</td>
+              <td class="num">-13.45%</td>
+              <td class="num positive-val">0.507</td>
+              <td class="num positive-val">18.92%</td>
+              <td class="num">46.57%</td>
+              <td class="num">$1,236,185</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">6</span></td>
+              <td style="font-weight:600">SPXL</td>
+              <td class="num">160</td>
+              <td class="num">0.04</td>
+              <td class="num">0.248</td>
+              <td class="num">3.11%</td>
+              <td class="num positive-val">0.293</td>
+              <td class="num positive-val">7.92%</td>
+              <td class="num">38.00%</td>
+              <td class="num">$1,097,764</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">7</span></td>
+              <td style="font-weight:600">SPY</td>
+              <td class="num">25</td>
+              <td class="num">0.04</td>
+              <td class="num">0.005</td>
+              <td class="num">3.16%</td>
+              <td class="num positive-val">0.450</td>
+              <td class="num positive-val">8.95%</td>
+              <td class="num">7.50%</td>
+              <td class="num">$1,110,598</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">8</span></td>
+              <td style="font-weight:600">SPY</td>
+              <td class="num">160</td>
+              <td class="num">0.025</td>
+              <td class="num">0.063</td>
+              <td class="num">3.80%</td>
+              <td class="num positive-val">0.408</td>
+              <td class="num positive-val">9.20%</td>
+              <td class="num">12.06%</td>
+              <td class="num">$1,113,667</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">9</span></td>
+              <td style="font-weight:600">TQQQ</td>
+              <td class="num">70</td>
+              <td class="num">0.05</td>
+              <td class="num">0.415</td>
+              <td class="num">11.57%</td>
+              <td class="num positive-val">0.173</td>
+              <td class="num negative-val">-0.87%</td>
+              <td class="num">50.83%</td>
+              <td class="num">$989,330</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">10</span></td>
+              <td style="font-weight:600">TQQQ</td>
+              <td class="num">160</td>
+              <td class="num">0.03</td>
+              <td class="num">-0.077</td>
+              <td class="num">-15.27%</td>
+              <td class="num positive-val">0.493</td>
+              <td class="num positive-val">18.05%</td>
+              <td class="num">46.57%</td>
+              <td class="num">$1,225,112</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VVIX Regime Tab -->
+    <div class="tab-panel" id="tab-vvix">
+      <h3>Parameter Sensitivity: Test Sharpe by Asset and VVIX Threshold</h3>
+      <p style="font-size:0.8125rem;color:var(--on-surface-muted);margin-bottom:12px">
+        Best Sharpe across all VVIX windows and modes for each asset/threshold combination.
+      </p>
+      <div class="heatmap">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th class="num">thr=0.5</th>
+                <th class="num">thr=0.6</th>
+                <th class="num">thr=0.7</th>
+                <th class="num">thr=0.75</th>
+                <th class="num">thr=0.8</th>
+                <th class="num">thr=0.9</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="asset-label">SPY</td>
+                <td class="num heat-strong">1.40</td>
+                <td class="num heat-strong">1.24</td>
+                <td class="num heat-strong">1.19</td>
+                <td class="num heat-strong">1.07</td>
+                <td class="num heat-good">0.76</td>
+                <td class="num heat-good">0.97</td>
+              </tr>
+              <tr>
+                <td class="asset-label">QQQ</td>
+                <td class="num heat-strong">1.41</td>
+                <td class="num heat-strong">1.14</td>
+                <td class="num heat-strong">1.09</td>
+                <td class="num heat-good">0.91</td>
+                <td class="num heat-good">0.78</td>
+                <td class="num heat-strong">1.13</td>
+              </tr>
+              <tr>
+                <td class="asset-label">TQQQ</td>
+                <td class="num heat-strong">1.48</td>
+                <td class="num heat-strong">1.15</td>
+                <td class="num heat-strong">1.03</td>
+                <td class="num heat-good">0.85</td>
+                <td class="num heat-good">0.70</td>
+                <td class="num heat-strong">1.22</td>
+              </tr>
+              <tr>
+                <td class="asset-label">IWM</td>
+                <td class="num heat-good">0.69</td>
+                <td class="num heat-good">0.54</td>
+                <td class="num heat-good">0.64</td>
+                <td class="num heat-neutral">0.39</td>
+                <td class="num heat-neutral">0.28</td>
+                <td class="num heat-strong">1.21</td>
+              </tr>
+              <tr>
+                <td class="asset-label">SPXL</td>
+                <td class="num heat-strong">1.69</td>
+                <td class="num heat-strong">1.45</td>
+                <td class="num heat-strong">1.31</td>
+                <td class="num heat-strong">1.18</td>
+                <td class="num heat-good">0.88</td>
+                <td class="num heat-strong">1.10</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3>Mode Comparison: risk_off vs contrarian</h3>
+      <p style="font-size:0.8125rem;color:var(--on-surface-muted);margin-bottom:12px">
+        Best candidate from each VVIX mode.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>Best Asset</th>
+              <th>Parameters</th>
+              <th class="num">Train Sharpe</th>
+              <th class="num">Test Sharpe</th>
+              <th class="num">Test CAGR</th>
+              <th class="num">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:600">risk_off</td>
+              <td>SPXL</td>
+              <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=42, thr=0.5, mode=risk_off</td>
+              <td class="num">0.779</td>
+              <td class="num">1.687</td>
+              <td class="num">44.16%</td>
+              <td class="num" style="font-weight:700">1.324</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600">contrarian</td>
+              <td>TQQQ</td>
+              <td style="font-family:'DM Mono',monospace;font-size:0.75rem">win=21, thr=0.9, mode=contrarian</td>
+              <td class="num">-0.043</td>
+              <td class="num">1.216</td>
+              <td class="num">57.49%</td>
+              <td class="num" style="font-weight:700">0.712</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Top 10 vvix_regime Candidates</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Asset</th>
+              <th>VVIX Window</th>
+              <th>Threshold</th>
+              <th>Mode</th>
+              <th class="num">Train Sharpe</th>
+              <th class="num">Train CAGR</th>
+              <th class="num">Test Sharpe</th>
+              <th class="num">Test CAGR</th>
+              <th class="num">Test Drawdown</th>
+              <th class="num">Test Final Equity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rank-badge top3">1</span></td>
+              <td style="font-weight:600">SPXL</td>
+              <td class="num">42</td>
+              <td class="num">0.5</td>
+              <td>risk_off</td>
+              <td class="num">0.779</td>
+              <td class="num">28.78%</td>
+              <td class="num positive-val">1.687</td>
+              <td class="num positive-val">44.16%</td>
+              <td class="num">10.18%</td>
+              <td class="num">$1,564,642</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge top3">2</span></td>
+              <td style="font-weight:600">SPXL</td>
+              <td class="num">42</td>
+              <td class="num">0.6</td>
+              <td>risk_off</td>
+              <td class="num">0.795</td>
+              <td class="num">31.92%</td>
+              <td class="num positive-val">1.385</td>
+              <td class="num positive-val">41.51%</td>
+              <td class="num">13.85%</td>
+              <td class="num">$1,529,516</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge top3">3</span></td>
+              <td style="font-weight:600">SPXL</td>
+              <td class="num">21</td>
+              <td class="num">0.5</td>
+              <td>risk_off</td>
+              <td class="num">0.779</td>
+              <td class="num">28.55%</td>
+              <td class="num positive-val">1.358</td>
+              <td class="num positive-val">39.26%</td>
+              <td class="num">13.70%</td>
+              <td class="num">$1,499,735</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">4</span></td>
+              <td style="font-weight:600">TQQQ</td>
+              <td class="num">42</td>
+              <td class="num">0.5</td>
+              <td>risk_off</td>
+              <td class="num">0.561</td>
+              <td class="num">21.23%</td>
+              <td class="num positive-val">1.481</td>
+              <td class="num positive-val">49.51%</td>
+              <td class="num">14.93%</td>
+              <td class="num">$1,635,936</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">5</span></td>
+              <td style="font-weight:600">QQQ</td>
+              <td class="num">42</td>
+              <td class="num">0.5</td>
+              <td>risk_off</td>
+              <td class="num">0.611</td>
+              <td class="num">13.32%</td>
+              <td class="num positive-val">1.415</td>
+              <td class="num positive-val">17.69%</td>
+              <td class="num">4.98%</td>
+              <td class="num">$1,220,599</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">6</span></td>
+              <td style="font-weight:600">SPY</td>
+              <td class="num">42</td>
+              <td class="num">0.5</td>
+              <td>risk_off</td>
+              <td class="num">0.617</td>
+              <td class="num">11.24%</td>
+              <td class="num positive-val">1.404</td>
+              <td class="num positive-val">14.41%</td>
+              <td class="num">3.45%</td>
+              <td class="num">$1,179,117</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">7</span></td>
+              <td style="font-weight:600">SPXL</td>
+              <td class="num">126</td>
+              <td class="num">0.5</td>
+              <td>risk_off</td>
+              <td class="num">0.597</td>
+              <td class="num">20.48%</td>
+              <td class="num positive-val">1.328</td>
+              <td class="num positive-val">33.89%</td>
+              <td class="num">12.37%</td>
+              <td class="num">$1,429,251</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">8</span></td>
+              <td style="font-weight:600">SPXL</td>
+              <td class="num">63</td>
+              <td class="num">0.6</td>
+              <td>risk_off</td>
+              <td class="num">0.408</td>
+              <td class="num">12.98%</td>
+              <td class="num positive-val">1.452</td>
+              <td class="num positive-val">39.23%</td>
+              <td class="num">14.57%</td>
+              <td class="num">$1,499,366</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">9</span></td>
+              <td style="font-weight:600">SPY</td>
+              <td class="num">42</td>
+              <td class="num">0.6</td>
+              <td>risk_off</td>
+              <td class="num">0.663</td>
+              <td class="num">12.72%</td>
+              <td class="num positive-val">1.187</td>
+              <td class="num positive-val">14.26%</td>
+              <td class="num">4.56%</td>
+              <td class="num">$1,177,188</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">10</span></td>
+              <td style="font-weight:600">SPXL</td>
+              <td class="num">63</td>
+              <td class="num">0.7</td>
+              <td>risk_off</td>
+              <td class="num">0.493</td>
+              <td class="num">17.10%</td>
+              <td class="num positive-val">1.235</td>
+              <td class="num positive-val">40.00%</td>
+              <td class="num">13.48%</td>
+              <td class="num">$1,509,522</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Equity Traces -->
+  <div class="section">
+    <div class="section-eyebrow">Performance Visualization</div>
+    <h2>Test-Window Equity Curves (Top 10)</h2>
+    <p style="font-size:0.8125rem;color:var(--on-surface-muted);margin-bottom:16px">
+      Equity curves from the out-of-sample test period (2025-01-01 to 2026-03-29). Starting capital: $1,000,000.
+    </p>
+    <div class="chart-container">
+      <div class="chart-title">#1 vvix_regime | SPXL | win=42, thr=0.5, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.687</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">44.16%</strong></span>
+        <span>Drawdown: <strong>10.18%</strong></span>
+      </div>
+      <canvas id="chart-0" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">#2 vvix_regime | SPXL | win=42, thr=0.6, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.385</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">41.51%</strong></span>
+        <span>Drawdown: <strong>13.85%</strong></span>
+      </div>
+      <canvas id="chart-1" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">#3 vvix_regime | SPXL | win=21, thr=0.5, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.358</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">39.26%</strong></span>
+        <span>Drawdown: <strong>13.70%</strong></span>
+      </div>
+      <canvas id="chart-2" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">#4 vvix_regime | TQQQ | win=42, thr=0.5, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.481</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">49.51%</strong></span>
+        <span>Drawdown: <strong>14.93%</strong></span>
+      </div>
+      <canvas id="chart-3" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">#5 vvix_regime | QQQ | win=42, thr=0.5, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.415</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">17.69%</strong></span>
+        <span>Drawdown: <strong>4.98%</strong></span>
+      </div>
+      <canvas id="chart-4" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">#6 vvix_regime | SPY | win=42, thr=0.5, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.404</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">14.41%</strong></span>
+        <span>Drawdown: <strong>3.45%</strong></span>
+      </div>
+      <canvas id="chart-5" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">#7 vvix_regime | SPXL | win=126, thr=0.5, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.328</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">33.89%</strong></span>
+        <span>Drawdown: <strong>12.37%</strong></span>
+      </div>
+      <canvas id="chart-6" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">#8 vvix_regime | SPXL | win=63, thr=0.6, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.452</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">39.23%</strong></span>
+        <span>Drawdown: <strong>14.57%</strong></span>
+      </div>
+      <canvas id="chart-7" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">#9 vvix_regime | SPY | win=42, thr=0.6, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.187</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">14.26%</strong></span>
+        <span>Drawdown: <strong>4.56%</strong></span>
+      </div>
+      <canvas id="chart-8" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">#10 vvix_regime | SPXL | win=63, thr=0.7, mode=risk_off</div>
+      <div style="display:flex;gap:32px;font-family:'Space Grotesk',sans-serif;font-size:0.8125rem;margin-bottom:12px;color:var(--on-surface-muted);">
+        <span>Sharpe: <strong style="color:var(--primary)">1.235</strong></span>
+        <span>CAGR: <strong style="color:var(--positive)">40.00%</strong></span>
+        <span>Drawdown: <strong>13.48%</strong></span>
+      </div>
+      <canvas id="chart-9" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Methodology -->
+  <div class="section">
+    <div class="section-eyebrow">Methodology</div>
+    <h2>Backtest Parameters and Notes</h2>
+
+    <div class="methodology">
+      <h4>Execution Details</h4>
+      <ul>
+        <li>All backtests executed via <code>doob run paper-research --output json</code></li>
+        <li>Capital: $1,000,000 per backtest</li>
+        <li>Fee model: IBKR Tiered (round-trip cost deducted per trade)</li>
+        <li>Train window: 2020-01-01 to 2024-12-31 (~5 years, ~1,260 sessions)</li>
+        <li>Test window: 2025-01-01 to 2026-03-29 (~1.25 years, ~315 sessions)</li>
+        <li>Price data: local parquet from ~/market-warehouse (split-adjusted, not dividend-adjusted)</li>
+        <li>VIX/VVIX data: local parquet at asset_class=volatility/symbol=VIX</li>
+      </ul>
+    </div>
+
+    <div class="methodology">
+      <h4>mean_reversion_filter Grid</h4>
+      <ul>
+        <li>Assets: SPY, QQQ, TQQQ, IWM, SPXL</li>
+        <li>SMA windows: 25, 50, 70, 90, 120, 160</li>
+        <li>Entry thresholds: 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05</li>
+        <li>Total combinations: 5 x 6 x 7 = 210</li>
+      </ul>
+    </div>
+
+    <div class="methodology">
+      <h4>vvix_regime Grid</h4>
+      <ul>
+        <li>Assets: SPY, QQQ, TQQQ, IWM, SPXL</li>
+        <li>VVIX windows: 21, 42, 63, 126, 252</li>
+        <li>VVIX thresholds: 0.5, 0.6, 0.7, 0.75, 0.8, 0.9</li>
+        <li>Modes: risk_off, contrarian</li>
+        <li>Total combinations: 5 x 5 x 6 x 2 = 300</li>
+      </ul>
+    </div>
+
+    <div class="methodology">
+      <h4>Scoring</h4>
+      <ul>
+        <li>Score = 0.6 x Test Sharpe + 0.4 x Train Sharpe</li>
+        <li>Blended score weights out-of-sample performance more heavily to penalize overfitting</li>
+        <li>Top 20 overall (top 10 per rule) selected for the leaderboard</li>
+        <li>Equity curves generated for the overall top 10 using --include-audit</li>
+      </ul>
+    </div>
+
+    <div class="methodology">
+      <h4>Caveats</h4>
+      <ul>
+        <li>adj_close == close in this warehouse (IB TRADES data). Buy-and-hold understates true total return by ~1.3%/yr due to missing dividends</li>
+        <li>VVIX proxy uses daily VIX close data, not intraday 10:00 EST VVIX as in the original paper</li>
+        <li>Mean reversion filter uses simple SMA spread, not the neural LAFO filter from the original paper</li>
+        <li>Results are not forward-looking: test window may include recent market regime shifts</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    doob Quantitative Research &middot; Generated 2026-03-29 19:08 &middot; All data from local parquet warehouse
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+// Tab switching
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Equity chart data
+const equityData = {};
+equityData[0] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1000000.0, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1017805.816, 1000775.536, 1000775.536, 1000775.536, 1000775.536, 1010886.384, 982309.305, 982309.305, 984290.738, 975259.8840000001, 1004770.75, 1003783.099, 1011484.618, 1018646.437, 1005464.009, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 953808.1009999999, 974605.7779999998, 944926.8279999999, 973634.8779999998, 966766.4609999999, 966148.1039999998, 1016586.4799999997, 1020488.2689999999, 984773.9379999997, 975648.9799999999, 916612.5619999998, 916612.5619999998, 925145.965, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 942295.0209999998, 1000510.0589999999, 1021631.4599999998, 1023152.1439999997, 1040853.3309999998, 1041398.1079999999, 1063324.7179999999, 1109960.791, 1090998.167, 1063748.336, 1063748.336, 1085319.5719999997, 1079756.8609999998, 1185675.9829999995, 1209004.6579999996, 1213314.0829999994, 1230300.8909999996, 1253623.7519999994, 1256969.3429999994, 1242826.5569999993, 1180880.3739999994, 1180880.3739999994, 1180880.3739999994, 1180880.3739999994, 1158863.7729999993, 1174504.1049999993, 1168386.1099999992, 1187727.6149999993, 1208069.4329999993, 1205578.1339999991, 1188123.614999999, 1222881.598999999, 1226019.975999999, 1246585.2129999988, 1236153.582999999, 1236153.582999999, 1236153.582999999, 1236153.582999999, 1236153.582999999, 1236153.582999999, 1236153.582999999, 1236153.582999999, 1236153.582999999, 1238160.087999999, 1267596.3429999992, 1284405.1609999991, 1303843.878999999, 1301492.309999999, 1317923.240999999, 1347723.3449999988, 1317581.701999999, 1317581.701999999, 1340438.163999999, 1351778.3389999988, 1335880.1269999987, 1342930.1149999988, 1342930.1149999988, 1342930.1149999988, 1342930.1149999988, 1339570.2139999988, 1346519.9429999988, 1346349.3749999986, 1380366.5669999986, 1381975.6219999988, 1397154.126999999, 1396019.7849999988, 1384579.9829999988, 1384579.9829999988, 1384579.9829999988, 1384579.9829999988, 1384579.9829999988, 1384579.9829999988, 1384579.9829999988, 1384579.9829999988, 1384579.9829999988, 1376283.2589999987, 1376283.2589999987, 1390299.2929999987, 1390299.2929999987, 1390299.2929999987, 1390299.2929999987, 1390299.2929999987, 1390299.2929999987, 1390299.2929999987, 1390299.2929999987, 1372827.9199999985, 1388891.8169999986, 1397701.6769999987, 1397701.6769999987, 1371601.3389999988, 1371601.3389999988, 1371601.3389999988, 1371601.3389999988, 1371601.3389999988, 1383726.7929999987, 1392178.8099999987, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1404443.7669999986, 1415496.7909999983, 1430668.5349999985, 1445703.0119999985, 1449530.8289999985, 1448093.0789999985, 1463800.3289999985, 1447042.5619999983, 1447042.5619999983, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1434617.0799999982, 1444197.8209999981, 1446433.1949999982, 1446433.1949999982, 1446433.1949999982, 1446433.1949999982, 1446433.1949999982, 1446433.1949999982, 1446433.1949999982, 1446433.1949999982, 1446433.1949999982, 1446433.1949999982, 1475074.2909999983, 1498467.5469999982, 1477526.395999998, 1484771.3749999981, 1499884.696999998, 1503631.0789999983, 1510135.1209999982, 1496194.1959999981, 1491399.2709999983, 1519619.898999998, 1530223.6469999983, 1479840.7149999982, 1472828.6259999983, 1459631.3769999985, 1409928.2379999983, 1442509.7719999983, 1480065.5859999983, 1507063.8429999982, 1526332.9499999983, 1541567.1899999983, 1539732.6299999985, 1522845.2699999984, 1516173.3029999982, 1482289.3859999983, 1489122.608999998, 1518527.294999998, 1545110.420999998, 1530044.189999998, 1528479.128999998, 1557073.397999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998, 1564642.329999998]};
+equityData[1] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1000000.0, 1017805.816, 983474.865, 983474.865, 983474.865, 983474.865, 983474.865, 983474.865, 978573.888, 978573.888, 978573.888, 994377.885, 994377.885, 984568.103, 943266.8239999999, 943266.8239999999, 943266.8239999999, 943266.8239999999, 927483.1849999998, 927483.1849999998, 927483.1849999998, 939246.1669999998, 948734.2719999998, 921912.4269999999, 939664.5319999999, 941559.7199999999, 932920.3479999999, 961146.4689999998, 960201.6399999999, 967569.2409999999, 974419.215, 961808.4489999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 912392.6229999999, 932286.5969999998, 903897.4539999999, 931357.8909999998, 924788.0109999999, 924196.5309999998, 972442.2639999999, 976174.997, 942013.4629999999, 933283.929, 876814.698, 892367.8299999998, 900675.122, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 917369.7069999999, 962202.5859999999, 1021648.6279999999, 1043216.7129999999, 1044769.5609999998, 1062845.1919999998, 1063401.426, 1085789.223, 1133412.06, 1114048.16, 1086221.613, 1099473.519, 1121767.558, 1116017.7370000002, 1225500.049, 1249613.6140000003, 1254067.492, 1271625.8900000004, 1295733.6410000003, 1299191.4050000003, 1284572.6090000002, 1220541.216, 1220541.216, 1195551.394, 1195551.394, 1173260.905, 1189095.829, 1182901.706, 1202483.8830000001, 1223078.8530000001, 1220556.546, 1202884.779, 1238075.435, 1241252.884, 1262074.153, 1251512.6350000002, 1264679.6700000002, 1264679.6700000002, 1264679.6700000002, 1264679.6700000002, 1264679.6700000002, 1264679.6700000002, 1264679.6700000002, 1264679.6700000002, 1266732.6330000001, 1296846.529, 1314044.5850000002, 1333930.854, 1331524.8229999999, 1348334.105, 1378820.5, 1347980.595, 1345268.143, 1368604.4510000001, 1380182.732, 1363948.553, 1371146.5870000003, 1353303.6240000003, 1366107.8510000003, 1390430.411, 1386951.371, 1394146.5940000003, 1393969.9770000002, 1429188.9630000002, 1430855.0890000004, 1446569.9080000003, 1445395.4800000002, 1433551.4120000002, 1433551.4120000002, 1433551.4120000002, 1433551.4120000002, 1433551.4120000002, 1433551.4120000002, 1433551.4120000002, 1433551.4120000002, 1433551.4120000002, 1424961.5850000002, 1424961.5850000002, 1439472.7400000002, 1439472.7400000002, 1439472.7400000002, 1439472.7400000002, 1439472.7400000002, 1439472.7400000002, 1439472.7400000002, 1439472.7400000002, 1421383.385, 1438015.48, 1447136.9980000001, 1461982.696, 1434681.287, 1434681.287, 1434681.287, 1434681.287, 1419964.244, 1432517.231, 1441267.301, 1453964.771, 1453964.771, 1451801.654, 1451801.654, 1451801.654, 1451801.654, 1471762.916, 1471762.916, 1492094.4740000002, 1492094.4740000002, 1492094.4740000002, 1492094.4740000002, 1492094.4740000002, 1503836.675, 1519954.4060000002, 1535926.45, 1539992.974, 1538465.338, 1555152.2550000001, 1537346.662, 1537346.662, 1524145.758, 1399656.934, 1399656.934, 1399656.934, 1399656.934, 1399656.934, 1399656.934, 1399656.934, 1399656.934, 1399656.934, 1399656.934, 1433184.4919999999, 1484299.8499999999, 1495223.8279999997, 1495223.8279999997, 1495223.8279999997, 1495223.8279999997, 1495223.8279999997, 1495223.8279999997, 1495223.8279999997, 1446103.2979999997, 1446103.2979999997, 1446103.2979999997, 1455759.8759999997, 1458013.2939999998, 1458013.2939999998, 1458013.2939999998, 1458013.2939999998, 1458013.2939999998, 1458013.2939999998, 1458013.2939999998, 1458013.2939999998, 1458013.2939999998, 1498278.9839999997, 1527946.0169999998, 1552177.2299999995, 1530485.8459999997, 1537990.3819999998, 1553647.4779999997, 1557528.0969999998, 1564265.1859999998, 1549824.6679999998, 1544857.91, 1574094.2119999998, 1585078.0169999998, 1532889.2719999999, 1525625.8199999998, 1511955.488, 1460470.6359999997, 1494220.2969999998, 1533122.5779999997, 1561088.9319999998, 1581048.9859999998, 1596829.5729999999, 1594929.22, 1577436.227, 1570524.947, 1535425.6670000001, 1542502.97, 1572962.513, 1600499.276, 1584892.482, 1583271.2680000002, 1612887.217, 1620727.756, 1609714.825, 1609714.825, 1609714.825, 1609714.825, 1609714.825, 1609714.825, 1609714.825, 1610335.831, 1610335.831, 1610335.831, 1610335.831, 1610335.831, 1610335.831, 1610335.831, 1610335.831, 1610335.831, 1610335.831, 1610335.831, 1610335.831, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1596250.7349999999, 1529515.645, 1529515.645, 1529515.645, 1529515.645, 1529515.645, 1529515.645]};
+equityData[2] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1000000.0, 1017805.816, 983474.865, 983474.865, 983474.865, 983474.865, 983474.865, 983474.865, 978573.888, 1005816.0510000001, 1032603.8940000001, 1049280.18, 1066467.486, 1055948.0050000001, 1011650.374, 1011650.374, 1011650.374, 1011650.374, 994721.1729999998, 973484.7549999999, 973484.7549999999, 985830.6489999999, 995790.8629999998, 967639.6099999999, 986271.5869999998, 988260.7269999998, 979193.0669999998, 1008824.2069999997, 1007832.5299999998, 1015565.4429999997, 1022755.1289999997, 1009518.9549999997, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 957652.4409999998, 978534.5469999997, 948735.0959999998, 977559.7049999997, 970663.3969999999, 970042.6219999997, 1020685.8469999997, 1024603.4849999999, 988744.0829999998, 979582.0539999999, 920314.6779999998, 936641.0619999997, 945360.0589999998, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 962884.7759999997, 1009941.2189999997, 1072335.9449999996, 1094973.9939999995, 1096603.8859999995, 1115576.4409999994, 1116160.2789999996, 1139659.2399999998, 1189639.9839999997, 1169314.8879999996, 1140106.9049999996, 1154016.7749999997, 1177417.8579999995, 1171383.2139999997, 1286289.4929999996, 1311600.7419999996, 1316275.8639999994, 1334704.3489999995, 1360006.8769999994, 1363636.4449999994, 1348293.0559999994, 1281087.5099999993, 1281087.5099999993, 1281087.5099999993, 1281087.5099999993, 1257202.1939999992, 1274170.2109999992, 1267532.8009999993, 1288513.8839999994, 1310582.9369999995, 1307880.0729999994, 1288945.5519999994, 1326655.6209999993, 1330060.5829999994, 1352370.0379999992, 1341052.1929999995, 1341052.1929999995, 1341052.1929999995, 1341052.1929999995, 1341052.1929999995, 1341052.1929999995, 1341052.1929999995, 1341052.1929999995, 1341052.1929999995, 1343229.0439999995, 1375164.3449999995, 1393400.3689999995, 1414487.0059999994, 1411935.7429999993, 1429759.7929999994, 1462090.8429999992, 1429388.9059999993, 1429388.9059999993, 1454182.9739999995, 1466486.1219999993, 1449237.7029999993, 1449237.7029999993, 1449237.7029999993, 1449237.7029999993, 1449237.7029999993, 1449237.7029999993, 1449237.7029999993, 1449054.1169999992, 1485667.550999999, 1487399.4279999991, 1503734.4879999992, 1502513.547999999, 1490201.950999999, 1490201.950999999, 1490201.950999999, 1490201.950999999, 1490201.950999999, 1490201.950999999, 1490201.950999999, 1490201.950999999, 1490201.950999999, 1481272.977999999, 1481272.977999999, 1496357.533999999, 1496357.533999999, 1496357.533999999, 1496357.533999999, 1496357.533999999, 1496357.533999999, 1496357.533999999, 1496357.533999999, 1477552.876999999, 1494840.412999999, 1504322.668999999, 1519753.487999999, 1491372.216999999, 1457200.118999999, 1457200.118999999, 1457200.118999999, 1442251.580999999, 1455000.305999999, 1463888.030999999, 1476783.518999999, 1476783.518999999, 1474586.465999999, 1474586.465999999, 1474586.465999999, 1474586.465999999, 1494863.231999999, 1494863.231999999, 1494863.231999999, 1494863.231999999, 1494863.231999999, 1494863.231999999, 1494863.231999999, 1506628.3509999989, 1522775.292999999, 1538778.5149999987, 1542852.4099999988, 1541322.0049999987, 1558039.1729999988, 1540201.3009999986, 1540201.3009999986, 1526976.0479999986, 1526976.0479999986, 1526976.0479999986, 1526976.0479999986, 1526976.0479999986, 1526976.0479999986, 1526976.0479999986, 1526976.0479999986, 1526976.0479999986, 1526976.0479999986, 1526976.0479999986, 1563555.7769999986, 1619324.4059999988, 1631241.1679999987, 1631241.1679999987, 1631241.1679999987, 1631241.1679999987, 1631241.1679999987, 1573926.1859999986, 1573926.1859999986, 1522223.4019999986, 1522223.4019999986, 1522223.4019999986, 1532388.5339999986, 1534760.6259999988, 1534760.6259999988, 1534760.6259999988, 1534760.6259999988, 1534760.6259999988, 1534760.6259999988, 1534760.6259999988, 1534760.6259999988, 1534760.6259999988, 1534760.6259999988, 1565151.3489999988, 1589970.1749999986, 1567749.5809999986, 1575437.2069999985, 1591474.0459999985, 1595449.3549999986, 1602349.8669999985, 1587556.9389999984, 1582468.9709999985, 1612414.5659999982, 1612414.5659999982, 1559326.6609999982, 1551938.0489999983, 1551938.0489999983, 1551938.0489999983, 1551938.0489999983, 1592343.2329999981, 1621390.159999998, 1642121.436999998, 1658511.846999998, 1656538.056999998, 1638369.066999998, 1631190.6699999978, 1594734.822999998, 1594734.822999998, 1626227.3379999981, 1654693.9959999982, 1638557.8539999982, 1638557.8539999982, 1669208.253999998, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1677322.6539999982, 1633939.9209999982, 1633939.9209999982, 1633939.9209999982, 1633939.9209999982, 1656783.9729999981, 1642292.267999998, 1641402.3629999983, 1641402.3629999983, 1641402.3629999983, 1641402.3629999983, 1641402.3629999983, 1641402.3629999983, 1641402.3629999983, 1641402.3629999983, 1641402.3629999983, 1641402.3629999983, 1613872.4459999981, 1590471.9919999982, 1590471.9919999982, 1590471.9919999982, 1590471.9919999982, 1565174.659999998, 1565174.659999998, 1565174.659999998, 1565174.659999998, 1565174.659999998, 1565174.659999998, 1565174.659999998, 1565174.659999998, 1565174.659999998, 1499735.065999998, 1499735.065999998, 1499735.065999998, 1499735.065999998, 1499735.065999998, 1499735.065999998]};
+equityData[3] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1000000.0, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1033663.877, 1027624.5979999999, 1027624.5979999999, 1027624.5979999999, 1027624.5979999999, 1042831.2289999999, 1002752.5909999999, 1002752.5909999999, 995423.07, 996991.5399999999, 1038812.7009999999, 1050674.473, 1056919.3360000001, 1056615.357, 1043454.669, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 977717.672, 996261.0020000001, 945643.0710000001, 981845.8320000002, 971339.6820000001, 980075.4310000001, 1042081.1720000001, 1060263.019, 997800.5020000002, 980388.7440000002, 901926.5550000003, 901926.5550000003, 922294.1150000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 942652.6170000003, 1022167.7730000003, 1055376.9490000003, 1054083.7120000003, 1073942.9020000002, 1073825.4460000002, 1110493.0670000003, 1162007.522, 1141168.2880000002, 1108223.0050000004, 1108223.0050000004, 1140929.0630000003, 1137725.5120000003, 1274954.5720000004, 1332684.8800000004, 1355699.2300000004, 1359437.2220000005, 1375885.6890000005, 1378850.7280000006, 1364107.9090000007, 1306658.7620000006, 1306658.7620000006, 1306658.7620000006, 1306658.7620000006, 1289602.7680000006, 1295384.1360000004, 1287911.5030000005, 1317238.7120000005, 1347291.2400000005, 1357844.5170000005, 1325754.7830000005, 1362755.9910000006, 1368522.7580000006, 1394483.0910000005, 1379690.5730000006, 1379690.5730000006, 1379690.5730000006, 1379690.5730000006, 1379690.5730000006, 1379690.5730000006, 1379690.5730000006, 1379690.5730000006, 1379690.5730000006, 1385944.1600000006, 1423629.5330000005, 1436940.6490000004, 1464365.6410000003, 1426857.6860000005, 1454618.3240000003, 1495064.985, 1461117.3090000004, 1461117.3090000004, 1490923.2390000003, 1483430.1120000002, 1471718.8350000002, 1487082.8810000003, 1487082.8810000003, 1487082.8810000003, 1487082.8810000003, 1481854.8710000003, 1503955.7440000002, 1479948.9970000002, 1498964.4200000002, 1508418.1530000002, 1516504.3560000001, 1530727.8090000001, 1523464.722, 1523464.722, 1523464.722, 1523464.722, 1523464.722, 1523464.722, 1523464.722, 1523464.722, 1523464.722, 1509810.529, 1509810.529, 1511627.6320000002, 1511627.6320000002, 1511627.6320000002, 1511627.6320000002, 1511627.6320000002, 1511627.6320000002, 1511627.6320000002, 1511627.6320000002, 1498147.2820000001, 1515101.3620000002, 1521352.9590000003, 1521352.9590000003, 1466111.85, 1466111.85, 1466111.85, 1466111.85, 1466111.85, 1486773.1480000003, 1498489.6230000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1499351.3550000004, 1518807.0960000004, 1530264.6180000005, 1551486.3840000003, 1570039.9410000003, 1548354.8690000004, 1582574.3010000004, 1556760.5640000002, 1556760.5640000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1550383.8790000002, 1537370.2300000002, 1533711.7990000003, 1533711.7990000003, 1533711.7990000003, 1533711.7990000003, 1533711.7990000003, 1533711.7990000003, 1533711.7990000003, 1533711.7990000003, 1533711.7990000003, 1533711.7990000003, 1573432.1350000002, 1607541.6520000002, 1592716.2300000002, 1629166.9090000002, 1640273.3290000001, 1634588.9000000001, 1653051.5420000001, 1642365.185, 1648163.486, 1666613.588, 1650344.881, 1553197.0450000002, 1529290.7800000003, 1538021.986, 1451527.216, 1513143.367, 1571805.2420000003, 1592862.0980000002, 1614794.7650000001, 1624687.063, 1622838.2020000003, 1598397.9820000003, 1586576.7830000003, 1545725.6650000003, 1534496.4880000004, 1570755.4320000003, 1611694.5170000002, 1616001.3230000003, 1586915.36, 1632510.5480000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002, 1635935.9570000002]};
+equityData[4] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1000000.0, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1011465.8159999999, 1009971.6069999998, 1009971.6069999998, 1009971.6069999998, 1009971.6069999998, 1015218.4359999999, 1002394.6479999997, 1002394.6479999997, 999984.8589999997, 1000547.0799999996, 1014909.2709999996, 1019143.9119999995, 1021428.7629999996, 1021688.1039999996, 1017328.5249999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 996196.9659999997, 1002626.3379999995, 985513.8699999996, 998669.4819999996, 995258.6139999996, 998511.7059999995, 1018871.0379999996, 1024656.8499999995, 1005779.7819999995, 1000023.0339999995, 973672.3659999995, 973672.3659999995, 981492.6579999994, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 988627.8699999993, 1016405.0679999994, 1027703.3459999993, 1027348.9839999994, 1034103.6019999993, 1033944.8999999993, 1047417.1779999993, 1062933.0159999991, 1056600.1539999992, 1046745.4119999992, 1046745.4119999992, 1057520.6169999992, 1056799.671999999, 1099811.726999999, 1116540.681999999, 1123202.386999999, 1124408.291999999, 1129273.0469999989, 1130327.4019999988, 1126532.1569999987, 1110851.0619999988, 1110851.0619999988, 1110851.0619999988, 1110851.0619999988, 1105900.7489999987, 1108046.6659999986, 1106271.5429999987, 1114980.9399999988, 1123669.0269999986, 1126772.4369999988, 1118267.3469999987, 1129166.5569999986, 1130800.2669999988, 1138248.8769999987, 1134387.1869999985, 1134387.1869999985, 1134387.1869999985, 1134387.1869999985, 1134387.1869999985, 1134387.1869999985, 1134387.1869999985, 1134387.1869999985, 1134387.1869999985, 1137259.2539999986, 1147863.0009999988, 1151764.5579999988, 1159195.7949999988, 1149398.8319999988, 1157376.3289999987, 1168736.4359999988, 1159905.9329999988, 1159905.9329999988, 1168085.7359999986, 1166379.2489999987, 1163728.2119999987, 1167919.9149999986, 1167919.9149999986, 1167919.9149999986, 1167919.9149999986, 1166770.7809999988, 1172790.7469999988, 1166695.9729999988, 1171988.6389999988, 1174455.224999999, 1177254.290999999, 1180905.336999999, 1179049.6829999988, 1179049.6829999988, 1179049.6829999988, 1179049.6829999988, 1179049.6829999988, 1179049.6829999988, 1179049.6829999988, 1179049.6829999988, 1179049.6829999988, 1175534.606999999, 1175534.606999999, 1176095.808999999, 1176095.808999999, 1176095.808999999, 1176095.808999999, 1176095.808999999, 1176095.808999999, 1176095.808999999, 1176095.808999999, 1172676.680999999, 1177358.1929999988, 1179140.7449999987, 1179140.7449999987, 1165466.9459999986, 1165466.9459999986, 1165466.9459999986, 1165466.9459999986, 1165466.9459999986, 1171125.2769999986, 1174416.6979999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1174774.7689999985, 1180189.1059999985, 1183395.9229999986, 1189046.7799999986, 1193909.2369999986, 1188857.5639999984, 1197756.0539999986, 1191426.4439999985, 1191426.4439999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1189959.5999999985, 1186765.8429999985, 1185805.6159999985, 1185805.6159999985, 1185805.6159999985, 1185805.6159999985, 1185805.6159999985, 1185805.6159999985, 1185805.6159999985, 1185805.6159999985, 1185805.6159999985, 1185805.6159999985, 1196255.1649999984, 1205925.9139999985, 1201850.8429999985, 1211229.5419999985, 1214163.6709999985, 1213009.0999999987, 1217929.1689999986, 1215567.4579999985, 1217041.3369999984, 1222000.3459999985, 1218022.6249999986, 1194711.1939999985, 1188692.2159999984, 1191021.5779999983, 1168928.6399999983, 1185833.5419999983, 1201259.483999998, 1205437.5459999982, 1211055.6479999982, 1214572.069999998, 1214468.931999998, 1208566.713999998, 1205739.1759999979, 1195750.357999998, 1193409.319999998, 1202861.041999998, 1213402.5239999979, 1214544.825999998, 1207611.227999998, 1219612.2099999979, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978, 1220598.8319999978]};
+equityData[5] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1000000.0, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1005737.5329999999, 1000364.2870000001, 1000364.2870000001, 1000364.2870000001, 1000364.2870000001, 1003818.2720000001, 994611.507, 994611.507, 995346.3749999999, 992119.203, 1002570.111, 1002499.4190000001, 1005420.807, 1007766.7949999999, 1003553.223, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 986368.4910000002, 993949.3950000003, 983186.8590000003, 993868.8030000003, 990972.7470000003, 988304.4510000004, 1005976.8750000003, 1008371.8590000003, 996312.8430000002, 993644.5470000003, 973613.9310000001, 973613.9310000001, 976340.5110000002, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 982494.8910000001, 1003140.2290000003, 1010360.6870000002, 1010721.9850000002, 1017062.1230000003, 1017441.761, 1024625.5390000002, 1039805.5570000001, 1033821.2150000002, 1025159.2330000001, 1025159.2330000001, 1032275.155, 1030936.6970000002, 1064967.8590000002, 1071974.2210000001, 1073319.9830000002, 1078536.8650000002, 1085342.3670000003, 1086505.5290000003, 1082829.7910000004, 1064564.3130000003, 1064564.3130000003, 1064564.3130000003, 1064564.3130000003, 1058384.9130000004, 1062537.5130000003, 1061326.1130000004, 1067278.7130000005, 1073339.3130000005, 1073027.9130000004, 1067820.5130000005, 1078759.1130000006, 1079707.7130000005, 1085804.3130000005, 1082684.9130000004, 1082684.9130000004, 1082684.9130000004, 1082684.9130000004, 1082684.9130000004, 1082684.9130000004, 1082684.9130000004, 1082684.9130000004, 1082684.9130000004, 1083268.2810000004, 1091719.0890000004, 1097119.2570000002, 1102341.0250000004, 1101961.0330000003, 1106933.0410000004, 1115633.6090000004, 1107296.9770000002, 1107296.9770000002, 1113910.2650000001, 1117026.9130000004, 1113078.9210000003, 1115178.6890000002, 1115178.6890000002, 1115178.6890000002, 1115178.6890000002, 1114339.1140000003, 1116428.289, 1116564.9640000002, 1126038.1390000002, 1126387.814, 1131121.739, 1130814.664, 1127809.589, 1127809.589, 1127809.589, 1127809.589, 1127809.589, 1127809.589, 1127809.589, 1127809.589, 1127809.589, 1125556.379, 1125556.379, 1129385.8159999999, 1129385.8159999999, 1129385.8159999999, 1129385.8159999999, 1129385.8159999999, 1129385.8159999999, 1129385.8159999999, 1129385.8159999999, 1124393.066, 1129077.816, 1131627.566, 1131627.566, 1124859.4970000002, 1124859.4970000002, 1124859.4970000002, 1124859.4970000002, 1124859.4970000002, 1127598.7460000003, 1130181.6650000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1133424.6440000003, 1136586.708, 1140844.452, 1144708.4360000002, 1146004.4200000002, 1145965.0440000002, 1150051.5880000002, 1145766.4520000003, 1145766.4520000003, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1142425.4260000002, 1145018.198, 1145633.29, 1145633.29, 1145633.29, 1145633.29, 1145633.29, 1145633.29, 1145633.29, 1145633.29, 1145633.29, 1145633.29, 1153519.249, 1159793.0580000002, 1154476.357, 1156592.516, 1160575.375, 1161401.814, 1163584.566, 1160068.758, 1159046.0699999998, 1166706.902, 1169398.454, 1156809.0459999999, 1155040.118, 1151863.51, 1139172.342, 1147749.014, 1154714.486, 1161883.4780000001, 1167169.9100000001, 1171252.182, 1171111.4139999999, 1166917.206, 1165470.518, 1156815.8299999998, 1158913.782, 1166608.534, 1173523.126, 1169718.9980000001, 1169578.23, 1177289.942, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534, 1179116.534]};
+equityData[6] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1000000.0, 1017805.816, 983474.865, 983474.865, 983474.865, 983474.865, 983474.865, 983474.865, 978573.888, 1005816.0510000001, 1032603.8940000001, 1049280.18, 1066467.486, 1055948.0050000001, 1011650.374, 1011650.374, 1011650.374, 1027293.805, 1010104.249, 988537.3330000001, 988537.3330000001, 1001074.4950000001, 1011187.18, 982599.7150000002, 1001520.4000000001, 1003540.3680000001, 994332.1760000002, 1024417.0770000002, 1023410.0280000003, 1031262.8090000002, 1038563.9630000002, 1025122.5770000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 972461.5040000002, 993665.6910000001, 963406.5510000002, 992675.8110000001, 985673.1040000003, 985042.6570000002, 1036467.3430000002, 1040445.4420000004, 1004032.6210000003, 994729.1730000004, 934537.9650000004, 934537.9650000004, 943237.3570000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 960722.6690000005, 962152.6580000004, 962152.6580000004, 962152.6580000004, 962152.6580000004, 962152.6580000004, 945714.3400000002, 945714.3400000002, 945714.3400000002, 964891.4590000001, 959946.2110000004, 1054120.0030000003, 1074861.4480000003, 1078692.4060000002, 1093795.0840000003, 1114530.715, 1117504.759, 1104931.043, 1049858.33, 1049858.33, 1049858.33, 1049858.33, 1030286.75, 1044191.97, 1038752.7829999999, 1055948.296, 1074032.8420000002, 1071817.708, 1056300.317, 1087200.309, 1089990.701, 1108272.9859999998, 1098998.171, 1110560.869, 1110560.869, 1110560.869, 1110560.869, 1110560.869, 1110560.869, 1110560.869, 1110560.869, 1112363.653, 1138807.32, 1153909.307, 1171371.557, 1169258.807, 1184018.87, 1210792.153, 1183712.429, 1181330.385, 1201821.024, 1211988.7529999998, 1197734.4549999998, 1204055.457, 1188386.822, 1199630.737, 1220988.9849999999, 1217933.953, 1224252.144, 1224097.055, 1255022.609, 1256485.6230000001, 1270284.4500000002, 1269253.077, 1258853.257, 1254047.637, 1238727.617, 1238727.617, 1238727.617, 1220317.1990000003, 1220317.1990000003, 1220317.1990000003, 1246639.1630000002, 1239168.9670000002, 1278057.3640000003, 1291073.3710000003, 1291073.3710000003, 1291073.3710000003, 1291073.3710000003, 1269383.1740000003, 1269383.1740000003, 1269383.1740000003, 1269383.1740000003, 1253429.9930000002, 1268095.7650000004, 1276139.9770000004, 1289230.3120000004, 1265153.7970000005, 1265153.7970000005, 1265153.7970000005, 1265153.7970000005, 1252175.9860000005, 1263245.4850000003, 1270961.3470000003, 1282158.0490000003, 1282158.0490000003, 1280250.3610000005, 1280250.3610000005, 1280250.3610000005, 1280250.3610000005, 1297853.7940000005, 1297853.7940000005, 1297853.7940000005, 1297853.7940000005, 1297853.7940000005, 1297853.7940000005, 1297853.7940000005, 1308067.0370000002, 1322086.0700000003, 1335980.323, 1339517.269, 1338188.5750000002, 1352704.4010000003, 1337217.9300000002, 1337217.9300000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1325736.4400000002, 1351989.3590000002, 1373428.541, 1354233.783, 1360873.4880000001, 1374726.243, 1378160.148, 1384120.736, 1371342.764, 1371342.764, 1371342.764, 1371342.764, 1326189.946, 1326189.946, 1326189.946, 1326189.946, 1326189.946, 1360717.606, 1385538.649, 1403253.842, 1417261.635, 1415575.041, 1400049.727, 1393915.9659999998, 1362765.355, 1369047.3639999998, 1396079.716, 1420518.148, 1406665.3800000001, 1405226.6050000002, 1431513.58, 1438472.8050000002, 1428699.3630000001, 1428699.3630000001, 1428699.3630000001, 1428699.3630000001, 1428699.3630000001, 1428699.3630000001, 1428699.3630000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001, 1429250.5080000001]};
+equityData[7] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1000000.0, 1017805.816, 983474.865, 983474.865, 983474.865, 983474.865, 983474.865, 983474.865, 978573.888, 1005816.0510000001, 1032603.8940000001, 1049280.18, 1066467.486, 1055948.0050000001, 1011650.374, 1011650.374, 1011650.374, 1011650.374, 994721.1729999998, 994721.1729999998, 994721.1729999998, 994721.1729999998, 1004769.5629999998, 976363.853, 976363.853, 978333.1749999999, 969355.857, 998686.3119999999, 997704.517, 1005358.945, 1012476.973, 999372.7209999999, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 948032.7219999998, 968705.3189999998, 939204.8889999999, 967735.9419999997, 960908.8449999999, 960294.3009999997, 1010429.1969999997, 1014307.5059999998, 978808.0949999997, 969738.0569999998, 911065.8419999997, 927228.2769999995, 935859.7049999997, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 953208.4129999996, 973332.5659999996, 974781.4419999996, 991646.6609999996, 992165.6429999997, 1013053.9079999997, 1057486.9729999998, 1039420.2209999996, 1013457.9419999996, 1025821.9159999997, 1046624.6699999997, 1041260.1569999999, 1143404.9369999997, 1165902.2099999997, 1170058.0529999996, 1186439.3989999997, 1208930.8579999995, 1212157.1869999997, 1198518.6189999997, 1138781.2139999997, 1138139.2089999998, 1114836.667, 1114836.667, 1094052.562, 1108817.2299999997, 1103041.0179999997, 1121299.4989999998, 1140504.7699999998, 1138152.6839999997, 1121675.7809999997, 1154491.2479999997, 1157454.2079999999, 1176869.9679999996, 1167021.481, 1179299.4669999997, 1179299.4669999997, 1179299.4669999997, 1179299.4669999997, 1179299.4669999997, 1179299.4669999997, 1179299.4669999997, 1179299.4669999997, 1181213.8569999996, 1209294.8299999996, 1225331.8829999997, 1243875.4989999996, 1241631.9149999996, 1257306.1439999996, 1285733.6659999995, 1256976.5079999994, 1254447.2629999993, 1276207.3679999993, 1287003.5159999991, 1271865.9839999992, 1278577.7149999994, 1261938.0659999994, 1273877.1199999994, 1296559.1739999992, 1293315.2409999992, 1300025.0979999993, 1299860.4179999991, 1332703.337999999, 1334256.840999999, 1348911.313999999, 1347816.139999999, 1336771.345999999, 1331668.404999999, 1315400.543999999, 1315400.543999999, 1315400.543999999, 1315400.543999999, 1315400.543999999, 1315400.543999999, 1315400.543999999, 1307518.206999999, 1307518.206999999, 1320833.634999999, 1320833.634999999, 1320833.634999999, 1320833.634999999, 1320833.634999999, 1320833.634999999, 1320833.634999999, 1320833.634999999, 1304235.7089999989, 1319496.5229999989, 1327865.889999999, 1341487.426999999, 1316433.893999999, 1316433.893999999, 1316433.893999999, 1316433.893999999, 1302930.689999999, 1314448.325999999, 1322477.801999999, 1334127.8609999989, 1334127.8609999989, 1334127.8609999989, 1334127.8609999989, 1334127.8609999989, 1334127.8609999989, 1352472.1649999989, 1352472.1649999989, 1352472.1649999989, 1352472.1649999989, 1352472.1649999989, 1352472.1649999989, 1352472.1649999989, 1363115.9389999986, 1363115.9389999986, 1377440.0029999984, 1381086.9469999985, 1379716.9309999987, 1394681.8679999986, 1378713.6949999984, 1378713.6949999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1366874.4619999984, 1415627.8729999985, 1426045.3969999985, 1426045.3969999985, 1426045.3969999985, 1426045.3969999985, 1426045.3969999985, 1426045.3969999985, 1426045.3969999985, 1426045.3969999985, 1426045.3969999985, 1426045.3969999985, 1435568.1449999984, 1437790.3329999985, 1437790.3329999985, 1437790.3329999985, 1437790.3329999985, 1437790.3329999985, 1437790.3329999985, 1437790.3329999985, 1437790.3329999985, 1437790.3329999985, 1437790.3329999985, 1466261.1489999986, 1489511.8479999984, 1468695.2169999983, 1475897.1159999983, 1490920.5579999983, 1494644.6599999985, 1501109.0549999985, 1487251.0499999984, 1482484.6449999984, 1510537.3929999983, 1521078.0609999984, 1470994.8489999985, 1464024.4799999986, 1450905.7509999988, 1401505.7249999987, 1433893.3789999988, 1471225.7129999988, 1498063.2899999989, 1517217.7169999988, 1532361.2769999988, 1530537.636999999, 1513750.7969999989, 1507118.5499999986, 1473436.3529999987, 1480227.8789999986, 1509457.4849999987, 1535882.3309999986, 1520905.8199999987, 1519350.0789999987, 1547769.8109999986, 1555293.6629999988, 1544725.5549999985, 1544725.5549999985, 1544725.5549999985, 1544725.5549999985, 1544725.5549999985, 1544725.5549999985, 1544725.5549999985, 1545321.5049999985, 1545321.5049999985, 1563914.7129999986, 1563914.7129999986, 1552761.9219999984, 1552761.9219999984, 1552761.9219999984, 1512598.0429999984, 1512598.0429999984, 1512598.0429999984, 1512598.0429999984, 1512598.0429999984, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985, 1499366.2249999985]};
+equityData[8] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1000000.0, 1005737.5329999999, 994348.6059999999, 994348.6059999999, 994348.6059999999, 994348.6059999999, 994348.6059999999, 994348.6059999999, 992415.0249999999, 992415.0249999999, 992415.0249999999, 997970.1900000001, 997970.1900000001, 995036.8420000001, 980945.974, 980945.974, 980945.974, 980945.974, 975705.2810000002, 975705.2810000002, 975705.2810000002, 979639.4480000003, 983022.4750000003, 974004.8520000002, 980597.4590000003, 981322.0460000001, 978140.0230000002, 988444.7200000002, 988375.0170000002, 991255.5340000002, 993568.7010000001, 989414.0780000002, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 972480.2180000003, 979952.9470000004, 969343.9860000004, 979873.5050000004, 977018.7740000003, 974388.5530000003, 991808.8020000004, 994169.6110000004, 982282.6700000004, 979652.4490000004, 959907.6580000003, 966326.9170000004, 969033.1260000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 975141.5250000004, 990223.8180000003, 1011038.0110000005, 1018317.5240000004, 1018681.7770000005, 1025073.7700000005, 1025456.5130000003, 1032699.0460000004, 1048003.2190000004, 1041969.9320000004, 1033237.1050000003, 1037558.2180000003, 1044759.8740000003, 1043405.2900000005, 1077846.4660000005, 1084937.2420000006, 1086299.2180000006, 1091578.9540000006, 1098466.4500000007, 1099643.6260000006, 1095923.6020000007, 1077438.0580000007, 1077438.0580000007, 1070062.9870000007, 1070062.9870000007, 1063849.2570000007, 1068024.9270000006, 1066806.7970000007, 1072792.4670000009, 1078883.3700000008, 1078570.4130000006, 1073336.9760000007, 1084330.2690000008, 1085283.6120000007, 1091410.6950000008, 1088275.6980000008, 1092575.6910000008, 1092575.6910000008, 1092575.6910000008, 1092575.6910000008, 1092575.6910000008, 1092575.6910000008, 1092575.6910000008, 1092575.6910000008, 1093164.291000001, 1101690.891000001, 1107139.4910000009, 1112408.091000001, 1112024.6910000008, 1117041.291000001, 1125819.8910000008, 1117408.4910000006, 1116773.0910000007, 1123445.6910000006, 1126590.2910000007, 1122606.8910000005, 1124725.4910000004, 1119896.0910000005, 1123616.6910000006, 1130469.2910000004, 1129618.3640000005, 1131735.7870000005, 1131874.3100000005, 1141475.5730000006, 1141829.9760000005, 1146627.9090000007, 1146316.6820000007, 1143270.9750000006, 1143270.9750000006, 1143270.9750000006, 1143270.9750000006, 1143270.9750000006, 1143270.9750000006, 1143270.9750000006, 1143270.9750000006, 1143270.9750000006, 1140987.2130000007, 1140987.2130000007, 1144869.1380000005, 1144869.1380000005, 1144869.1380000005, 1144869.1380000005, 1144869.1380000005, 1144869.1380000005, 1144869.1380000005, 1144869.1380000005, 1139807.9160000007, 1144556.9140000006, 1147141.6320000007, 1151181.0300000007, 1144296.4710000008, 1144296.4710000008, 1144296.4710000008, 1144296.4710000008, 1140961.0050000008, 1143739.679000001, 1146359.773000001, 1149649.427000001, 1149649.427000001, 1149242.143000001, 1149242.143000001, 1149242.143000001, 1149242.143000001, 1154587.924000001, 1154587.924000001, 1160025.777000001, 1160025.777000001, 1160025.777000001, 1160025.777000001, 1160025.777000001, 1163261.7210000008, 1167618.9450000008, 1171573.209000001, 1172899.473000001, 1172859.1770000008, 1177041.2010000008, 1172655.9450000008, 1172655.9450000008, 1169236.3990000007, 1137613.8730000006, 1137613.8730000006, 1137613.8730000006, 1137613.8730000006, 1137613.8730000006, 1137613.8730000006, 1137613.8730000006, 1137613.8730000006, 1137613.8730000006, 1137613.8730000006, 1146886.4340000006, 1160391.4950000006, 1163450.7460000005, 1163450.7460000005, 1163450.7460000005, 1163450.7460000005, 1163450.7460000005, 1163450.7460000005, 1163450.7460000005, 1150945.8350000004, 1150945.8350000004, 1150945.8350000004, 1153557.1710000003, 1154176.6670000004, 1154176.6670000004, 1154176.6670000004, 1154176.6670000004, 1154176.6670000004, 1154176.6670000004, 1154176.6670000004, 1154176.6670000004, 1154176.6670000004, 1165004.4920000003, 1173020.5670000003, 1179397.8920000002, 1173993.4670000002, 1176144.5420000001, 1180193.117, 1181033.192, 1183253.2670000002, 1179677.3420000002, 1178637.1670000001, 1186428.9920000003, 1189166.5670000003, 1176361.8920000002, 1174562.7170000002, 1171331.7920000001, 1158423.617, 1167146.9420000003, 1174231.5170000002, 1181523.0920000002, 1186899.9170000001, 1191051.992, 1190908.817, 1186642.8920000002, 1185171.4670000002, 1176368.7920000001, 1178502.617, 1186328.9420000003, 1193361.7670000002, 1189494.8350000004, 1189351.7430000002, 1197190.7710000004, 1199047.5190000003, 1196628.7470000004, 1196628.7470000004, 1196628.7470000004, 1196628.7470000004, 1196628.7470000004, 1196628.7470000004, 1196628.7470000004, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1197040.1790000005, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1193862.8470000003, 1177188.2800000003, 1177188.2800000003, 1177188.2800000003, 1177188.2800000003, 1177188.2800000003, 1177188.2800000003]};
+equityData[9] = {dates: ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-10", "2025-01-13", "2025-01-14", "2025-01-15", "2025-01-16", "2025-01-17", "2025-01-21", "2025-01-22", "2025-01-23", "2025-01-24", "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", "2025-02-03", "2025-02-04", "2025-02-05", "2025-02-06", "2025-02-07", "2025-02-10", "2025-02-11", "2025-02-12", "2025-02-13", "2025-02-14", "2025-02-18", "2025-02-19", "2025-02-20", "2025-02-21", "2025-02-24", "2025-02-25", "2025-02-26", "2025-02-27", "2025-02-28", "2025-03-03", "2025-03-04", "2025-03-05", "2025-03-06", "2025-03-07", "2025-03-10", "2025-03-11", "2025-03-12", "2025-03-13", "2025-03-14", "2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20", "2025-03-21", "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28", "2025-03-31", "2025-04-01", "2025-04-02", "2025-04-03", "2025-04-04", "2025-04-07", "2025-04-08", "2025-04-09", "2025-04-10", "2025-04-11", "2025-04-14", "2025-04-15", "2025-04-16", "2025-04-17", "2025-04-21", "2025-04-22", "2025-04-23", "2025-04-24", "2025-04-25", "2025-04-28", "2025-04-29", "2025-04-30", "2025-05-01", "2025-05-02", "2025-05-05", "2025-05-06", "2025-05-07", "2025-05-08", "2025-05-09", "2025-05-12", "2025-05-13", "2025-05-14", "2025-05-15", "2025-05-16", "2025-05-19", "2025-05-20", "2025-05-21", "2025-05-22", "2025-05-23", "2025-05-27", "2025-05-28", "2025-05-29", "2025-05-30", "2025-06-02", "2025-06-03", "2025-06-04", "2025-06-05", "2025-06-06", "2025-06-09", "2025-06-10", "2025-06-11", "2025-06-12", "2025-06-13", "2025-06-16", "2025-06-17", "2025-06-18", "2025-06-20", "2025-06-23", "2025-06-24", "2025-06-25", "2025-06-26", "2025-06-27", "2025-06-30", "2025-07-01", "2025-07-02", "2025-07-03", "2025-07-07", "2025-07-08", "2025-07-09", "2025-07-10", "2025-07-11", "2025-07-14", "2025-07-15", "2025-07-16", "2025-07-17", "2025-07-18", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25", "2025-07-28", "2025-07-29", "2025-07-30", "2025-07-31", "2025-08-01", "2025-08-04", "2025-08-05", "2025-08-06", "2025-08-07", "2025-08-08", "2025-08-11", "2025-08-12", "2025-08-13", "2025-08-14", "2025-08-15", "2025-08-18", "2025-08-19", "2025-08-20", "2025-08-21", "2025-08-22", "2025-08-25", "2025-08-26", "2025-08-27", "2025-08-28", "2025-08-29", "2025-09-02", "2025-09-03", "2025-09-04", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-28", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-26", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25"], equities: [1000000.0, 1036136.872, 1054584.784, 1019009.656, 1021560.9809999999, 974400.306, 974400.306, 974400.306, 974400.306, 969544.205, 996536.924, 1023074.766, 1039598.3279999999, 1056625.203, 1046202.078, 1002310.2029999999, 1002310.2029999999, 989664.4299999997, 1004967.8469999997, 988151.9769999996, 967053.9069999997, 967053.9069999997, 979317.8289999996, 989211.9109999995, 961247.6059999996, 979755.8509999996, 981732.1459999995, 972724.7139999995, 1002159.0419999994, 1001173.9529999995, 1008855.4939999995, 1015998.7349999995, 1002850.5089999995, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 951328.6229999994, 972073.1409999994, 942470.0619999995, 971100.4059999994, 964249.5499999995, 963632.8669999994, 1013942.2639999994, 1017834.0739999996, 982216.4569999995, 973114.8399999996, 914238.3159999996, 930457.0319999995, 939118.5209999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 956527.6499999997, 1003271.0669999997, 1065250.6869999997, 1087738.1099999996, 1089357.1559999995, 1108205.6219999995, 1108785.6409999996, 1132130.8729999997, 1181784.6079999998, 1161594.8259999997, 1132581.3169999996, 1146398.5609999998, 1169646.4849999996, 1163651.3419999997, 1277805.3919999995, 1302948.0349999997, 1307592.0109999995, 1325899.8269999996, 1351036.6559999995, 1354642.0379999995, 1339400.9029999995, 1272635.5679999995, 1271918.1159999995, 1245876.7569999995, 1322418.9509999997, 1297763.3249999997, 1315278.6319999998, 1308427.1119999997, 1330085.0849999997, 1352866.1279999998, 1350076.0539999998, 1330530.5229999998, 1369457.4819999996, 1372972.3339999998, 1396001.8789999997, 1384320.077, 1398885.635, 1351550.896, 1351550.896, 1351550.896, 1351550.896, 1337979.052, 1337979.052, 1375503.8329999999, 1377736.754, 1410490.708, 1429194.2650000001, 1450824.172, 1448207.4919999999, 1466490.812, 1499650.9649999999, 1466110.3109999998, 1463159.9369999997, 1488540.1459999997, 1501132.6379999996, 1483476.4099999997, 1491305.045, 1471896.38, 1485822.498, 1512276.4489999998, 1508492.5399999998, 1516318.364, 1516126.268, 1554432.305, 1556244.2550000001, 1573336.705, 1572059.308, 1559176.801, 1553224.6770000001, 1534251.9460000002, 1534251.9460000002, 1534251.9460000002, 1511449.1810000003, 1511449.1810000003, 1511449.1810000003, 1511449.1810000003, 1502392.1860000002, 1502392.1860000002, 1517692.012, 1517692.012, 1517692.012, 1517692.012, 1492196.574, 1492196.574, 1492196.574, 1492196.574, 1473443.01, 1490683.569, 1500138.831, 1515527.713, 1487227.248, 1453148.0329999998, 1453148.0329999998, 1453148.0329999998, 1438241.768, 1450956.153, 1459818.741, 1472679.4889999998, 1472679.4889999998, 1470488.4959999998, 1493027.5229999998, 1493027.5229999998, 1493027.5229999998, 1513557.8189999997, 1533356.5979999995, 1554539.9069999997, 1554539.9069999997, 1554539.9069999997, 1554539.9069999997, 1554539.9069999997, 1566774.8449999995, 1583566.6759999997, 1600209.0469999996, 1604445.6709999996, 1602854.1349999998, 1620239.1519999998, 1601688.6589999995, 1601688.6589999995, 1587935.2199999995, 1458235.8109999995, 1458235.8109999995, 1458235.8109999995, 1458235.8109999995, 1458235.8109999995, 1458235.8109999995, 1458235.8109999995, 1458235.8109999995, 1458235.8109999995, 1458235.8109999995, 1493168.4999999995, 1546426.0889999997, 1557806.2109999997, 1557806.2109999997, 1557806.2109999997, 1557806.2109999997, 1557806.2109999997, 1557806.2109999997, 1557806.2109999997, 1506629.9759999998, 1506629.9759999998, 1506629.9759999998, 1516691.0179999997, 1519038.8199999998, 1519038.8199999998, 1519038.8199999998, 1519038.8199999998, 1519038.8199999998, 1519038.8199999998, 1519038.8199999998, 1519038.8199999998, 1519038.8199999998, 1519038.8199999998, 1549118.782, 1573683.7869999998, 1551690.4419999998, 1559299.447, 1575172.255, 1579106.903, 1585936.8239999998, 1571295.2249999999, 1566260.0189999999, 1595899.2329999998, 1607036.0069999998, 1554127.934, 1546763.311, 1532904.531, 1480709.951, 1514929.771, 1554368.4039999999, 1582724.407, 1602959.693, 1618960.179, 1617033.618, 1599299.377, 1592291.776, 1556708.3680000002, 1563884.32, 1594764.0550000002, 1622680.6900000002, 1606856.3250000002, 1605212.7430000002, 1635241.621, 1643190.3520000002, 1632025.453, 1608094.624, 1608094.624, 1602054.4870000002, 1503711.5930000003, 1503711.5930000003, 1526367.4360000005, 1526956.2520000003, 1550759.3080000004, 1569418.6840000006, 1568518.6730000007, 1557332.8220000006, 1542562.6440000008, 1542562.6440000008, 1502662.0170000007, 1502662.0170000007, 1502662.0170000007, 1502662.0170000007, 1523668.6950000005, 1510340.7330000005, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007, 1509522.2910000007]};
+
+
+// Render equity charts
+document.addEventListener('DOMContentLoaded', function() {
+  const chartColors = [
+    '#003434', '#004d4d', '#3d5a00', '#7aa7a1', '#4e635c',
+    '#c3f400', '#6f7978', '#abd600', '#bfc8c8', '#151d1c'
+  ];
+
+  for (let i = 0; i < 10; i++) {
+    const canvas = document.getElementById('chart-' + i);
+    if (!canvas || !equityData[i]) continue;
+
+    const data = equityData[i];
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: data.dates,
+        datasets: [{
+          label: 'Equity',
+          data: data.equities,
+          borderColor: chartColors[i % chartColors.length],
+          borderWidth: 1.5,
+          fill: false,
+          pointRadius: 0,
+          tension: 0.1,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                return '$' + ctx.parsed.y.toLocaleString(undefined, {maximumFractionDigits: 0});
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            display: true,
+            ticks: {
+              maxTicksLimit: 8,
+              font: { family: "'Space Grotesk'", size: 10 },
+              color: '#6f7978'
+            },
+            grid: { display: false }
+          },
+          y: {
+            display: true,
+            ticks: {
+              callback: function(v) { return '$' + (v/1000).toFixed(0) + 'k'; },
+              font: { family: "'Space Grotesk'", size: 10 },
+              color: '#6f7978'
+            },
+            grid: { color: 'rgba(191, 200, 200, 0.2)' }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+
+</body>
+</html>

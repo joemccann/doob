@@ -213,6 +213,14 @@ pub fn load_price_panel(
 /// Same parquet schema as equities (trade_date, open, high, low, close, volume).
 /// No HTTP download — pure local data.
 pub fn load_vix_ohlcv(warehouse: Option<&std::path::Path>) -> Result<Vec<OhlcvRow>> {
+    load_volatility_index_ohlcv("VIX", warehouse)
+}
+
+/// Load any volatility index (VIX, VVIX, VIX3M, etc.) from local warehouse parquet.
+pub fn load_volatility_index_ohlcv(
+    symbol: &str,
+    warehouse: Option<&std::path::Path>,
+) -> Result<Vec<OhlcvRow>> {
     let root = match warehouse {
         Some(w) => w.to_path_buf(),
         None => warehouse_root()?,
@@ -221,12 +229,12 @@ pub fn load_vix_ohlcv(warehouse: Option<&std::path::Path>) -> Result<Vec<OhlcvRo
         .join("data-lake")
         .join("bronze")
         .join("asset_class=volatility")
-        .join("symbol=VIX")
+        .join(format!("symbol={symbol}"))
         .join("data.parquet");
 
     if !data_file.exists() {
         bail!(
-            "VIX parquet not found: {}. Ensure VIX data is in the warehouse at asset_class=volatility/symbol=VIX/",
+            "{symbol} parquet not found: {}. Ensure data is in the warehouse at asset_class=volatility/symbol={symbol}/",
             data_file.display()
         );
     }
@@ -242,7 +250,7 @@ pub fn load_vix_ohlcv(warehouse: Option<&std::path::Path>) -> Result<Vec<OhlcvRo
         ])
         .sort(["trade_date"], Default::default())
         .collect()
-        .with_context(|| "reading VIX parquet from volatility asset class")?;
+        .with_context(|| format!("reading {symbol} parquet from volatility asset class"))?;
 
     dataframe_to_ohlcv(&df)
 }

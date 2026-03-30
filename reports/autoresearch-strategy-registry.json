@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-03-19T13:35:07.189824+00:00",
+  "updated_at": "2026-03-30T01:32:39.748221+00:00",
   "entries": [
     {
       "signature": "--asset=QQQ|--fast-window=12.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=vol_spread|--slow-window=50.00|--vol-cap=0.10|--vol-window=18.00",
@@ -34,37 +34,44 @@
         "seed-001-vol_spread-v0"
       ],
       "sources": [
-        "https://arxiv.org/html/2603.10857v1"
+        "https://arxiv.org/html/2603.10857v1",
+        "https://arxiv.org/pdf/2508.16598"
       ],
       "first_top10_at": "2026-03-18T19:30:39.744598+00:00",
-      "last_top10_at": "2026-03-18T19:30:39.744598+00:00",
-      "times_in_top10": 1,
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "times_in_top10": 3,
       "latest": {
-        "observed_at": "2026-03-18T19:30:39.744598+00:00",
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
         "candidate_id": "seed-001-vol_spread-v0",
-        "source": "https://arxiv.org/html/2603.10857v1",
-        "rationale": "ArXiv-seeded hypothesis (1): SPX–VIX Risk Computations Via Perturbed Optimal ...",
+        "source": "https://arxiv.org/pdf/2508.16598",
+        "rationale": "ArXiv-seeded hypothesis (1): [PDF] Kelly, VIX, and Hybrid Approaches in Put-Writing on Index Options",
         "round": 0,
-        "combined_score": 3.694868075655579,
-        "train_score": 3.2143331821372607,
-        "test_score": 4.587290020761028,
+        "combined_score": 3.388965758567097,
+        "train_score": 2.8972697522022903,
+        "test_score": 4.302115484673167,
         "train_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.14915539524964827,
-          "final_equity": 2057115.7509999964,
-          "max_drawdown": 0.15413293377039125,
+          "cagr": 0.13815699194895625,
+          "capital": 1000000.0,
+          "final_equity": 1909055.314,
+          "max_drawdown": 0.1541335750964308,
           "name": "PaperResearch [QQQ|vol_spread]",
-          "sharpe": 0.8450623059726396,
-          "var_95": -0.010261926629430792
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.7613716018811854,
+          "var_95": -0.010736503907066689
         },
         "test_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.22187040380504897,
-          "final_equity": 1283539.2319999954,
-          "max_drawdown": 0.08371089047313741,
+          "cagr": 0.20808126650860492,
+          "capital": 1000000.0,
+          "final_equity": 1260291.0520000025,
+          "max_drawdown": 0.05839319557432924,
           "name": "PaperResearch [QQQ|vol_spread]",
-          "sharpe": 1.124420948197709,
-          "var_95": -0.011927762162239522
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 1.045126119808533,
+          "var_95": -0.012461334866971756
         },
         "train_audit": {
           "artifact_path": "autoresearch-audits/seed-001-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
@@ -73,10 +80,10 @@
           "actual_period_end": "2024-12-31"
         },
         "test_audit": {
-          "artifact_path": "autoresearch-audits/seed-001-vol_spread-v0-test-2025-01-01-to-2026-03-11.json",
-          "trade_count": 134,
+          "artifact_path": "autoresearch-audits/seed-001-vol_spread-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 144,
           "actual_period_start": "2025-01-02",
-          "actual_period_end": "2026-03-11"
+          "actual_period_end": "2026-03-25"
         }
       },
       "best": {
@@ -150,23 +157,26 @@
       ],
       "is_seeded": true,
       "candidate_ids": [
-        "seed-075-vol_spread-v1"
+        "seed-075-vol_spread-v1",
+        "seed-074-vol_spread-v2"
       ],
       "sources": [
-        "https://arxiv.org/html/2309.08175v2"
+        "https://arxiv.org/html/2309.08175v2",
+        "https://arxiv.org/pdf/1701.04260",
+        "https://arxiv.org/abs/1701.04260"
       ],
       "first_top10_at": "2026-03-19T13:34:26.666130+00:00",
-      "last_top10_at": "2026-03-19T13:35:07.189824+00:00",
-      "times_in_top10": 2,
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "times_in_top10": 4,
       "latest": {
-        "observed_at": "2026-03-19T13:35:07.189824+00:00",
-        "candidate_id": "seed-075-vol_spread-v1",
-        "source": "https://arxiv.org/html/2309.08175v2",
-        "rationale": "ArXiv-seeded hypothesis (75): Closed-form solutions for VIX derivatives in a Legendre empirical model",
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-074-vol_spread-v2",
+        "source": "https://arxiv.org/abs/1701.04260",
+        "rationale": "ArXiv-seeded hypothesis (74): [1701.04260] On VIX Futures in the rough Bergomi model",
         "round": 0,
-        "combined_score": 3.611179640602927,
+        "combined_score": 3.2617019012724873,
         "train_score": 3.0492139054997636,
-        "test_score": 4.6548302915088025,
+        "test_score": 3.6563224648504034,
         "train_details": {
           "beginning_equity": 1000000.0,
           "cagr": 0.12495101911278096,
@@ -181,27 +191,27 @@
         },
         "test_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.21052986329092227,
+          "cagr": 0.1708630729312146,
           "capital": 1000000.0,
-          "final_equity": 1254199.387000003,
-          "max_drawdown": 0.05517971995367513,
+          "final_equity": 1212939.387000004,
+          "max_drawdown": 0.06395430433967302,
           "name": "PaperResearch [QQQ|vol_spread]",
-          "period_end": "2026-03-11",
+          "period_end": "2026-03-25",
           "period_start": "2025-01-02",
-          "sharpe": 1.156300906566138,
-          "var_95": -0.005456481844345917
+          "sharpe": 0.9068933511128858,
+          "var_95": -0.006842942702432949
         },
         "train_audit": {
-          "artifact_path": "autoresearch-audits/seed-075-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
+          "artifact_path": "autoresearch-audits/seed-074-vol_spread-v2-train-2020-01-01-to-2024-12-31.json",
           "trade_count": 236,
           "actual_period_start": "2020-01-02",
           "actual_period_end": "2024-12-31"
         },
         "test_audit": {
-          "artifact_path": "autoresearch-audits/seed-075-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
-          "trade_count": 86,
+          "artifact_path": "autoresearch-audits/seed-074-vol_spread-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 96,
           "actual_period_start": "2025-01-02",
-          "actual_period_end": "2026-03-11"
+          "actual_period_end": "2026-03-25"
         }
       },
       "best": {
@@ -252,6 +262,137 @@
       }
     },
     {
+      "signature": "--asset=QQQ|--fast-window=12.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=vol_spread|--slow-window=50.00|--vol-cap=0.15|--vol-window=20.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "vol_spread",
+      "focus_asset": "QQQ",
+      "args": [
+        "--asset",
+        "QQQ",
+        "--rule",
+        "vol_spread",
+        "--fast-window",
+        "12",
+        "--slow-window",
+        "50",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "20",
+        "--vol-cap",
+        "0.15",
+        "--hypothesis-id",
+        "seed-146-0"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-146-vol_spread-v0"
+      ],
+      "sources": [
+        "https://export.arxiv.org/pdf/2301.00248v1.pdf"
+      ],
+      "first_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "last_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "times_in_top10": 1,
+      "latest": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-146-vol_spread-v0",
+        "source": "https://export.arxiv.org/pdf/2301.00248v1.pdf",
+        "rationale": "ArXiv-seeded hypothesis (146): Nowcasting Stock Implied Volatility with Twitter",
+        "round": 0,
+        "combined_score": 3.4844875075088653,
+        "train_score": 3.159829188078605,
+        "test_score": 4.0874243864507775,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.14317848814104672,
+          "capital": 1000000.0,
+          "final_equity": 1951512.4800000011,
+          "max_drawdown": 0.1568382531808287,
+          "name": "PaperResearch [QQQ|vol_spread]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.8401106045618283,
+          "var_95": -0.007144570377567904
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.19485070406903904,
+          "capital": 1000000.0,
+          "final_equity": 1243420.2320000022,
+          "max_drawdown": 0.06909601944352266,
+          "name": "PaperResearch [QQQ|vol_spread]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 1.0050181964191582,
+          "var_95": -0.011635272272574626
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-146-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 332,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-146-vol_spread-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 125,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-146-vol_spread-v0",
+        "source": "https://export.arxiv.org/pdf/2301.00248v1.pdf",
+        "rationale": "ArXiv-seeded hypothesis (146): Nowcasting Stock Implied Volatility with Twitter",
+        "round": 0,
+        "combined_score": 3.4844875075088653,
+        "train_score": 3.159829188078605,
+        "test_score": 4.0874243864507775,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.14317848814104672,
+          "capital": 1000000.0,
+          "final_equity": 1951512.4800000011,
+          "max_drawdown": 0.1568382531808287,
+          "name": "PaperResearch [QQQ|vol_spread]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.8401106045618283,
+          "var_95": -0.007144570377567904
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.19485070406903904,
+          "capital": 1000000.0,
+          "final_equity": 1243420.2320000022,
+          "max_drawdown": 0.06909601944352266,
+          "name": "PaperResearch [QQQ|vol_spread]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 1.0050181964191582,
+          "var_95": -0.011635272272574626
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-146-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 332,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-146-vol_spread-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 125,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      }
+    },
+    {
       "signature": "--asset=QQQ|--fast-window=12.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=vol_spread|--slow-window=50.00|--vol-cap=0.10|--vol-window=24.00",
       "registry_status": "research_candidate",
       "strategy": "paper-research",
@@ -282,53 +423,61 @@
       "is_seeded": true,
       "candidate_ids": [
         "seed-121-vol_spread-v0",
-        "seed-120-vol_spread-v1"
+        "seed-120-vol_spread-v1",
+        "seed-119-vol_spread-v2"
       ],
       "sources": [
         "https://arxiv.org/abs/2111.03477",
-        "https://arxiv.org/pdf/2101.00299"
+        "https://arxiv.org/pdf/2101.00299",
+        "https://arxiv.org/pdf/1812.05859"
       ],
       "first_top10_at": "2026-03-18T19:30:39.744598+00:00",
-      "last_top10_at": "2026-03-19T13:35:07.189824+00:00",
-      "times_in_top10": 3,
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "times_in_top10": 4,
       "latest": {
-        "observed_at": "2026-03-19T13:35:07.189824+00:00",
-        "candidate_id": "seed-120-vol_spread-v1",
-        "source": "https://arxiv.org/pdf/2101.00299",
-        "rationale": "ArXiv-seeded hypothesis (120): arXiv:2101.00299v2 [q-fin.PR] 2 Mar 2021",
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-119-vol_spread-v2",
+        "source": "https://arxiv.org/pdf/1812.05859",
+        "rationale": "ArXiv-seeded hypothesis (119): Consistent Time-Homogeneous Modeling of SPX and VIX",
         "round": 0,
-        "combined_score": 3.416023349245542,
-        "train_score": 3.1682016519923812,
-        "test_score": 3.876263644144267,
+        "combined_score": 2.9598911681780358,
+        "train_score": 2.8942361669523633,
+        "test_score": 3.0818218847399983,
         "train_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.15332622418822806,
-          "final_equity": 2096147.8930000004,
-          "max_drawdown": 0.1430188821016719,
+          "cagr": 0.1433612299412319,
+          "capital": 1000000.0,
+          "final_equity": 1953071.696999998,
+          "max_drawdown": 0.14301050312733088,
           "name": "PaperResearch [QQQ|vol_spread]",
-          "sharpe": 0.8161569139351178,
-          "var_95": -0.00800451919376693
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.7447611638944116,
+          "var_95": -0.008148348491414778
         },
         "test_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.18915962896535787,
-          "final_equity": 1240875.834,
-          "max_drawdown": 0.06749540672355019,
+          "cagr": 0.15676973547842432,
+          "capital": 1000000.0,
+          "final_equity": 1195096.016,
+          "max_drawdown": 0.06749646999999963,
           "name": "PaperResearch [QQQ|vol_spread]",
-          "sharpe": 0.9452664799216968,
-          "var_95": -0.010713216248830228
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.7452328432898173,
+          "var_95": -0.013166806907268904
         },
         "train_audit": {
-          "artifact_path": "autoresearch-audits/seed-120-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
+          "artifact_path": "autoresearch-audits/seed-119-vol_spread-v2-train-2020-01-01-to-2024-12-31.json",
           "trade_count": 367,
           "actual_period_start": "2020-01-02",
           "actual_period_end": "2024-12-31"
         },
         "test_audit": {
-          "artifact_path": "autoresearch-audits/seed-120-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
-          "trade_count": 139,
+          "artifact_path": "autoresearch-audits/seed-119-vol_spread-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 149,
           "actual_period_start": "2025-01-02",
-          "actual_period_end": "2026-03-11"
+          "actual_period_end": "2026-03-25"
         }
       },
       "best": {
@@ -373,6 +522,137 @@
       }
     },
     {
+      "signature": "--asset=TQQQ|--fast-window=14.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=120.00|--vol-cap=0.50|--vol-window=30.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "volatility_regime",
+      "focus_asset": "TQQQ",
+      "args": [
+        "--asset",
+        "TQQQ",
+        "--rule",
+        "volatility_regime",
+        "--fast-window",
+        "14",
+        "--slow-window",
+        "120",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "30",
+        "--vol-cap",
+        "0.50",
+        "--hypothesis-id",
+        "seed-104-0"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-104-volatility_regime-v0"
+      ],
+      "sources": [
+        "https://export.arxiv.org/pdf/2208.11574v1.pdf"
+      ],
+      "first_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "times_in_top10": 1,
+      "latest": {
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-104-volatility_regime-v0",
+        "source": "https://export.arxiv.org/pdf/2208.11574v1.pdf",
+        "rationale": "ArXiv-seeded hypothesis (104): IMPROVING ON THE MARKOV-SWITCHING REGRESSION",
+        "round": 0,
+        "combined_score": 3.0128161119095633,
+        "train_score": 2.8050441906484527,
+        "test_score": 3.398678251394484,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.2249321602137777,
+          "capital": 1000000.0,
+          "final_equity": 2755869.436000002,
+          "max_drawdown": 0.3646732180027179,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.6553312448565305,
+          "var_95": -0.035147513399717736
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.23434344072040725,
+          "capital": 1000000.0,
+          "final_equity": 1293901.3269999991,
+          "max_drawdown": 0.17112686895098714,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.7440650745344742,
+          "var_95": -0.029795152757267355
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-104-volatility_regime-v0-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 588,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-104-volatility_regime-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 140,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-104-volatility_regime-v0",
+        "source": "https://export.arxiv.org/pdf/2208.11574v1.pdf",
+        "rationale": "ArXiv-seeded hypothesis (104): IMPROVING ON THE MARKOV-SWITCHING REGRESSION",
+        "round": 0,
+        "combined_score": 3.0128161119095633,
+        "train_score": 2.8050441906484527,
+        "test_score": 3.398678251394484,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.2249321602137777,
+          "capital": 1000000.0,
+          "final_equity": 2755869.436000002,
+          "max_drawdown": 0.3646732180027179,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.6553312448565305,
+          "var_95": -0.035147513399717736
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.23434344072040725,
+          "capital": 1000000.0,
+          "final_equity": 1293901.3269999991,
+          "max_drawdown": 0.17112686895098714,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.7440650745344742,
+          "var_95": -0.029795152757267355
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-104-volatility_regime-v0-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 588,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-104-volatility_regime-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 140,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      }
+    },
+    {
       "signature": "--asset=QQQ|--fast-window=12.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=vol_spread|--slow-window=50.00|--vol-cap=0.15|--vol-window=10.00",
       "registry_status": "research_candidate",
       "strategy": "paper-research",
@@ -402,52 +682,60 @@
       ],
       "is_seeded": true,
       "candidate_ids": [
-        "seed-024-vol_spread-v2"
+        "seed-024-vol_spread-v2",
+        "seed-026-vol_spread-v0"
       ],
       "sources": [
-        "https://arxiv.org/abs/2103.02016"
+        "https://arxiv.org/abs/2103.02016",
+        "https://arxiv.org/abs/2508.16598"
       ],
       "first_top10_at": "2026-03-19T02:57:11.743244+00:00",
-      "last_top10_at": "2026-03-19T02:59:10.988862+00:00",
-      "times_in_top10": 2,
+      "last_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "times_in_top10": 3,
       "latest": {
-        "observed_at": "2026-03-19T02:59:10.988862+00:00",
-        "candidate_id": "seed-024-vol_spread-v2",
-        "source": "https://arxiv.org/abs/2103.02016",
-        "rationale": "ArXiv-seeded hypothesis (24): Trading Signals In VIX Futures",
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-026-vol_spread-v0",
+        "source": "https://arxiv.org/abs/2508.16598",
+        "rationale": "ArXiv-seeded hypothesis (26): Kelly, VIX, and Hybrid Approaches in Put-Writing on Index Options",
         "round": 0,
-        "combined_score": 2.9947115969048825,
-        "train_score": 2.9123300891618196,
-        "test_score": 3.1477058255705708,
+        "combined_score": 2.5133490500074016,
+        "train_score": 2.559101426194685,
+        "test_score": 2.428380351373876,
         "train_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.12979879883705414,
-          "final_equity": 1883570.1350000056,
-          "max_drawdown": 0.12069588481186404,
+          "cagr": 0.11826759337728344,
+          "capital": 1000000.0,
+          "final_equity": 1748085.051000004,
+          "max_drawdown": 0.12070128406963825,
           "name": "PaperResearch [QQQ|vol_spread]",
-          "sharpe": 0.7675038449587015,
-          "var_95": -0.00929560149843084
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.6728258878761593,
+          "var_95": -0.009344634180172113
         },
         "test_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.15682736424127786,
-          "final_equity": 1198988.5490000024,
+          "cagr": 0.1285692172991728,
+          "capital": 1000000.0,
+          "final_equity": 1159538.106000003,
           "max_drawdown": 0.10603315741660736,
           "name": "PaperResearch [QQQ|vol_spread]",
-          "sharpe": 0.7850626868353846,
-          "var_95": -0.01071384497433428
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.6018038226540298,
+          "var_95": -0.013281608982685432
         },
         "train_audit": {
-          "artifact_path": "autoresearch-audits/seed-024-vol_spread-v2-train-2020-01-01-to-2024-12-31.json",
+          "artifact_path": "autoresearch-audits/seed-026-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
           "trade_count": 405,
           "actual_period_start": "2020-01-02",
           "actual_period_end": "2024-12-31"
         },
         "test_audit": {
-          "artifact_path": "autoresearch-audits/seed-024-vol_spread-v2-test-2025-01-01-to-2026-03-11.json",
-          "trade_count": 127,
+          "artifact_path": "autoresearch-audits/seed-026-vol_spread-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 137,
           "actual_period_start": "2025-01-02",
-          "actual_period_end": "2026-03-11"
+          "actual_period_end": "2026-03-25"
         }
       },
       "best": {
@@ -1338,6 +1626,138 @@
       }
     },
     {
+      "signature": "--asset=QQQ|--fast-window=20.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=220.00|--vol-cap=0.70|--vol-window=30.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "volatility_regime",
+      "focus_asset": "QQQ",
+      "args": [
+        "--asset",
+        "QQQ",
+        "--rule",
+        "volatility_regime",
+        "--fast-window",
+        "20",
+        "--slow-window",
+        "220",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "30",
+        "--vol-cap",
+        "0.70",
+        "--hypothesis-id",
+        "seed-84-2"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-084-volatility_regime-v2"
+      ],
+      "sources": [
+        "https://arxiv.org/html/2402.05272v3",
+        "https://arxiv.org/abs/2402.05272"
+      ],
+      "first_top10_at": "2026-03-18T19:30:39.744598+00:00",
+      "last_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "times_in_top10": 2,
+      "latest": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-084-volatility_regime-v2",
+        "source": "https://arxiv.org/abs/2402.05272",
+        "rationale": "ArXiv-seeded hypothesis (84): Downside Risk Reduction Using Regime-Switching Signals - arXiv",
+        "round": 0,
+        "combined_score": 2.3053538735925008,
+        "train_score": 3.0074307766745387,
+        "test_score": 1.001496767868716,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.14825448119410822,
+          "capital": 1000000.0,
+          "final_equity": 1995194.6679999984,
+          "max_drawdown": 0.1426109191250073,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.7725197254282999,
+          "var_95": -0.014719063983008198
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.06956546026182053,
+          "capital": 1000000.0,
+          "final_equity": 1085786.7630000054,
+          "max_drawdown": 0.13226624978057933,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.2564255853302013,
+          "var_95": -0.018535616131438303
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 754,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 258,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-084-volatility_regime-v2",
+        "source": "https://arxiv.org/abs/2402.05272",
+        "rationale": "ArXiv-seeded hypothesis (84): Downside Risk Reduction Using Regime-Switching Signals - arXiv",
+        "round": 0,
+        "combined_score": 2.3053538735925008,
+        "train_score": 3.0074307766745387,
+        "test_score": 1.001496767868716,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.14825448119410822,
+          "capital": 1000000.0,
+          "final_equity": 1995194.6679999984,
+          "max_drawdown": 0.1426109191250073,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.7725197254282999,
+          "var_95": -0.014719063983008198
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.06956546026182053,
+          "capital": 1000000.0,
+          "final_equity": 1085786.7630000054,
+          "max_drawdown": 0.13226624978057933,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.2564255853302013,
+          "var_95": -0.018535616131438303
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 754,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 258,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      }
+    },
+    {
       "signature": "--asset=QQQ|--fast-window=20.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=120.00|--vol-cap=0.70|--vol-window=22.00",
       "registry_status": "research_candidate",
       "strategy": "paper-research",
@@ -1457,6 +1877,138 @@
       }
     },
     {
+      "signature": "--asset=QQQ|--fast-window=20.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=50.00|--vol-cap=0.70|--vol-window=14.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "volatility_regime",
+      "focus_asset": "QQQ",
+      "args": [
+        "--asset",
+        "QQQ",
+        "--rule",
+        "volatility_regime",
+        "--fast-window",
+        "20",
+        "--slow-window",
+        "50",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "14",
+        "--vol-cap",
+        "0.70",
+        "--hypothesis-id",
+        "seed-34-2"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-034-volatility_regime-v2"
+      ],
+      "sources": [
+        "https://arxiv.org/html/2410.14841v1",
+        "https://arxiv.org/html/2505.24250v1"
+      ],
+      "first_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "times_in_top10": 2,
+      "latest": {
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-034-volatility_regime-v2",
+        "source": "https://arxiv.org/html/2505.24250v1",
+        "rationale": "ArXiv-seeded hypothesis (34): Winners vs. Losers: Momentum-based Strategies with Intertemporal ...",
+        "round": 0,
+        "combined_score": 2.2564111244315557,
+        "train_score": 3.9348780262781897,
+        "test_score": -0.8607416932836212,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.197781268645445,
+          "capital": 1000000.0,
+          "final_equity": 2463878.8709999933,
+          "max_drawdown": 0.20378511779552752,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 1.0111631931064191,
+          "var_95": -0.015390408897595189
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.001145595032006952,
+          "capital": 1000000.0,
+          "final_equity": 1001402.1809999944,
+          "max_drawdown": 0.14486948219369672,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": -0.2215993294681625,
+          "var_95": -0.016635830232546882
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-034-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 830,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-034-volatility_regime-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 209,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-034-volatility_regime-v2",
+        "source": "https://arxiv.org/html/2410.14841v1",
+        "rationale": "ArXiv-seeded hypothesis (34): Dynamic Factor Allocation Leveraging Regime-Switching Signals",
+        "round": 0,
+        "combined_score": 2.2564111244315557,
+        "train_score": 3.9348780262781897,
+        "test_score": -0.8607416932836212,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.197781268645445,
+          "capital": 1000000.0,
+          "final_equity": 2463878.8709999933,
+          "max_drawdown": 0.20378511779552752,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 1.0111631931064191,
+          "var_95": -0.015390408897595189
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.001145595032006952,
+          "capital": 1000000.0,
+          "final_equity": 1001402.1809999944,
+          "max_drawdown": 0.14486948219369672,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": -0.2215993294681625,
+          "var_95": -0.016635830232546882
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-034-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 830,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-034-volatility_regime-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 209,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      }
+    },
+    {
       "signature": "--asset=QQQ|--fast-window=12.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=vol_spread|--slow-window=50.00|--vol-cap=0.40|--vol-window=35.00",
       "registry_status": "research_candidate",
       "strategy": "paper-research",
@@ -1490,49 +2042,56 @@
         "seed-005-vol_spread-v1"
       ],
       "sources": [
-        "https://arxiv.org/abs/2102.02119"
+        "https://arxiv.org/abs/2102.02119",
+        "https://arxiv.org/html/2603.10857v2"
       ],
       "first_top10_at": "2026-03-18T19:30:39.744598+00:00",
-      "last_top10_at": "2026-03-19T13:35:07.189824+00:00",
-      "times_in_top10": 3,
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "times_in_top10": 4,
       "latest": {
-        "observed_at": "2026-03-19T13:35:07.189824+00:00",
-        "candidate_id": "seed-005-vol_spread-v1",
-        "source": "https://arxiv.org/abs/2102.02119",
-        "rationale": "ArXiv-seeded hypothesis (5): The VIX index under scrutiny of machine learning techniques and neural networks",
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-006-vol_spread-v0",
+        "source": "https://arxiv.org/html/2603.10857v2",
+        "rationale": "ArXiv-seeded hypothesis (6): SPX–VIX Risk Computations Via Perturbed Optimal Transport",
         "round": 0,
-        "combined_score": 2.253214389784162,
-        "train_score": 1.2189867251445134,
-        "test_score": 4.1739229098292245,
+        "combined_score": 1.9822821321472732,
+        "train_score": 0.7686019011366589,
+        "test_score": 4.236259704024128,
         "train_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.06403892746562767,
-          "final_equity": 1379944.8270000005,
-          "max_drawdown": 0.10345166316982142,
+          "cagr": 0.05363451784355178,
+          "capital": 1000000.0,
+          "final_equity": 1298291.751000001,
+          "max_drawdown": 0.10345123180097604,
           "name": "PaperResearch [QQQ|vol_spread]",
-          "sharpe": 0.3265284962628324,
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.19720883953223825,
           "var_95": 0.0
         },
         "test_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.17843316005184695,
-          "final_equity": 1226948.0039999995,
-          "max_drawdown": 0.03590779649678285,
+          "cagr": 0.183908437311318,
+          "capital": 1000000.0,
+          "final_equity": 1229498.8450000011,
+          "max_drawdown": 0.03591607598466597,
           "name": "PaperResearch [QQQ|vol_spread]",
-          "sharpe": 1.0511982882045463,
-          "var_95": -0.0004945716205401028
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 1.0610305288449176,
+          "var_95": -0.0014692072764515844
         },
         "train_audit": {
-          "artifact_path": "autoresearch-audits/seed-005-vol_spread-v1-train-2020-01-01-to-2024-12-31.json",
+          "artifact_path": "autoresearch-audits/seed-006-vol_spread-v0-train-2020-01-01-to-2024-12-31.json",
           "trade_count": 130,
           "actual_period_start": "2020-01-02",
           "actual_period_end": "2024-12-31"
         },
         "test_audit": {
-          "artifact_path": "autoresearch-audits/seed-005-vol_spread-v1-test-2025-01-01-to-2026-03-11.json",
-          "trade_count": 44,
+          "artifact_path": "autoresearch-audits/seed-006-vol_spread-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 50,
           "actual_period_start": "2025-01-02",
-          "actual_period_end": "2026-03-11"
+          "actual_period_end": "2026-03-25"
         }
       },
       "best": {
@@ -1573,6 +2132,137 @@
           "trade_count": 44,
           "actual_period_start": "2025-01-02",
           "actual_period_end": "2026-03-11"
+        }
+      }
+    },
+    {
+      "signature": "--asset=TQQQ|--fast-window=14.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=220.00|--vol-cap=0.50|--vol-window=40.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "volatility_regime",
+      "focus_asset": "TQQQ",
+      "args": [
+        "--asset",
+        "TQQQ",
+        "--rule",
+        "volatility_regime",
+        "--fast-window",
+        "14",
+        "--slow-window",
+        "220",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "40",
+        "--vol-cap",
+        "0.50",
+        "--hypothesis-id",
+        "seed-34-0"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-034-volatility_regime-v0"
+      ],
+      "sources": [
+        "https://arxiv.org/html/2410.14841v1"
+      ],
+      "first_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "last_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "times_in_top10": 1,
+      "latest": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-034-volatility_regime-v0",
+        "source": "https://arxiv.org/html/2410.14841v1",
+        "rationale": "ArXiv-seeded hypothesis (34): Dynamic Factor Allocation Leveraging Regime-Switching Signals",
+        "round": 0,
+        "combined_score": 2.211173966787184,
+        "train_score": 1.6238972093481512,
+        "test_score": 3.301830802031103,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.13561792140220574,
+          "capital": 1000000.0,
+          "final_equity": 1887870.351,
+          "max_drawdown": 0.3651065641582822,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.44044629025217047,
+          "var_95": -0.03141284897515451
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.2417680386658978,
+          "capital": 1000000.0,
+          "final_equity": 1303432.5180000032,
+          "max_drawdown": 0.21849779447066447,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.7190398274315489,
+          "var_95": -0.036523944988445224
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-034-volatility_regime-v0-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 463,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-034-volatility_regime-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 155,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-034-volatility_regime-v0",
+        "source": "https://arxiv.org/html/2410.14841v1",
+        "rationale": "ArXiv-seeded hypothesis (34): Dynamic Factor Allocation Leveraging Regime-Switching Signals",
+        "round": 0,
+        "combined_score": 2.211173966787184,
+        "train_score": 1.6238972093481512,
+        "test_score": 3.301830802031103,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.13561792140220574,
+          "capital": 1000000.0,
+          "final_equity": 1887870.351,
+          "max_drawdown": 0.3651065641582822,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.44044629025217047,
+          "var_95": -0.03141284897515451
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.2417680386658978,
+          "capital": 1000000.0,
+          "final_equity": 1303432.5180000032,
+          "max_drawdown": 0.21849779447066447,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.7190398274315489,
+          "var_95": -0.036523944988445224
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-034-volatility_regime-v0-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 463,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-034-volatility_regime-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 155,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
         }
       }
     },
@@ -1816,6 +2506,268 @@
       }
     },
     {
+      "signature": "--asset=SPY|--fast-window=12.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=vol_spread|--slow-window=50.00|--vol-cap=0.15|--vol-window=20.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "vol_spread",
+      "focus_asset": "SPY",
+      "args": [
+        "--asset",
+        "SPY",
+        "--rule",
+        "vol_spread",
+        "--fast-window",
+        "12",
+        "--slow-window",
+        "50",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "20",
+        "--vol-cap",
+        "0.15",
+        "--hypothesis-id",
+        "seed-108-2"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-108-vol_spread-v2"
+      ],
+      "sources": [
+        "https://arxiv.org/pdf/1712.08329"
+      ],
+      "first_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "times_in_top10": 1,
+      "latest": {
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-108-vol_spread-v2",
+        "source": "https://arxiv.org/pdf/1712.08329",
+        "rationale": "ArXiv-seeded hypothesis (108): [PDF] A threshold model for local volatility: evidence of leverage and mean ...",
+        "round": 0,
+        "combined_score": 2.1213514103814037,
+        "train_score": 3.013758657141854,
+        "test_score": 0.46402366639771,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.15291003778752787,
+          "capital": 1000000.0,
+          "final_equity": 2035943.0170000072,
+          "max_drawdown": 0.12205050232713448,
+          "name": "PaperResearch [SPY|vol_spread]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.755723044558225,
+          "var_95": -0.013952970521013948
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.0488811542640446,
+          "capital": 1000000.0,
+          "final_equity": 1060144.8899999885,
+          "max_drawdown": 0.15091672204985687,
+          "name": "PaperResearch [SPY|vol_spread]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.12734005056108066,
+          "var_95": -0.01524133830500798
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-108-vol_spread-v2-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 864,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-108-vol_spread-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 231,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-108-vol_spread-v2",
+        "source": "https://arxiv.org/pdf/1712.08329",
+        "rationale": "ArXiv-seeded hypothesis (108): [PDF] A threshold model for local volatility: evidence of leverage and mean ...",
+        "round": 0,
+        "combined_score": 2.1213514103814037,
+        "train_score": 3.013758657141854,
+        "test_score": 0.46402366639771,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.15291003778752787,
+          "capital": 1000000.0,
+          "final_equity": 2035943.0170000072,
+          "max_drawdown": 0.12205050232713448,
+          "name": "PaperResearch [SPY|vol_spread]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.755723044558225,
+          "var_95": -0.013952970521013948
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.0488811542640446,
+          "capital": 1000000.0,
+          "final_equity": 1060144.8899999885,
+          "max_drawdown": 0.15091672204985687,
+          "name": "PaperResearch [SPY|vol_spread]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.12734005056108066,
+          "var_95": -0.01524133830500798
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-108-vol_spread-v2-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 864,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-108-vol_spread-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 231,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      }
+    },
+    {
+      "signature": "--asset=SPY|--fast-window=12.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=vol_spread|--slow-window=50.00|--vol-cap=0.30|--vol-window=10.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "vol_spread",
+      "focus_asset": "SPY",
+      "args": [
+        "--asset",
+        "SPY",
+        "--rule",
+        "vol_spread",
+        "--fast-window",
+        "12",
+        "--slow-window",
+        "50",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "10",
+        "--vol-cap",
+        "0.30",
+        "--hypothesis-id",
+        "seed-123-2"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-123-vol_spread-v2"
+      ],
+      "sources": [
+        "https://arxiv.org/pdf/2101.00299"
+      ],
+      "first_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "last_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "times_in_top10": 1,
+      "latest": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-123-vol_spread-v2",
+        "source": "https://arxiv.org/pdf/2101.00299",
+        "rationale": "ArXiv-seeded hypothesis (123): [PDF] arXiv:2101.00299v2 [q-fin.PR] 2 Mar 2021",
+        "round": 0,
+        "combined_score": 2.086619419211191,
+        "train_score": 1.2798833614436385,
+        "test_score": 3.5848435264937883,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.07570996508269867,
+          "capital": 1000000.0,
+          "final_equity": 1440016.5659999975,
+          "max_drawdown": 0.13819700445840205,
+          "name": "PaperResearch [SPY|vol_spread]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.3396997923964031,
+          "var_95": -0.012259640140987831
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.16538312292310864,
+          "capital": 1000000.0,
+          "final_equity": 1205995.556999992,
+          "max_drawdown": 0.064605925434448,
+          "name": "PaperResearch [SPY|vol_spread]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.8943310281877879,
+          "var_95": -0.011020587689019966
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-123-vol_spread-v2-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 668,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-123-vol_spread-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 186,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-123-vol_spread-v2",
+        "source": "https://arxiv.org/pdf/2101.00299",
+        "rationale": "ArXiv-seeded hypothesis (123): [PDF] arXiv:2101.00299v2 [q-fin.PR] 2 Mar 2021",
+        "round": 0,
+        "combined_score": 2.086619419211191,
+        "train_score": 1.2798833614436385,
+        "test_score": 3.5848435264937883,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.07570996508269867,
+          "capital": 1000000.0,
+          "final_equity": 1440016.5659999975,
+          "max_drawdown": 0.13819700445840205,
+          "name": "PaperResearch [SPY|vol_spread]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.3396997923964031,
+          "var_95": -0.012259640140987831
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.16538312292310864,
+          "capital": 1000000.0,
+          "final_equity": 1205995.556999992,
+          "max_drawdown": 0.064605925434448,
+          "name": "PaperResearch [SPY|vol_spread]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.8943310281877879,
+          "var_95": -0.011020587689019966
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-123-vol_spread-v2-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 668,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-123-vol_spread-v2-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 186,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      }
+    },
+    {
       "signature": "--asset=SPY|--fast-window=16.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=90.00|--vol-cap=0.60|--vol-window=20.00",
       "registry_status": "research_candidate",
       "strategy": "paper-research",
@@ -1947,7 +2899,7 @@
       }
     },
     {
-      "signature": "--asset=QQQ|--fast-window=20.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=220.00|--vol-cap=0.70|--vol-window=30.00",
+      "signature": "--asset=QQQ|--fast-window=20.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=35.00|--vol-cap=0.70|--vol-window=14.00",
       "registry_status": "research_candidate",
       "strategy": "paper-research",
       "rule": "volatility_regime",
@@ -1960,7 +2912,138 @@
         "--fast-window",
         "20",
         "--slow-window",
-        "220",
+        "35",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "14",
+        "--vol-cap",
+        "0.70",
+        "--hypothesis-id",
+        "seed-35-1"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-035-volatility_regime-v1"
+      ],
+      "sources": [
+        "https://arxiv.org/html/2505.24250v1"
+      ],
+      "first_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "last_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "times_in_top10": 1,
+      "latest": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-035-volatility_regime-v1",
+        "source": "https://arxiv.org/html/2505.24250v1",
+        "rationale": "ArXiv-seeded hypothesis (35): Winners vs. Losers: Momentum-based Strategies with Intertemporal ...",
+        "round": 0,
+        "combined_score": 1.9220358145000933,
+        "train_score": 3.3707915459757687,
+        "test_score": -0.7685105439547323,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.1763422008697959,
+          "capital": 1000000.0,
+          "final_equity": 2251266.9670000006,
+          "max_drawdown": 0.2165108662199321,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.8719511844882994,
+          "var_95": -0.01613529970703915
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.0027774665928830267,
+          "capital": 1000000.0,
+          "final_equity": 1003400.1730000032,
+          "max_drawdown": 0.1326640269980434,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": -0.1998152352382566,
+          "var_95": -0.0173951829888911
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-035-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 849,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-035-volatility_regime-v1-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 222,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-035-volatility_regime-v1",
+        "source": "https://arxiv.org/html/2505.24250v1",
+        "rationale": "ArXiv-seeded hypothesis (35): Winners vs. Losers: Momentum-based Strategies with Intertemporal ...",
+        "round": 0,
+        "combined_score": 1.9220358145000933,
+        "train_score": 3.3707915459757687,
+        "test_score": -0.7685105439547323,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.1763422008697959,
+          "capital": 1000000.0,
+          "final_equity": 2251266.9670000006,
+          "max_drawdown": 0.2165108662199321,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.8719511844882994,
+          "var_95": -0.01613529970703915
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.0027774665928830267,
+          "capital": 1000000.0,
+          "final_equity": 1003400.1730000032,
+          "max_drawdown": 0.1326640269980434,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": -0.1998152352382566,
+          "var_95": -0.0173951829888911
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-035-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 849,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-035-volatility_regime-v1-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 222,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      }
+    },
+    {
+      "signature": "--asset=TQQQ|--fast-window=35.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=160.00|--vol-cap=0.25|--vol-window=30.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "volatility_regime",
+      "focus_asset": "TQQQ",
+      "args": [
+        "--asset",
+        "TQQQ",
+        "--rule",
+        "volatility_regime",
+        "--fast-window",
+        "35",
+        "--slow-window",
+        "160",
         "--rsi-window",
         "14",
         "--rsi-oversold",
@@ -1970,98 +3053,110 @@
         "--vol-window",
         "30",
         "--vol-cap",
-        "0.70",
+        "0.25",
         "--hypothesis-id",
-        "seed-84-2"
+        "seed-148-1"
       ],
       "is_seeded": true,
       "candidate_ids": [
-        "seed-084-volatility_regime-v2"
+        "seed-148-volatility_regime-v1"
       ],
       "sources": [
-        "https://arxiv.org/html/2402.05272v3"
+        "https://arxiv.org/html/2511.10365v1"
       ],
-      "first_top10_at": "2026-03-18T19:30:39.744598+00:00",
-      "last_top10_at": "2026-03-18T19:30:39.744598+00:00",
+      "first_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
       "times_in_top10": 1,
       "latest": {
-        "observed_at": "2026-03-18T19:30:39.744598+00:00",
-        "candidate_id": "seed-084-volatility_regime-v2",
-        "source": "https://arxiv.org/html/2402.05272v3",
-        "rationale": "ArXiv-seeded hypothesis (84): Downside Risk Reduction Using Regime-Switching Signals: A Statistical Jump Model Approach1footnote 11footnote 1 This article was previously titled “Regime-Aware Asset Allocation: a Statistical Jump Model Approach”. The authors are grateful for the thoughtful comments from the editor and the anonymous reviewer, which have significantly improved the article.",
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-148-volatility_regime-v1",
+        "source": "https://arxiv.org/html/2511.10365v1",
+        "rationale": "ArXiv-seeded hypothesis (148): FCOC: A Fractal-Chaotic Co-driven Framework for Financial Volatility Forecasting",
         "round": 0,
-        "combined_score": 1.9332057975044177,
-        "train_score": 2.4711386518208265,
-        "test_score": 0.9341876394882298,
+        "combined_score": 1.894412179963993,
+        "train_score": 1.4738170562634778,
+        "test_score": 2.675517409693521,
         "train_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.122303587083602,
-          "final_equity": 1819633.351,
-          "max_drawdown": 0.19576970695770596,
-          "name": "PaperResearch [QQQ|volatility_regime]",
-          "sharpe": 0.6704649063533342,
-          "var_95": -0.0133214374442468
+          "cagr": 0.09560893968958516,
+          "capital": 1000000.0,
+          "final_equity": 1578127.6259999983,
+          "max_drawdown": 0.23085574208723092,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.4077871523493634,
+          "var_95": 0.0
         },
         "test_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.066816061151586,
-          "final_equity": 1083906.3679999951,
-          "max_drawdown": 0.13224869930699776,
-          "name": "PaperResearch [QQQ|volatility_regime]",
-          "sharpe": 0.23947981720283693,
-          "var_95": -0.018594759235964924
+          "cagr": 0.17483778712046272,
+          "capital": 1000000.0,
+          "final_equity": 1217980.436999999,
+          "max_drawdown": 0.17428546346124835,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.6234967786054976,
+          "var_95": -0.02050471755227453
         },
         "train_audit": {
-          "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
-          "trade_count": 754,
+          "artifact_path": "autoresearch-audits/seed-148-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 166,
           "actual_period_start": "2020-01-02",
           "actual_period_end": "2024-12-31"
         },
         "test_audit": {
-          "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-test-2025-01-01-to-2026-03-11.json",
-          "trade_count": 249,
+          "artifact_path": "autoresearch-audits/seed-148-volatility_regime-v1-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 106,
           "actual_period_start": "2025-01-02",
-          "actual_period_end": "2026-03-11"
+          "actual_period_end": "2026-03-25"
         }
       },
       "best": {
-        "observed_at": "2026-03-18T19:30:39.744598+00:00",
-        "candidate_id": "seed-084-volatility_regime-v2",
-        "source": "https://arxiv.org/html/2402.05272v3",
-        "rationale": "ArXiv-seeded hypothesis (84): Downside Risk Reduction Using Regime-Switching Signals: A Statistical Jump Model Approach1footnote 11footnote 1 This article was previously titled “Regime-Aware Asset Allocation: a Statistical Jump Model Approach”. The authors are grateful for the thoughtful comments from the editor and the anonymous reviewer, which have significantly improved the article.",
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-148-volatility_regime-v1",
+        "source": "https://arxiv.org/html/2511.10365v1",
+        "rationale": "ArXiv-seeded hypothesis (148): FCOC: A Fractal-Chaotic Co-driven Framework for Financial Volatility Forecasting",
         "round": 0,
-        "combined_score": 1.9332057975044177,
-        "train_score": 2.4711386518208265,
-        "test_score": 0.9341876394882298,
+        "combined_score": 1.894412179963993,
+        "train_score": 1.4738170562634778,
+        "test_score": 2.675517409693521,
         "train_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.122303587083602,
-          "final_equity": 1819633.351,
-          "max_drawdown": 0.19576970695770596,
-          "name": "PaperResearch [QQQ|volatility_regime]",
-          "sharpe": 0.6704649063533342,
-          "var_95": -0.0133214374442468
+          "cagr": 0.09560893968958516,
+          "capital": 1000000.0,
+          "final_equity": 1578127.6259999983,
+          "max_drawdown": 0.23085574208723092,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.4077871523493634,
+          "var_95": 0.0
         },
         "test_details": {
           "beginning_equity": 1000000.0,
-          "cagr": 0.066816061151586,
-          "final_equity": 1083906.3679999951,
-          "max_drawdown": 0.13224869930699776,
-          "name": "PaperResearch [QQQ|volatility_regime]",
-          "sharpe": 0.23947981720283693,
-          "var_95": -0.018594759235964924
+          "cagr": 0.17483778712046272,
+          "capital": 1000000.0,
+          "final_equity": 1217980.436999999,
+          "max_drawdown": 0.17428546346124835,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.6234967786054976,
+          "var_95": -0.02050471755227453
         },
         "train_audit": {
-          "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-train-2020-01-01-to-2024-12-31.json",
-          "trade_count": 754,
+          "artifact_path": "autoresearch-audits/seed-148-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 166,
           "actual_period_start": "2020-01-02",
           "actual_period_end": "2024-12-31"
         },
         "test_audit": {
-          "artifact_path": "autoresearch-audits/seed-084-volatility_regime-v2-test-2025-01-01-to-2026-03-11.json",
-          "trade_count": 249,
+          "artifact_path": "autoresearch-audits/seed-148-volatility_regime-v1-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 106,
           "actual_period_start": "2025-01-02",
-          "actual_period_end": "2026-03-11"
+          "actual_period_end": "2026-03-25"
         }
       }
     },
@@ -2911,6 +4006,399 @@
           "trade_count": 90,
           "actual_period_start": "2025-01-02",
           "actual_period_end": "2026-03-11"
+        }
+      }
+    },
+    {
+      "signature": "--asset=SPXL|--fast-window=10.00|--rsi-overbought=74.00|--rsi-oversold=26.00|--rsi-window=8.00|--rule=rsi_reversion|--slow-window=24.00|--vol-cap=0.40|--vol-window=20.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "rsi_reversion",
+      "focus_asset": "SPXL",
+      "args": [
+        "--asset",
+        "SPXL",
+        "--rule",
+        "rsi_reversion",
+        "--fast-window",
+        "10",
+        "--slow-window",
+        "24",
+        "--rsi-window",
+        "8",
+        "--rsi-oversold",
+        "26",
+        "--rsi-overbought",
+        "74",
+        "--vol-window",
+        "20",
+        "--vol-cap",
+        "0.40",
+        "--hypothesis-id",
+        "seed-112-0"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-112-rsi_reversion-v0"
+      ],
+      "sources": [
+        "https://arxiv.org/pdf/1602.05858"
+      ],
+      "first_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "times_in_top10": 1,
+      "latest": {
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-112-rsi_reversion-v0",
+        "source": "https://arxiv.org/pdf/1602.05858",
+        "rationale": "ArXiv-seeded hypothesis (112): On the Profitability of Optimal Mean Reversion Trading Strategies",
+        "round": 0,
+        "combined_score": 1.69011838035867,
+        "train_score": 2.2224735620617366,
+        "test_score": 0.7014587571958315,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.1561452236572869,
+          "capital": 1000000.0,
+          "final_equity": 2064649.3249999988,
+          "max_drawdown": 0.23116611655922137,
+          "name": "PaperResearch [SPXL|rsi_reversion]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.5364115944336418,
+          "var_95": 0.0
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.06642317100383477,
+          "capital": 1000000.0,
+          "final_equity": 1081884.13,
+          "max_drawdown": 0.2809930170000001,
+          "name": "PaperResearch [SPXL|rsi_reversion]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.2321033183242744,
+          "var_95": 0.0
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-112-rsi_reversion-v0-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 123,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-112-rsi_reversion-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 21,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-112-rsi_reversion-v0",
+        "source": "https://arxiv.org/pdf/1602.05858",
+        "rationale": "ArXiv-seeded hypothesis (112): On the Profitability of Optimal Mean Reversion Trading Strategies",
+        "round": 0,
+        "combined_score": 1.69011838035867,
+        "train_score": 2.2224735620617366,
+        "test_score": 0.7014587571958315,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.1561452236572869,
+          "capital": 1000000.0,
+          "final_equity": 2064649.3249999988,
+          "max_drawdown": 0.23116611655922137,
+          "name": "PaperResearch [SPXL|rsi_reversion]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.5364115944336418,
+          "var_95": 0.0
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.06642317100383477,
+          "capital": 1000000.0,
+          "final_equity": 1081884.13,
+          "max_drawdown": 0.2809930170000001,
+          "name": "PaperResearch [SPXL|rsi_reversion]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.2321033183242744,
+          "var_95": 0.0
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-112-rsi_reversion-v0-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 123,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-112-rsi_reversion-v0-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 21,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      }
+    },
+    {
+      "signature": "--asset=TQQQ|--fast-window=14.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=160.00|--vol-cap=0.50|--vol-window=30.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "volatility_regime",
+      "focus_asset": "TQQQ",
+      "args": [
+        "--asset",
+        "TQQQ",
+        "--rule",
+        "volatility_regime",
+        "--fast-window",
+        "14",
+        "--slow-window",
+        "160",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "30",
+        "--vol-cap",
+        "0.50",
+        "--hypothesis-id",
+        "seed-103-1"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-103-volatility_regime-v1"
+      ],
+      "sources": [
+        "https://arxiv.org/html/2510.03236v1"
+      ],
+      "first_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "last_top10_at": "2026-03-30T01:32:39.748221+00:00",
+      "times_in_top10": 1,
+      "latest": {
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-103-volatility_regime-v1",
+        "source": "https://arxiv.org/html/2510.03236v1",
+        "rationale": "ArXiv-seeded hypothesis (103): Improving S&P 500 Volatility Forecasting through Regime-Switching ...",
+        "round": 0,
+        "combined_score": 1.6717398412200422,
+        "train_score": 1.6681440398233105,
+        "test_score": 1.6784177580996864,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.139560551751303,
+          "capital": 1000000.0,
+          "final_equity": 1920847.3860000016,
+          "max_drawdown": 0.36262320676819704,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.4461510729303227,
+          "var_95": -0.03315368924356396
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.13133405436626133,
+          "capital": 1000000.0,
+          "final_equity": 1163015.57,
+          "max_drawdown": 0.2714518629884063,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.4234820133619624,
+          "var_95": -0.03662816399360653
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-103-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 514,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-103-volatility_regime-v1-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 163,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:32:39.748221+00:00",
+        "candidate_id": "seed-103-volatility_regime-v1",
+        "source": "https://arxiv.org/html/2510.03236v1",
+        "rationale": "ArXiv-seeded hypothesis (103): Improving S&P 500 Volatility Forecasting through Regime-Switching ...",
+        "round": 0,
+        "combined_score": 1.6717398412200422,
+        "train_score": 1.6681440398233105,
+        "test_score": 1.6784177580996864,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.139560551751303,
+          "capital": 1000000.0,
+          "final_equity": 1920847.3860000016,
+          "max_drawdown": 0.36262320676819704,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.4461510729303227,
+          "var_95": -0.03315368924356396
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.13133405436626133,
+          "capital": 1000000.0,
+          "final_equity": 1163015.57,
+          "max_drawdown": 0.2714518629884063,
+          "name": "PaperResearch [TQQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.4234820133619624,
+          "var_95": -0.03662816399360653
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-103-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 514,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-103-volatility_regime-v1-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 163,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      }
+    },
+    {
+      "signature": "--asset=QQQ|--fast-window=8.00|--rsi-overbought=70.00|--rsi-oversold=30.00|--rsi-window=14.00|--rule=volatility_regime|--slow-window=70.00|--vol-cap=0.35|--vol-window=20.00",
+      "registry_status": "research_candidate",
+      "strategy": "paper-research",
+      "rule": "volatility_regime",
+      "focus_asset": "QQQ",
+      "args": [
+        "--asset",
+        "QQQ",
+        "--rule",
+        "volatility_regime",
+        "--fast-window",
+        "8",
+        "--slow-window",
+        "70",
+        "--rsi-window",
+        "14",
+        "--rsi-oversold",
+        "30",
+        "--rsi-overbought",
+        "70",
+        "--vol-window",
+        "20",
+        "--vol-cap",
+        "0.35",
+        "--hypothesis-id",
+        "seed-100-1"
+      ],
+      "is_seeded": true,
+      "candidate_ids": [
+        "seed-100-volatility_regime-v1"
+      ],
+      "sources": [
+        "https://arxiv.org/html/2510.03236v1"
+      ],
+      "first_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "last_top10_at": "2026-03-30T01:07:36.889197+00:00",
+      "times_in_top10": 1,
+      "latest": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-100-volatility_regime-v1",
+        "source": "https://arxiv.org/html/2510.03236v1",
+        "rationale": "ArXiv-seeded hypothesis (100): Improving S&P 500 Volatility Forecasting through Regime-Switching ...",
+        "round": 0,
+        "combined_score": 1.611316386330171,
+        "train_score": 1.4123278045244114,
+        "test_score": 1.980866609683724,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.07195852001406688,
+          "capital": 1000000.0,
+          "final_equity": 1415098.3469999954,
+          "max_drawdown": 0.0872694853297267,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.36758465463387585,
+          "var_95": -0.007895440726831371
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.0799336690667527,
+          "capital": 1000000.0,
+          "final_equity": 1098681.9579999982,
+          "max_drawdown": 0.05801153978428986,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.5274935836604044,
+          "var_95": -0.005990769872122276
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-100-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 396,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-100-volatility_regime-v1-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 105,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
+        }
+      },
+      "best": {
+        "observed_at": "2026-03-30T01:07:36.889197+00:00",
+        "candidate_id": "seed-100-volatility_regime-v1",
+        "source": "https://arxiv.org/html/2510.03236v1",
+        "rationale": "ArXiv-seeded hypothesis (100): Improving S&P 500 Volatility Forecasting through Regime-Switching ...",
+        "round": 0,
+        "combined_score": 1.611316386330171,
+        "train_score": 1.4123278045244114,
+        "test_score": 1.980866609683724,
+        "train_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.07195852001406688,
+          "capital": 1000000.0,
+          "final_equity": 1415098.3469999954,
+          "max_drawdown": 0.0872694853297267,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2024-12-31",
+          "period_start": "2020-01-02",
+          "sharpe": 0.36758465463387585,
+          "var_95": -0.007895440726831371
+        },
+        "test_details": {
+          "beginning_equity": 1000000.0,
+          "cagr": 0.0799336690667527,
+          "capital": 1000000.0,
+          "final_equity": 1098681.9579999982,
+          "max_drawdown": 0.05801153978428986,
+          "name": "PaperResearch [QQQ|volatility_regime]",
+          "period_end": "2026-03-25",
+          "period_start": "2025-01-02",
+          "sharpe": 0.5274935836604044,
+          "var_95": -0.005990769872122276
+        },
+        "train_audit": {
+          "artifact_path": "autoresearch-audits/seed-100-volatility_regime-v1-train-2020-01-01-to-2024-12-31.json",
+          "trade_count": 396,
+          "actual_period_start": "2020-01-02",
+          "actual_period_end": "2024-12-31"
+        },
+        "test_audit": {
+          "artifact_path": "autoresearch-audits/seed-100-volatility_regime-v1-test-2025-01-01-to-2026-03-29.json",
+          "trade_count": 105,
+          "actual_period_start": "2025-01-02",
+          "actual_period_end": "2026-03-25"
         }
       }
     }
